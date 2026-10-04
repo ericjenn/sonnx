@@ -1,0 +1,1311 @@
+{
+  "op": "MaxPool",
+  "opset": 14,
+  "spec": "# Contents\n\n- **MaxPool** operator for type [real](#real)\n- **MaxPool** operator for types [`float16`, `float`, `double`](#float)\n- **MaxPool** operator for types [`int8`, `int64`](#int)\n- **MaxPool** operator for types [`uint8`](#uint)\n\nBased on ONNX documentation [MaxPool version 14](https://onnx.ai/onnx/operators/onnx__MaxPool.html#maxpool-14).\n\nRevision 2026-10-03: first issue of this specification, based on ONNX opset 14.\n\n<a id=\"real\"></a>\n\n# **MaxPool** (real)\n\n## Signature\n\n$Y\\,[, \\text{Indices}] = \\textbf{MaxPool}(X)$\n\nwhere\n- $X$: input tensor of rank $rX \\ge 3$\n- $Y$: result of the max pooling of $X$\n- $\\text{Indices}$: optional tensor of the flattened indices of the elements of $X$ selected by the pooling windows\n\n## Restrictions\n\n[General restrictions](./../common/general_restrictions.md) are applicable.\n\n| Restriction    | Statement | Origin |\n| -------- | ------- | ------- |\n| `[R1]` | Attribute `auto_pad` is restricted to `NOTSET` | Transient |\n| `[R2]` | Attribute `storage_order` is restricted to `0` | Transient |\n| `[R3]` | Attribute `ceil_mode` is restricted to `0` | Transient |\n| `[R4]` | Attribute `dilations` is restricted to $1$ along each spatial axis | Transient |\n| `[R5]` | The output $\\text{Indices}$ is not supported | Transient |\n\n## Function\n\n<a id=\"E_MAXPOOL_REAL_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MAXPOOL_REAL_FUNC_0010]</br></span>\n\nOperator **MaxPool** applies max pooling to the input tensor $X$: it slides a window of the shape given by `kernel_shape` over the spatial axes of $X$, with the steps given by `strides`, and stores in $Y$ the maximum of the elements of $X$ covered by each window.\n\nThe first two axes of $X$ are the batch axis and the channel axis; they are not pooled. The remaining $rX - 2$ axes are the spatial axes, numbered from $0$ to $rX-3$ in the order of the axes of $X$. The number of spatial axes is denoted $m = rX - 2$; the operator is applicable to any $m \\ge 1$.\n\nFor any [tensor index](./../common/definitions.md#tensor_index) $i = (n, c, j_0, \\dots, j_{m-1})$ of the result $Y$:\n\n$$\nY[n, c, j_0, \\dots, j_{m-1}] = \\max_{k_0, \\dots, k_{m-1}} X_p[n, c, j_0 \\cdot s_0 + k_0, \\dots, j_{m-1} \\cdot s_{m-1} + k_{m-1}]\n$$\n\nwhere\n- $n \\in [0, dX_0-1]$ is the batch index, $dX_0$ being the batch size of $X$,\n- $c \\in [0, dX_1-1]$ is the channel index, $dX_1$ being the number of channels of $X$,\n- $j_t \\in [0, dY_{t+2}-1]$ is the index along spatial axis $t$ of $Y$, for $t \\in [0, m-1]$,\n- $k_t \\in [0, dK_t-1]$ is the index along spatial axis $t$ of the window, $dK_t$ being the value of `kernel_shape` along that axis,\n- $s_t$ is the value of `strides` along spatial axis $t$,\n- $X_p$ is the tensor obtained by padding $X$ with the values of `pads`, and $X_p[n, c, h_0, \\dots, h_{m-1}]$ is one of its elements,\n- the maximum is taken over the $dK_0 \\times \\dots \\times dK_{m-1}$ elements of the window.\n\n**Padding.** The padding adds $p_{t,\\text{begin}}$ elements before and $p_{t,\\text{end}}$ elements after the input along spatial axis $t$, where $p_{t,\\text{begin}}$ and $p_{t,\\text{end}}$ are the two values of `pads` for that axis. The padded elements are not elements of $X$: they are excluded from the maximum, so that the maximum is taken over the elements of $X$ covered by the window only. A window that covers no element of $X$ is not a window of the result: the shape of $Y$ is such that every window covers at least one element of $X$.\n\n**Shape of the result.** The spatial dimensions of $Y$ are\n\n$$\ndY_{t+2} = \\left\\lfloor \\frac{dX_{t+2} + p_{t,\\text{begin}} + p_{t,\\text{end}} - dK_t}{s_t} \\right\\rfloor + 1\n$$\n\nfor every $t \\in [0, m-1]$, and $dY_0 = dX_0$, $dY_1 = dX_1$. The floor is the one of the `ceil_mode` attribute, which is restricted to $0$ by [<b><span style=\"font-family: 'Courier New', monospace\">R3</span></b>](#R3); the formula above is the one of the ONNX definition with `ceil_mode` disabled and `dilations` equal to $1$.\n\n**Tensors with no dimension.** The input tensor $X$ has at least three axes, since the batch axis, the channel axis and at least one spatial axis are required; a rank-0 tensor is not a valid input.\n\n**Zero-sized dimensions.** A spatial dimension of $X$ may have size $0$. The formula above then gives a spatial dimension of $Y$ of size $0$ when $p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$, and the corresponding dimension of $Y$ is empty; otherwise the operator is not applicable, since a window would cover no element of $X$. A batch or channel dimension of size $0$ gives a dimension of $Y$ of size $0$, and $Y$ is empty.\n\n**Ties.** When several elements of a window are equal to the maximum, the result is that maximum, and the choice of the element that realizes it is not observable in $Y$. The output $\\text{Indices}$ would make that choice observable; it is not supported by this profile, as stated by [<b><span style=\"font-family: 'Courier New', monospace\">R5</span></b>](#R5).\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>\n\nThe effect of the operator is illustrated on the following examples.\n\n### Example 1\n\n$$\nX = \\begin{bmatrix}\\begin{bmatrix}\n  1 & 2 & 3 & 4 \\\\\n  5 & 6 & 7 & 8 \\\\\n  9 & 10 & 11 & 12 \\\\\n  13 & 14 & 15 & 16\n\\end{bmatrix}\\end{bmatrix}\n$$\n\nwith `kernel_shape` $= [2, 2]$ and `strides` $= [2, 2]$, so that $X$ has shape $(1, 1, 4, 4)$: $dX_0 = dX_1 = 1$, $m = 2$, $dK_0 = dK_1 = 2$, $s_0 = s_1 = 2$ and $p_{t,\\text{begin}} = p_{t,\\text{end}} = 0$:\n\n$$\nY = \\begin{bmatrix}\\begin{bmatrix}\n  6 & 8 \\\\\n  14 & 16\n\\end{bmatrix}\\end{bmatrix}\n$$\n\nThe window of the first element of $Y$ covers the elements $1, 2, 5, 6$ of $X$, whose maximum is $6$; the window of the last element covers $11, 12, 15, 16$, whose maximum is $16$.\n\n### Example 2\n\n$$\nX = \\begin{bmatrix}\\begin{bmatrix} 1 & 2 & 3 \\end{bmatrix}\\end{bmatrix}\n$$\n\nwith `kernel_shape` $= [2]$, `strides` $= [1]$ and `pads` $= [1, 1]$, so that $X$ has shape $(1, 1, 3)$: $dX_0 = dX_1 = 1$, $m = 1$, $dK_0 = 2$, $s_0 = 1$, $p_{0,\\text{begin}} = p_{0,\\text{end}} = 1$ and $dY_2 = \\lfloor (3 + 1 + 1 - 2)/1 \\rfloor + 1 = 4$:\n\n$$\nY = \\begin{bmatrix}\\begin{bmatrix} 1 & 2 & 3 & 3 \\end{bmatrix}\\end{bmatrix}\n$$\n\nThe first window covers the padded element before $X$ and the element $1$; the padded element is excluded from the maximum, which is $1$. The last window covers the element $3$ and the padded element after $X$; the maximum is $3$.\n\n## Error conditions\n\n| Condition | Disposition |\n| -------- | ------- |\n| Invalid operation | not applicable: the operator performs no floating-point arithmetic, and the maximum of a set of values is defined for every value of the type, including the special numbers |\n| Overflow | not applicable: the result is one of the elements of $X$, and no arithmetic is performed |\n| Integer overflow | not applicable: the result is one of the elements of $X$, and no arithmetic is performed |\n| Division by zero | not applicable: the operator performs no division |\n| A window that covers no element of $X$ | ruled out by the precondition [<b><span style=\"font-family: 'Courier New', monospace\">E_MAXPOOL_REAL_CONSTR_X_0020</span></b>](#E_MAXPOOL_REAL_CONSTR_X_0020) |\n\nNo error condition.\n\n## Attributes\n\n### `auto_pad`: `string`\n\n`auto_pad` selects the way the padding is computed. It is restricted to `NOTSET` by [<b><span style=\"font-family: 'Courier New', monospace\">R1</span></b>](#R1), so that the padding is the one given by `pads`.\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_REAL_CONSTR_auto_pad_0010\"></a>\n- `[E_MAXPOOL_REAL_CONSTR_auto_pad_0010]` Value of `auto_pad`\n  - Statement: The value of `auto_pad` is `NOTSET`.\n  - Rationale: The other values of the attribute are deprecated in ONNX and are not supported by this profile.\n\n### `ceil_mode`: `int`\n\n`ceil_mode` selects the rounding of the output shape. It is restricted to $0$ by [<b><span style=\"font-family: 'Courier New', monospace\">R3</span></b>](#R3), so that the floor is used.\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_REAL_CONSTR_ceil_mode_0010\"></a>\n- `[E_MAXPOOL_REAL_CONSTR_ceil_mode_0010]` Value of `ceil_mode`\n  - Statement: The value of `ceil_mode` is $0$.\n\n### `dilations`: `list of int`\n\n`dilations` gives the dilation along each spatial axis. It is restricted to $1$ along each spatial axis by [<b><span style=\"font-family: 'Courier New', monospace\">R4</span></b>](#R4), so that the window covers consecutive elements of $X$.\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_REAL_CONSTR_dilations_0010\"></a>\n- `[E_MAXPOOL_REAL_CONSTR_dilations_0010]` Value of `dilations`\n  - Statement: Every value of `dilations` is $1$.\n\n### `kernel_shape`: `list of int`\n\n`kernel_shape` gives the size of the window along each spatial axis. It has $m$ values, one per spatial axis, and every value is at least $1$.\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_REAL_CONSTR_kernel_shape_0010\"></a>\n- `[E_MAXPOOL_REAL_CONSTR_kernel_shape_0010]` Length of `kernel_shape`\n  - Statement: The number of values of `kernel_shape` is $rX - 2$.\n<a id=\"E_MAXPOOL_REAL_CONSTR_kernel_shape_0020\"></a>\n- `[E_MAXPOOL_REAL_CONSTR_kernel_shape_0020]` Values of `kernel_shape`\n  - Statement: Every value of `kernel_shape` is at least $1$.\n\n### `pads`: `list of int`\n\n`pads` gives the number of elements added before and after $X$ along each spatial axis. It has $2m$ values, the first $m$ being the numbers added at the beginning of the axes and the last $m$ the numbers added at the end, in the order of the spatial axes. Every value is at least $0$.\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_REAL_CONSTR_pads_0010\"></a>\n- `[E_MAXPOOL_REAL_CONSTR_pads_0010]` Length of `pads`\n  - Statement: The number of values of `pads` is $2(rX - 2)$.\n<a id=\"E_MAXPOOL_REAL_CONSTR_pads_0020\"></a>\n- `[E_MAXPOOL_REAL_CONSTR_pads_0020]` Values of `pads`\n  - Statement: Every value of `pads` is at least $0$.\n\n### `storage_order`: `int`\n\n`storage_order` selects the order in which the flattened index of the output $\\text{Indices}$ is computed. It is restricted to $0$ by [<b><span style=\"font-family: 'Courier New', monospace\">R2</span></b>](#R2), and the output $\\text{Indices}$ is not supported by this profile, as stated by [<b><span style=\"font-family: 'Courier New', monospace\">R5</span></b>](#R5).\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_REAL_CONSTR_storage_order_0010\"></a>\n- `[E_MAXPOOL_REAL_CONSTR_storage_order_0010]` Value of `storage_order`\n  - Statement: The value of `storage_order` is $0$.\n\n### `strides`: `list of int`\n\n`strides` gives the step of the window along each spatial axis. It has $m$ values, one per spatial axis, and every value is at least $1$.\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_REAL_CONSTR_strides_0010\"></a>\n- `[E_MAXPOOL_REAL_CONSTR_strides_0010]` Length of `strides`\n  - Statement: The number of values of `strides` is $rX - 2$.\n<a id=\"E_MAXPOOL_REAL_CONSTR_strides_0020\"></a>\n- `[E_MAXPOOL_REAL_CONSTR_strides_0020]` Values of `strides`\n  - Statement: Every value of `strides` is at least $1$.\n\n## Inputs\n\n### $\\text{X}$: real tensor\n\nThe tensor to which the max pooling is applied. Its first two axes are the batch axis and the channel axis, and its remaining axes are the spatial axes.\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_REAL_CONSTR_X_0010\"></a>\n- `[E_MAXPOOL_REAL_CONSTR_X_0010]` Rank of $X$\n  - Statement: The rank of $X$ is at least $3$.\n  - Rationale: The batch axis, the channel axis and at least one spatial axis are required.\n<a id=\"E_MAXPOOL_REAL_CONSTR_X_0020\"></a>\n- `[E_MAXPOOL_REAL_CONSTR_X_0020]` Window coverage\n  - Statement: For every spatial axis $t$, either $dX_{t+2} \\ge 1$ and $dX_{t+2} + p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$, or $dX_{t+2} = 0$ and $p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$.\n  - Rationale: Every window of the result covers at least one element of $X$.\n\n## Outputs\n\n### $\\text{Y}$: real tensor\n\nThe result of the max pooling of $X$.\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_REAL_CONSTR_Y_0010\"></a>\n- `[E_MAXPOOL_REAL_CONSTR_Y_0010]` Shape definition\n  - Statement: $dY_0 = dX_0$, $dY_1 = dX_1$, and for every spatial axis $t$, $dY_{t+2} = \\lfloor (dX_{t+2} + p_{t,\\text{begin}} + p_{t,\\text{end}} - dK_t)/s_t \\rfloor + 1$.\n\n<a id=\"float\"></a>\n\n# **MaxPool** (float)\n\nwhere float is in {`float16`, `float`, `double`}.\n\nThe three types share one semantics: the operator selects one of the elements of the input tensor and performs no arithmetic on it, so that the result is the same for all of them, the special numbers included.\n\n## Signature\n\n$Y\\,[, \\text{Indices}] = \\textbf{MaxPool}(X)$\n\nwhere\n- $X$: input tensor of rank $rX \\ge 3$\n- $Y$: result of the max pooling of $X$\n- $\\text{Indices}$: optional tensor of the flattened indices of the elements of $X$ selected by the pooling windows\n\n## Restrictions\n\n[General restrictions](./../common/general_restrictions.md) are applicable.\n\n| Restriction    | Statement | Origin |\n| -------- | ------- | ------- |\n| `[R1]` | Attribute `auto_pad` is restricted to `NOTSET` | Transient |\n| `[R2]` | Attribute `storage_order` is restricted to `0` | Transient |\n| `[R3]` | Attribute `ceil_mode` is restricted to `0` | Transient |\n| `[R4]` | Attribute `dilations` is restricted to $1$ along each spatial axis | Transient |\n| `[R5]` | The output $\\text{Indices}$ is not supported | Transient |\n\n## Function\n\n<a id=\"E_MAXPOOL_FLOAT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MAXPOOL_FLOAT_FUNC_0010]</br></span>\n\nOperator **MaxPool** applies max pooling to the input tensor $X$: it slides a window of the shape given by `kernel_shape` over the spatial axes of $X$, with the steps given by `strides`, and stores in $Y$ the maximum of the elements of $X$ covered by each window.\n\nThe first two axes of $X$ are the batch axis and the channel axis; they are not pooled. The remaining $rX - 2$ axes are the spatial axes, numbered from $0$ to $rX-3$ in the order of the axes of $X$. The number of spatial axes is denoted $m = rX - 2$; the operator is applicable to any $m \\ge 1$.\n\nFor any [tensor index](./../common/definitions.md#tensor_index) $i = (n, c, j_0, \\dots, j_{m-1})$ of the result $Y$:\n\n$$\nY[n, c, j_0, \\dots, j_{m-1}] = \\max_{k_0, \\dots, k_{m-1}} X_p[n, c, j_0 \\cdot s_0 + k_0, \\dots, j_{m-1} \\cdot s_{m-1} + k_{m-1}]\n$$\n\nwhere\n- $n \\in [0, dX_0-1]$ is the batch index, $dX_0$ being the batch size of $X$,\n- $c \\in [0, dX_1-1]$ is the channel index, $dX_1$ being the number of channels of $X$,\n- $j_t \\in [0, dY_{t+2}-1]$ is the index along spatial axis $t$ of $Y$, for $t \\in [0, m-1]$,\n- $k_t \\in [0, dK_t-1]$ is the index along spatial axis $t$ of the window, $dK_t$ being the value of `kernel_shape` along that axis,\n- $s_t$ is the value of `strides` along spatial axis $t$,\n- $X_p$ is the tensor obtained by padding $X$ with the values of `pads`, and $X_p[n, c, h_0, \\dots, h_{m-1}]$ is one of its elements,\n- the maximum is taken over the elements of $X$ covered by the window, the padded elements being excluded.\n\n**The maximum of the floating-point values.** The maximum is the one of the values of the type, and it is not the maximum of the real numbers they represent: the values of the type include the special numbers $\\pm 0$, $\\pm\\text{inf}$ and NaN, and the maximum is defined on them as follows.\n\n- NaN is not comparable with any value, itself included. When a window covers an element that is NaN, the result of that window is NaN. The NaN of the result is a quiet NaN; its sign and its payload are not specified, so that every quiet NaN of the type of $X$ and $Y$ is a conforming result.\n- $+\\text{inf}$ is greater than every finite value and than $-\\text{inf}$, and $-\\text{inf}$ is smaller than every finite value. A window whose elements are all $-\\text{inf}$ gives $-\\text{inf}$.\n- $+0$ and $-0$ are equal, and neither is greater than the other. A window whose elements are all null gives a null result; its sign is not specified, so that $+0$ and $-0$ are both conforming results.\n\n**Padding.** The padding adds $p_{t,\\text{begin}}$ elements before and $p_{t,\\text{end}}$ elements after the input along spatial axis $t$, where $p_{t,\\text{begin}}$ and $p_{t,\\text{end}}$ are the two values of `pads` for that axis. The padded elements are not elements of $X$: they are excluded from the maximum, so that the maximum is taken over the elements of $X$ covered by the window only. A window that covers no element of $X$ is not a window of the result: the shape of $Y$ is such that every window covers at least one element of $X$.\n\n**Shape of the result.** The spatial dimensions of $Y$ are\n\n$$\ndY_{t+2} = \\left\\lfloor \\frac{dX_{t+2} + p_{t,\\text{begin}} + p_{t,\\text{end}} - dK_t}{s_t} \\right\\rfloor + 1\n$$\n\nfor every $t \\in [0, m-1]$, and $dY_0 = dX_0$, $dY_1 = dX_1$. The floor is the one of the `ceil_mode` attribute, which is restricted to $0$ by [<b><span style=\"font-family: 'Courier New', monospace\">R3</span></b>](#R3); the formula above is the one of the ONNX definition with `ceil_mode` disabled and `dilations` equal to $1$.\n\n**Tensors with no dimension.** The input tensor $X$ has at least three axes, since the batch axis, the channel axis and at least one spatial axis are required; a rank-0 tensor is not a valid input.\n\n**Zero-sized dimensions.** A spatial dimension of $X$ may have size $0$. The formula above then gives a spatial dimension of $Y$ of size $0$ when $p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$, and the corresponding dimension of $Y$ is empty; otherwise the operator is not applicable, since a window would cover no element of $X$. A batch or channel dimension of size $0$ gives a dimension of $Y$ of size $0$, and $Y$ is empty.\n\n**Ties.** When several elements of a window are equal to the maximum, the result is that maximum, and the choice of the element that realizes it is not observable in $Y$. The output $\\text{Indices}$ would make that choice observable; it is not supported by this profile, as stated by [<b><span style=\"font-family: 'Courier New', monospace\">R5</span></b>](#R5).\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>\n\nThe effect of the operator is illustrated on the following examples.\n\n### Example 1\n\n$$\nX = \\begin{bmatrix}\\begin{bmatrix}\n  1.0 & 2.0 & 3.0 & 4.0 \\\\\n  5.0 & 6.0 & 7.0 & 8.0 \\\\\n  9.0 & 10.0 & 11.0 & 12.0 \\\\\n  13.0 & 14.0 & 15.0 & 16.0\n\\end{bmatrix}\\end{bmatrix}\n$$\n\nwith `kernel_shape` $= [2, 2]$ and `strides` $= [2, 2]$, so that $X$ has shape $(1, 1, 4, 4)$:\n\n$$\nY = \\begin{bmatrix}\\begin{bmatrix}\n  6.0 & 8.0 \\\\\n  14.0 & 16.0\n\\end{bmatrix}\\end{bmatrix}\n$$\n\n### Example 2\n\n$$\nX = \\begin{bmatrix}\\begin{bmatrix} 1.0 & \\text{NaN} & 3.0 & \\text{-inf} \\end{bmatrix}\\end{bmatrix}\n$$\n\nwith `kernel_shape` $= [2]$ and `strides` $= [2]$, so that $X$ has shape $(1, 1, 4)$:\n\n$$\nY = \\begin{bmatrix}\\begin{bmatrix} \\text{NaN} & 3.0 \\end{bmatrix}\\end{bmatrix}\n$$\n\nThe first window covers $1.0$ and NaN; the result is NaN, since NaN is not comparable with any value. The second window covers $3.0$ and $-\\text{inf}$; the result is $3.0$, which is greater than $-\\text{inf}$.\n\n## Error conditions\n\n| Condition | Disposition |\n| -------- | ------- |\n| Invalid operation | not applicable: the operator performs no floating-point arithmetic, and the maximum of a set of values is defined for every value of the type, including the special numbers |\n| Overflow | not applicable: the result is one of the elements of $X$, and no arithmetic is performed |\n| Integer overflow | not applicable: the operator performs no integer arithmetic |\n| Division by zero | not applicable: the operator performs no division |\n| A window that covers no element of $X$ | ruled out by the precondition [<b><span style=\"font-family: 'Courier New', monospace\">E_MAXPOOL_FLOAT_CONSTR_X_0020</span></b>](#E_MAXPOOL_FLOAT_CONSTR_X_0020) |\n\nNo error condition.\n\n## Attributes\n\nThe attributes of the operator are the ones given in the [real](#real) section; they do not depend on the type of the arguments.\n\n## Inputs\n\n### $\\text{X}$: floating-point tensor\n\nThe tensor to which the max pooling is applied. Its first two axes are the batch axis and the channel axis, and its remaining axes are the spatial axes.\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_FLOAT_CONSTR_X_0010\"></a>\n- `[E_MAXPOOL_FLOAT_CONSTR_X_0010]` Rank of $X$\n  - Statement: The rank of $X$ is at least $3$.\n  - Rationale: The batch axis, the channel axis and at least one spatial axis are required.\n<a id=\"E_MAXPOOL_FLOAT_CONSTR_X_0020\"></a>\n- `[E_MAXPOOL_FLOAT_CONSTR_X_0020]` Window coverage\n  - Statement: For every spatial axis $t$, either $dX_{t+2} \\ge 1$ and $dX_{t+2} + p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$, or $dX_{t+2} = 0$ and $p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$.\n  - Rationale: Every window of the result covers at least one element of $X$.\n<a id=\"E_MAXPOOL_FLOAT_CONSTR_X_0030\"></a>\n- `[E_MAXPOOL_FLOAT_CONSTR_X_0030]` Type consistency\n  - Statement: Tensors $X$ and $Y$ have the same type.\n\n## Outputs\n\n### $\\text{Y}$: floating-point tensor\n\nThe result of the max pooling of $X$.\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_FLOAT_CONSTR_Y_0010\"></a>\n- `[E_MAXPOOL_FLOAT_CONSTR_Y_0010]` Shape definition\n  - Statement: $dY_0 = dX_0$, $dY_1 = dX_1$, and for every spatial axis $t$, $dY_{t+2} = \\lfloor (dX_{t+2} + p_{t,\\text{begin}} + p_{t,\\text{end}} - dK_t)/s_t \\rfloor + 1$.\n- `[E_MAXPOOL_FLOAT_CONSTR_Y_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MAXPOOL_FLOAT_CONSTR_X_0030</span></b>](#E_MAXPOOL_FLOAT_CONSTR_X_0030) on tensor $X$.\n\n<a id=\"int\"></a>\n\n# **MaxPool** (int)\n\nwhere int is in {`int8`, `int64`}.\n\nThe two types share one semantics: the operator selects one of the elements of the input tensor and performs no arithmetic on it, so that the result is the same for both, the comparison being the one of the signed integers they represent.\n\n## Signature\n\n$Y\\,[, \\text{Indices}] = \\textbf{MaxPool}(X)$\n\nwhere\n- $X$: input tensor of rank $rX \\ge 3$\n- $Y$: result of the max pooling of $X$\n- $\\text{Indices}$: optional tensor of the flattened indices of the elements of $X$ selected by the pooling windows\n\n## Restrictions\n\n[General restrictions](./../common/general_restrictions.md) are applicable.\n\n| Restriction    | Statement | Origin |\n| -------- | ------- | ------- |\n| `[R1]` | Attribute `auto_pad` is restricted to `NOTSET` | Transient |\n| `[R2]` | Attribute `storage_order` is restricted to `0` | Transient |\n| `[R3]` | Attribute `ceil_mode` is restricted to `0` | Transient |\n| `[R4]` | Attribute `dilations` is restricted to $1$ along each spatial axis | Transient |\n| `[R5]` | The output $\\text{Indices}$ is not supported | Transient |\n\n## Function\n\n<a id=\"E_MAXPOOL_INT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MAXPOOL_INT_FUNC_0010]</br></span>\n\nOperator **MaxPool** applies max pooling to the input tensor $X$: it slides a window of the shape given by `kernel_shape` over the spatial axes of $X$, with the steps given by `strides`, and stores in $Y$ the maximum of the elements of $X$ covered by each window.\n\nThe first two axes of $X$ are the batch axis and the channel axis; they are not pooled. The remaining $rX - 2$ axes are the spatial axes, numbered from $0$ to $rX-3$ in the order of the axes of $X$. The number of spatial axes is denoted $m = rX - 2$; the operator is applicable to any $m \\ge 1$.\n\nFor any [tensor index](./../common/definitions.md#tensor_index) $i = (n, c, j_0, \\dots, j_{m-1})$ of the result $Y$:\n\n$$\nY[n, c, j_0, \\dots, j_{m-1}] = \\max_{k_0, \\dots, k_{m-1}} X_p[n, c, j_0 \\cdot s_0 + k_0, \\dots, j_{m-1} \\cdot s_{m-1} + k_{m-1}]\n$$\n\nwhere\n- $n \\in [0, dX_0-1]$ is the batch index, $dX_0$ being the batch size of $X$,\n- $c \\in [0, dX_1-1]$ is the channel index, $dX_1$ being the number of channels of $X$,\n- $j_t \\in [0, dY_{t+2}-1]$ is the index along spatial axis $t$ of $Y$, for $t \\in [0, m-1]$,\n- $k_t \\in [0, dK_t-1]$ is the index along spatial axis $t$ of the window, $dK_t$ being the value of `kernel_shape` along that axis,\n- $s_t$ is the value of `strides` along spatial axis $t$,\n- $X_p$ is the tensor obtained by padding $X$ with the values of `pads`, and $X_p[n, c, h_0, \\dots, h_{m-1}]$ is one of its elements,\n- the maximum is taken over the elements of $X$ covered by the window, the padded elements being excluded.\n\n**The maximum of the integer values.** The maximum is the one of the values of the type, and it is the maximum of the signed integers they represent: for `int8`, the values range from $-128$ to $127$ and the maximum of $-128$ and $127$ is $127$; for `int64`, the values range from $-2^{63}$ to $2^{63}-1$. The comparison is the same for the two types, and the result is one of the elements of $X$, so that no overflow can occur.\n\n**Padding.** The padding adds $p_{t,\\text{begin}}$ elements before and $p_{t,\\text{end}}$ elements after the input along spatial axis $t$, where $p_{t,\\text{begin}}$ and $p_{t,\\text{end}}$ are the two values of `pads` for that axis. The padded elements are not elements of $X$: they are excluded from the maximum, so that the maximum is taken over the elements of $X$ covered by the window only. A window that covers no element of $X$ is not a window of the result: the shape of $Y$ is such that every window covers at least one element of $X$.\n\n**Shape of the result.** The spatial dimensions of $Y$ are\n\n$$\ndY_{t+2} = \\left\\lfloor \\frac{dX_{t+2} + p_{t,\\text{begin}} + p_{t,\\text{end}} - dK_t}{s_t} \\right\\rfloor + 1\n$$\n\nfor every $t \\in [0, m-1]$, and $dY_0 = dX_0$, $dY_1 = dX_1$. The floor is the one of the `ceil_mode` attribute, which is restricted to $0$ by [<b><span style=\"font-family: 'Courier New', monospace\">R3</span></b>](#R3); the formula above is the one of the ONNX definition with `ceil_mode` disabled and `dilations` equal to $1$.\n\n**Tensors with no dimension.** The input tensor $X$ has at least three axes, since the batch axis, the channel axis and at least one spatial axis are required; a rank-0 tensor is not a valid input.\n\n**Zero-sized dimensions.** A spatial dimension of $X$ may have size $0$. The formula above then gives a spatial dimension of $Y$ of size $0$ when $p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$, and the corresponding dimension of $Y$ is empty; otherwise the operator is not applicable, since a window would cover no element of $X$. A batch or channel dimension of size $0$ gives a dimension of $Y$ of size $0$, and $Y$ is empty.\n\n**Ties.** When several elements of a window are equal to the maximum, the result is that maximum, and the choice of the element that realizes it is not observable in $Y$. The output $\\text{Indices}$ would make that choice observable; it is not supported by this profile, as stated by [<b><span style=\"font-family: 'Courier New', monospace\">R5</span></b>](#R5).\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>\n\nThe effect of the operator is illustrated on the following example.\n\n### Example 1\n\nFor the `int8` type:\n\n$$\nX = \\begin{bmatrix}\\begin{bmatrix}\n  -1 & 2 & -3 & 4 \\\\\n  5 & -6 & 7 & -8 \\\\\n  -9 & 10 & -11 & 12 \\\\\n  13 & -14 & 15 & -16\n\\end{bmatrix}\\end{bmatrix}\n$$\n\nwith `kernel_shape` $= [2, 2]$ and `strides` $= [2, 2]$, so that $X$ has shape $(1, 1, 4, 4)$:\n\n$$\nY = \\begin{bmatrix}\\begin{bmatrix}\n  5 & 7 \\\\\n  13 & 15\n\\end{bmatrix}\\end{bmatrix}\n$$\n\nThe window of the first element of $Y$ covers $-1, 2, 5, -6$, whose maximum is $5$; the window of the last element covers $-11, 12, 15, -16$, whose maximum is $15$. The negative values are smaller than the positive ones, and the result is one of the elements of $X$. The values of the example are values of `int8`; they are also values of `int64`, for which the comparison and the result are the same.\n\n## Error conditions\n\n| Condition | Disposition |\n| -------- | ------- |\n| Invalid operation | not applicable: the operator performs no floating-point arithmetic |\n| Overflow | not applicable: the result is one of the elements of $X$, and no arithmetic is performed |\n| Integer overflow | not applicable: the result is one of the elements of $X$, and no arithmetic is performed |\n| Division by zero | not applicable: the operator performs no division |\n| A window that covers no element of $X$ | ruled out by the precondition [<b><span style=\"font-family: 'Courier New', monospace\">E_MAXPOOL_INT_CONSTR_X_0020</span></b>](#E_MAXPOOL_INT_CONSTR_X_0020) |\n\nNo error condition.\n\n## Attributes\n\nThe attributes of the operator are the ones given in the [real](#real) section; they do not depend on the type of the arguments.\n\n## Inputs\n\n### $\\text{X}$: signed integer tensor\n\nThe tensor to which the max pooling is applied. Its first two axes are the batch axis and the channel axis, and its remaining axes are the spatial axes.\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_INT_CONSTR_X_0010\"></a>\n- `[E_MAXPOOL_INT_CONSTR_X_0010]` Rank of $X$\n  - Statement: The rank of $X$ is at least $3$.\n  - Rationale: The batch axis, the channel axis and at least one spatial axis are required.\n<a id=\"E_MAXPOOL_INT_CONSTR_X_0020\"></a>\n- `[E_MAXPOOL_INT_CONSTR_X_0020]` Window coverage\n  - Statement: For every spatial axis $t$, either $dX_{t+2} \\ge 1$ and $dX_{t+2} + p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$, or $dX_{t+2} = 0$ and $p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$.\n  - Rationale: Every window of the result covers at least one element of $X$.\n<a id=\"E_MAXPOOL_INT_CONSTR_X_0030\"></a>\n- `[E_MAXPOOL_INT_CONSTR_X_0030]` Type consistency\n  - Statement: Tensors $X$ and $Y$ have the same type.\n\n## Outputs\n\n### $\\text{Y}$: signed integer tensor\n\nThe result of the max pooling of $X$.\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_INT_CONSTR_Y_0010\"></a>\n- `[E_MAXPOOL_INT_CONSTR_Y_0010]` Shape definition\n  - Statement: $dY_0 = dX_0$, $dY_1 = dX_1$, and for every spatial axis $t$, $dY_{t+2} = \\lfloor (dX_{t+2} + p_{t,\\text{begin}} + p_{t,\\text{end}} - dK_t)/s_t \\rfloor + 1$.\n- `[E_MAXPOOL_INT_CONSTR_Y_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MAXPOOL_INT_CONSTR_X_0030</span></b>](#E_MAXPOOL_INT_CONSTR_X_0030) on tensor $X$.\n\n<a id=\"uint\"></a>\n\n# **MaxPool** (uint)\n\nwhere uint is in {`uint8`}.\n\nThe types of this section share one semantics: the operator selects one of the elements of the input tensor and performs no arithmetic on it, so that the result is the same for every type of the family, the comparison being the one of the unsigned integers they represent.\n\n## Signature\n\n$Y\\,[, \\text{Indices}] = \\textbf{MaxPool}(X)$\n\nwhere\n- $X$: input tensor of rank $rX \\ge 3$\n- $Y$: result of the max pooling of $X$\n- $\\text{Indices}$: optional tensor of the flattened indices of the elements of $X$ selected by the pooling windows\n\n## Restrictions\n\n[General restrictions](./../common/general_restrictions.md) are applicable.\n\n| Restriction    | Statement | Origin |\n| -------- | ------- | ------- |\n| `[R1]` | Attribute `auto_pad` is restricted to `NOTSET` | Transient |\n| `[R2]` | Attribute `storage_order` is restricted to `0` | Transient |\n| `[R3]` | Attribute `ceil_mode` is restricted to `0` | Transient |\n| `[R4]` | Attribute `dilations` is restricted to $1$ along each spatial axis | Transient |\n| `[R5]` | The output $\\text{Indices}$ is not supported | Transient |\n\n## Function\n\n<a id=\"E_MAXPOOL_UINT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MAXPOOL_UINT_FUNC_0010]</br></span>\n\nOperator **MaxPool** applies max pooling to the input tensor $X$: it slides a window of the shape given by `kernel_shape` over the spatial axes of $X$, with the steps given by `strides`, and stores in $Y$ the maximum of the elements of $X$ covered by each window.\n\nThe first two axes of $X$ are the batch axis and the channel axis; they are not pooled. The remaining $rX - 2$ axes are the spatial axes, numbered from $0$ to $rX-3$ in the order of the axes of $X$. The number of spatial axes is denoted $m = rX - 2$; the operator is applicable to any $m \\ge 1$.\n\nFor any [tensor index](./../common/definitions.md#tensor_index) $i = (n, c, j_0, \\dots, j_{m-1})$ of the result $Y$:\n\n$$\nY[n, c, j_0, \\dots, j_{m-1}] = \\max_{k_0, \\dots, k_{m-1}} X_p[n, c, j_0 \\cdot s_0 + k_0, \\dots, j_{m-1} \\cdot s_{m-1} + k_{m-1}]\n$$\n\nwhere\n- $n \\in [0, dX_0-1]$ is the batch index, $dX_0$ being the batch size of $X$,\n- $c \\in [0, dX_1-1]$ is the channel index, $dX_1$ being the number of channels of $X$,\n- $j_t \\in [0, dY_{t+2}-1]$ is the index along spatial axis $t$ of $Y$, for $t \\in [0, m-1]$,\n- $k_t \\in [0, dK_t-1]$ is the index along spatial axis $t$ of the window, $dK_t$ being the value of `kernel_shape` along that axis,\n- $s_t$ is the value of `strides` along spatial axis $t$,\n- $X_p$ is the tensor obtained by padding $X$ with the values of `pads`, and $X_p[n, c, h_0, \\dots, h_{m-1}]$ is one of its elements,\n- the maximum is taken over the elements of $X$ covered by the window, the padded elements being excluded.\n\n**The maximum of the integer values.** The maximum is the one of the values of the type, and it is the maximum of the unsigned integers they represent: for `uint8`, the values range from $0$ to $255$ and the maximum of $0$ and $255$ is $255$. The result is one of the elements of $X$, so that no overflow can occur.\n\n**Padding.** The padding adds $p_{t,\\text{begin}}$ elements before and $p_{t,\\text{end}}$ elements after the input along spatial axis $t$, where $p_{t,\\text{begin}}$ and $p_{t,\\text{end}}$ are the two values of `pads` for that axis. The padded elements are not elements of $X$: they are excluded from the maximum, so that the maximum is taken over the elements of $X$ covered by the window only. A window that covers no element of $X$ is not a window of the result: the shape of $Y$ is such that every window covers at least one element of $X$.\n\n**Shape of the result.** The spatial dimensions of $Y$ are\n\n$$\ndY_{t+2} = \\left\\lfloor \\frac{dX_{t+2} + p_{t,\\text{begin}} + p_{t,\\text{end}} - dK_t}{s_t} \\right\\rfloor + 1\n$$\n\nfor every $t \\in [0, m-1]$, and $dY_0 = dX_0$, $dY_1 = dX_1$. The floor is the one of the `ceil_mode` attribute, which is restricted to $0$ by [<b><span style=\"font-family: 'Courier New', monospace\">R3</span></b>](#R3); the formula above is the one of the ONNX definition with `ceil_mode` disabled and `dilations` equal to $1$.\n\n**Tensors with no dimension.** The input tensor $X$ has at least three axes, since the batch axis, the channel axis and at least one spatial axis are required; a rank-0 tensor is not a valid input.\n\n**Zero-sized dimensions.** A spatial dimension of $X$ may have size $0$. The formula above then gives a spatial dimension of $Y$ of size $0$ when $p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$, and the corresponding dimension of $Y$ is empty; otherwise the operator is not applicable, since a window would cover no element of $X$. A batch or channel dimension of size $0$ gives a dimension of $Y$ of size $0$, and $Y$ is empty.\n\n**Ties.** When several elements of a window are equal to the maximum, the result is that maximum, and the choice of the element that realizes it is not observable in $Y$. The output $\\text{Indices}$ would make that choice observable; it is not supported by this profile, as stated by [<b><span style=\"font-family: 'Courier New', monospace\">R5</span></b>](#R5).\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>\n\nThe effect of the operator is illustrated on the following example.\n\n### Example 1\n\nFor the `uint8` type:\n\n$$\nX = \\begin{bmatrix}\\begin{bmatrix}\n  0 & 200 & 3 & 255 \\\\\n  17 & 128 & 9 & 64 \\\\\n  250 & 1 & 100 & 7 \\\\\n  33 & 254 & 2 & 90\n\\end{bmatrix}\\end{bmatrix}\n$$\n\nwith `kernel_shape` $= [2, 2]$ and `strides` $= [2, 2]$, so that $X$ has shape $(1, 1, 4, 4)$:\n\n$$\nY = \\begin{bmatrix}\\begin{bmatrix}\n  200 & 255 \\\\\n  254 & 100\n\\end{bmatrix}\\end{bmatrix}\n$$\n\nThe window of the first element of $Y$ covers $0, 200, 17, 128$, whose maximum is $200$; the window of the second element covers $3, 255, 9, 64$, whose maximum is the largest value $255$ of `uint8`; the window of the third element covers $250, 1, 33, 254$, whose maximum is $254$; the window of the last element covers $100, 7, 2, 90$, whose maximum is $100$. The result is one of the elements of $X$.\n\n## Error conditions\n\n| Condition | Disposition |\n| -------- | ------- |\n| Invalid operation | not applicable: the operator performs no floating-point arithmetic |\n| Overflow | not applicable: the result is one of the elements of $X$, and no arithmetic is performed |\n| Integer overflow | not applicable: the result is one of the elements of $X$, and no arithmetic is performed |\n| Division by zero | not applicable: the operator performs no division |\n| A window that covers no element of $X$ | ruled out by the precondition [<b><span style=\"font-family: 'Courier New', monospace\">E_MAXPOOL_UINT_CONSTR_X_0020</span></b>](#E_MAXPOOL_UINT_CONSTR_X_0020) |\n\nNo error condition.\n\n## Attributes\n\nThe attributes of the operator are the ones given in the [real](#real) section; they do not depend on the type of the arguments.\n\n## Inputs\n\n### $\\text{X}$: unsigned integer tensor\n\nThe tensor to which the max pooling is applied. Its first two axes are the batch axis and the channel axis, and its remaining axes are the spatial axes.\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_UINT_CONSTR_X_0010\"></a>\n- `[E_MAXPOOL_UINT_CONSTR_X_0010]` Rank of $X$\n  - Statement: The rank of $X$ is at least $3$.\n  - Rationale: The batch axis, the channel axis and at least one spatial axis are required.\n<a id=\"E_MAXPOOL_UINT_CONSTR_X_0020\"></a>\n- `[E_MAXPOOL_UINT_CONSTR_X_0020]` Window coverage\n  - Statement: For every spatial axis $t$, either $dX_{t+2} \\ge 1$ and $dX_{t+2} + p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$, or $dX_{t+2} = 0$ and $p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$.\n  - Rationale: Every window of the result covers at least one element of $X$.\n<a id=\"E_MAXPOOL_UINT_CONSTR_X_0030\"></a>\n- `[E_MAXPOOL_UINT_CONSTR_X_0030]` Type consistency\n  - Statement: Tensors $X$ and $Y$ have the same type.\n\n## Outputs\n\n### $\\text{Y}$: unsigned integer tensor\n\nThe result of the max pooling of $X$.\n\n#### Constraints\n\n<a id=\"E_MAXPOOL_UINT_CONSTR_Y_0010\"></a>\n- `[E_MAXPOOL_UINT_CONSTR_Y_0010]` Shape definition\n  - Statement: $dY_0 = dX_0$, $dY_1 = dX_1$, and for every spatial axis $t$, $dY_{t+2} = \\lfloor (dX_{t+2} + p_{t,\\text{begin}} + p_{t,\\text{end}} - dK_t)/s_t \\rfloor + 1$.\n- `[E_MAXPOOL_UINT_CONSTR_Y_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MAXPOOL_UINT_CONSTR_X_0030</span></b>](#E_MAXPOOL_UINT_CONSTR_X_0030) on tensor $X$.\n",
+  "spec_path": "agents/runs/MaxPool/maxpool.md",
+  "spec_md5": "6bb29b037cf9ffe1d9442d833f217cf8",
+  "lint": {
+    "ok": true,
+    "findings": [],
+    "stdout": "agents/runs/MaxPool/maxpool.md: 700 lines, CRLF\n  sections       : float, int, real, uint\n  red spans      : 4\n  tags declared  : 22 (4 statements, 18 constraints)\n  tag zones      : {'CONSTR_Y': 7, 'CONSTR_X': 11, 'FUNC': 4}\n\nno mechanical finding",
+    "returncode": 0
+  },
+  "review": {
+    "ok": true,
+    "findings": [],
+    "notes": "Checked the four family sections against the schema verdict (real, float, int, uint all applicable; no absent family present), the Contents/anchors, the case analysis (rank-0, zero-sized dimensions, padding, ties, special float values as operands and results, signed vs unsigned comparison), the error-condition rows (each a disposition referring to a tag, none restating the Function section), the examples (values of the type under discussion, `$$` blocks, no contradiction), and the tags (all referred tags declared with anchors, no renumbering). No blocking or minor finding; the linter reported nothing mechanical."
+  },
+  "spec_ok": true,
+  "checked_md5": "6bb29b037cf9ffe1d9442d833f217cf8",
+  "no_progress": false,
+  "review_failed": false,
+  "impl_path": "agents/runs/MaxPool/iter-001-impl.py",
+  "impl_text": "\"\"\"MaxPool operator.\n\nSpecification: \"MaxPool version 14\", revision 2026-10-03, based on ONNX opset\n14.  The specification gives four sections, one per type family: ``real``,\n``float16``/``float``/``double``, ``int8``/``int64`` and ``uint8``.  They share\none semantics, so this module implements all of them with a single function.\n\nQuoting the ``float`` section:\n\n    \"The three types share one semantics: the operator selects one of the\n    elements of the input tensor and performs no arithmetic on it, so that the\n    result is the same for all of them, the special numbers included.\"\n\nQuoting the ``int`` section:\n\n    \"The two types share one semantics: the operator selects one of the\n    elements of the input tensor and performs no arithmetic on it, so that the\n    result is the same for both, the comparison being the one of the signed\n    integers they represent.\"\n\nQuoting the ``uint`` section:\n\n    \"The types of this section share one semantics: the operator selects one of\n    the elements of the input tensor and performs no arithmetic on it, so that\n    the result is the same for every type of the family, the comparison being\n    the one of the unsigned integers they represent.\"\n\nThe entry point is :func:`maxpool`.\n\"\"\"\n\nimport numpy as np\n\n\ndef maxpool(X, kernel_shape, strides=None, pads=None, auto_pad='NOTSET',\n            ceil_mode=0, dilations=None, storage_order=0):\n    r\"\"\"Apply max pooling to the tensor ``X``.\n\n    Quoting the specification, section \"MaxPool (real)\", function\n    [E_MAXPOOL_REAL_FUNC_0010] (the ``float``, ``int`` and ``uint`` sections\n    repeat the same text):\n\n        \"Operator **MaxPool** applies max pooling to the input tensor $X$: it\n        slides a window of the shape given by `kernel_shape` over the spatial\n        axes of $X$, with the steps given by `strides`, and stores in $Y$ the\n        maximum of the elements of $X$ covered by each window.\"\n\n        \"The first two axes of $X$ are the batch axis and the channel axis;\n        they are not pooled. The remaining $rX - 2$ axes are the spatial axes,\n        numbered from $0$ to $rX-3$ in the order of the axes of $X$. The number\n        of spatial axes is denoted $m = rX - 2$; the operator is applicable to\n        any $m \\ge 1$.\"\n\n        \"For any tensor index $i = (n, c, j_0, \\dots, j_{m-1})$ of the result\n        $Y$:\n\n        $$Y[n, c, j_0, \\dots, j_{m-1}] = \\max_{k_0, \\dots, k_{m-1}}\n        X_p[n, c, j_0 \\cdot s_0 + k_0, \\dots, j_{m-1} \\cdot s_{m-1} +\n        k_{m-1}]$$\"\n\n        \"where ... $k_t \\in [0, dK_t-1]$ is the index along spatial axis $t$ of\n        the window, $dK_t$ being the value of `kernel_shape` along that axis,\n        $s_t$ is the value of `strides` along spatial axis $t$, $X_p$ is the\n        tensor obtained by padding $X$ with the values of `pads` ... the\n        maximum is taken over the elements of $X$ covered by the window, the\n        padded elements being excluded.\"\n\n        \"**Padding.** The padding adds $p_{t,\\text{begin}}$ elements before and\n        $p_{t,\\text{end}}$ elements after the input along spatial axis $t$,\n        where $p_{t,\\text{begin}}$ and $p_{t,\\text{end}}$ are the two values of\n        `pads` for that axis. The padded elements are not elements of $X$: they\n        are excluded from the maximum, so that the maximum is taken over the\n        elements of $X$ covered by the window only. A window that covers no\n        element of $X$ is not a window of the result: the shape of $Y$ is such\n        that every window covers at least one element of $X$.\"\n\n        \"**Shape of the result.** The spatial dimensions of $Y$ are\n\n        $$dY_{t+2} = \\left\\lfloor \\frac{dX_{t+2} + p_{t,\\text{begin}} +\n        p_{t,\\text{end}} - dK_t}{s_t} \\right\\rfloor + 1$$\n\n        for every $t \\in [0, m-1]$, and $dY_0 = dX_0$, $dY_1 = dX_1$.\"\n\n    The maximum of the floating-point values is the one of the values of the\n    type, not of the real numbers they represent; quoting the ``float``\n    section:\n\n        \"NaN is not comparable with any value, itself included. When a window\n        covers an element that is NaN, the result of that window is NaN. ...\n        $+\\text{inf}$ is greater than every finite value and than $-\\text{inf}$,\n        and $-\\text{inf}$ is smaller than every finite value. A window whose\n        elements are all $-\\text{inf}$ gives $-\\text{inf}$. $+0$ and $-0$ are\n        equal, and neither is greater than the other. A window whose elements\n        are all null gives a null result; its sign is not specified ...\"\n\n    The maximum of the integer values is the one of the signed (``int``) or\n    unsigned (``uint``) integers the values represent; quoting the ``int``\n    section:\n\n        \"for `int8`, the values range from $-128$ to $127$ and the maximum of\n        $-128$ and $127$ is $127$; for `int64`, the values range from $-2^{63}$\n        to $2^{63}-1$. The comparison is the same for the two types, and the\n        result is one of the elements of $X$, so that no overflow can occur.\"\n\n    Parameters\n    ----------\n    X : array_like\n        \"The tensor to which the max pooling is applied. Its first two axes are\n        the batch axis and the channel axis, and its remaining axes are the\n        spatial axes.\"  Its rank is at least 3\n        ([E_MAXPOOL_REAL_CONSTR_X_0010]).\n    kernel_shape : sequence of int\n        \"`kernel_shape` gives the size of the window along each spatial axis.\n        It has $m$ values, one per spatial axis, and every value is at least\n        $1$.\"\n    strides : sequence of int, optional\n        \"`strides` gives the step of the window along each spatial axis. It has\n        $m$ values, one per spatial axis, and every value is at least $1$.\"\n    pads : sequence of int, optional\n        \"`pads` gives the number of elements added before and after $X$ along\n        each spatial axis. It has $2m$ values, the first $m$ being the numbers\n        added at the beginning of the axes and the last $m$ the numbers added\n        at the end, in the order of the spatial axes. Every value is at least\n        $0$.\"\n    auto_pad : str, optional\n        \"`auto_pad` selects the way the padding is computed. It is restricted\n        to `NOTSET` by [R1], so that the padding is the one given by `pads`.\"\n    ceil_mode : int, optional\n        \"`ceil_mode` selects the rounding of the output shape. It is restricted\n        to $0$ by [R3], so that the floor is used.\"\n    dilations : sequence of int, optional\n        \"`dilations` gives the dilation along each spatial axis. It is\n        restricted to $1$ along each spatial axis by [R4], so that the window\n        covers consecutive elements of $X$.\"\n    storage_order : int, optional\n        \"`storage_order` selects the order in which the flattened index of the\n        output $\\text{Indices}$ is computed. It is restricted to $0$ by [R2],\n        and the output $\\text{Indices}$ is not supported by this profile, as\n        stated by [R5].\"\n\n    Returns\n    -------\n    numpy.ndarray\n        The tensor $Y$, of the same type as ``X``\n        ([E_MAXPOOL_FLOAT_CONSTR_X_0030],\n        [E_MAXPOOL_INT_CONSTR_X_0030],\n        [E_MAXPOOL_UINT_CONSTR_X_0030]).\n\n    Notes\n    -----\n    DECISION: the specification gives no default for any attribute.  The\n    signature above supplies ``strides=None`` (meaning one along every spatial\n    axis), ``pads=None`` (meaning zero along every spatial axis),\n    ``dilations=None`` (meaning one along every spatial axis), ``auto_pad=\n    'NOTSET'``, ``ceil_mode=0`` and ``storage_order=0``.  The document says\n    nothing about these defaults; the values chosen are the ones the\n    restrictions [R1], [R2], [R3] and [R4] force the attributes to take, and\n    the neutral values for `strides`, `pads` and `dilations`.  `kernel_shape`\n    is given no default at all, since the document gives it none and no value\n    of it is neutral.\n\n    DECISION: the document gives the operator the signature\n    \"$Y\\,[, \\text{Indices}] = \\textbf{MaxPool}(X)$\" with an optional second\n    output, but restriction [R5] states \"The output $\\text{Indices}$ is not\n    supported\".  The function therefore returns $Y$ alone, not a tuple.\n\n    DECISION: the document says of `auto_pad`, `ceil_mode`, `dilations` and\n    `storage_order` only that they are restricted to `NOTSET`, $0$, $1$ and $0$\n    respectively; it says nothing about what the operator does for any other\n    value.  The parameters are accepted and their values are ignored: the\n    computation always uses the padding given by `pads`, the floor of the\n    formula, consecutive window elements and no index output.\n\n    DECISION: the document says \"The padded elements are not elements of $X$:\n    they are excluded from the maximum\".  This is implemented by padding with\n    the smallest value of the type of $X$ ($-\\text{inf}$ for the floating-point\n    types, the minimum of the type for the integer types), which is equivalent\n    because the document also guarantees that \"every window covers at least one\n    element of $X$\" ([E_MAXPOOL_REAL_CONSTR_X_0020] and its counterparts): the\n    maximum over the elements of $X$ covered by a window is unchanged by adding\n    a value that is not greater than any of them.\n\n    DECISION: the document is self-contradictory about a spatial dimension of\n    $X$ of size $0$.  It says \"The formula above then gives a spatial dimension\n    of $Y$ of size $0$ when $p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$,\n    and the corresponding dimension of $Y$ is empty\", but the formula\n    $dY_{t+2} = \\lfloor (0 + p_{t,\\text{begin}} + p_{t,\\text{end}} - dK_t)/s_t\n    \\rfloor + 1$ gives at least $1$ under that condition, never $0$.  The\n    reading implemented here is the one of the prose: a spatial dimension of\n    $X$ of size $0$ gives a spatial dimension of $Y$ of size $0$, so that $Y$\n    is empty and no window is evaluated.  This is the only reading under which\n    the operator is well defined, since the formula's reading would require the\n    maximum over a window that \"covers no element of $X$\", which the document\n    says \"is not a window of the result\".  The same rule is applied when\n    $dX_{t+2} = 0$ and $p_{t,\\text{begin}} + p_{t,\\text{end}} < dK_t$, a case\n    the document calls \"not applicable\"; no error is raised, since the document\n    states \"No error condition.\"\n\n    DECISION: the document states the precondition\n    [E_MAXPOOL_REAL_CONSTR_X_0020] (\"For every spatial axis $t$, either\n    $dX_{t+2} \\ge 1$ and $dX_{t+2} + p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge\n    dK_t$, or $dX_{t+2} = 0$ and $p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge\n    dK_t$\") but requires no validation of it, and its table of error conditions\n    says \"No error condition.\"  No validation is performed; an input that\n    violates the precondition is not detected here.\n    \"\"\"\n\n    X = np.asarray(X)\n\n    # \"The number of spatial axes is denoted $m = rX - 2$\".\n    m = X.ndim - 2\n\n    # \"`kernel_shape` gives the size of the window along each spatial axis. It\n    # has $m$ values, one per spatial axis\".\n    ks = [int(k) for k in kernel_shape]\n\n    # \"`strides` gives the step of the window along each spatial axis. It has\n    # $m$ values, one per spatial axis\".\n    if strides is None:\n        strides = [1] * m\n    ss = [int(s) for s in strides]\n\n    # \"`pads` gives the number of elements added before and after $X$ along\n    # each spatial axis. It has $2m$ values, the first $m$ being the numbers\n    # added at the beginning of the axes and the last $m$ the numbers added at\n    # the end, in the order of the spatial axes.\"\n    if pads is None:\n        pads = [0] * (2 * m)\n    ps = [int(p) for p in pads]\n\n    # \"`dilations` gives the dilation along each spatial axis. It is restricted\n    # to $1$ along each spatial axis by [R4], so that the window covers\n    # consecutive elements of $X$.\"  The value is therefore not used below.\n    if dilations is None:\n        dilations = [1] * m\n    _dilations = [int(d) for d in dilations]\n\n    # \"**Shape of the result.** The spatial dimensions of $Y$ are\n    # $dY_{t+2} = \\lfloor (dX_{t+2} + p_{t,begin} + p_{t,end} - dK_t)/s_t\n    # \\rfloor + 1$ for every $t \\in [0, m-1]$, and $dY_0 = dX_0$, $dY_1 =\n    # dX_1$.\"  Python's `//` on integers is the floor of the formula.\n    #\n    # DECISION: a spatial dimension of $X$ of size $0$ gives a spatial\n    # dimension of $Y$ of size $0$; see the note in the docstring.\n    out_spatial = []\n    for t in range(m):\n        dX = X.shape[2 + t]\n        if dX == 0:\n            out_spatial.append(0)\n        else:\n            out_spatial.append((dX + ps[t] + ps[m + t] - ks[t]) // ss[t] + 1)\n\n    out_shape = (X.shape[0], X.shape[1]) + tuple(out_spatial)\n\n    # \"A batch or channel dimension of size $0$ gives a dimension of $Y$ of\n    # size $0$, and $Y$ is empty.\"  The same holds for an empty spatial\n    # dimension of $Y$: no window is evaluated.\n    if 0 in out_shape:\n        return np.empty(out_shape, dtype=X.dtype)\n\n    # \"The padded elements are not elements of $X$: they are excluded from the\n    # maximum\".  Padding with the smallest value of the type of $X$ leaves the\n    # maximum over the elements of $X$ covered by a window unchanged, since\n    # every window covers at least one element of $X$.\n    if np.issubdtype(X.dtype, np.floating):\n        fill = -np.inf\n    else:\n        fill = np.iinfo(X.dtype).min\n    pad_width = [(0, 0), (0, 0)] + [(ps[t], ps[m + t]) for t in range(m)]\n    Xp = np.pad(X, pad_width, mode='constant', constant_values=fill)\n\n    # The windows of the result: a window of shape `kernel_shape` is slid over\n    # the spatial axes of the padded tensor, and the windows are taken every\n    # `strides` elements along each spatial axis.\n    windows = np.lib.stride_tricks.sliding_window_view(\n        Xp, tuple(ks), axis=tuple(range(2, 2 + m)))\n    index = ((slice(None), slice(None))\n             + tuple(slice(None, None, s) for s in ss)\n             + tuple(slice(None) for _ in range(m)))\n    windows = windows[index]\n\n    # \"stores in $Y$ the maximum of the elements of $X$ covered by each\n    # window\".  `numpy.max` propagates NaN, as the `float` section requires\n    # (\"When a window covers an element that is NaN, the result of that window\n    # is NaN\"), and compares $-\\text{inf}$ and the finite values as the section\n    # requires.\n    Y = windows.max(axis=tuple(range(2 + m, 2 + 2 * m)))\n\n    return Y\n",
+  "decisions": "# DECISION: a spatial dimension of $X$ of size $0$ gives a spatial\n# dimension of $Y$ of size $0$; see the note in the docstring.",
+  "impl_unusable": "",
+  "cases_path": "agents/runs/MaxPool/cases.py",
+  "report": {
+    "spec": "agents/runs/MaxPool/maxpool.md",
+    "op": "MaxPool",
+    "opset": 14,
+    "impl": "agents/runs/MaxPool/iter-001-impl.py",
+    "entry": "maxpool",
+    "generated": "2026-10-04T12:39:38Z",
+    "cases": {
+      "total": 111,
+      "passed": 75,
+      "mismatched": [
+        {
+          "case": "float16: nan",
+          "elements_differing": 2,
+          "attrs": {
+            "kernel_shape": [
+              2
+            ],
+            "strides": [
+              2
+            ]
+          },
+          "first_differences": [
+            {
+              "index": 0,
+              "ort": "1.0",
+              "impl": "nan",
+              "ort_bits": "[15360]",
+              "impl_bits": "[32256]"
+            },
+            {
+              "index": 0,
+              "ort": "1.0",
+              "impl": "nan",
+              "ort_bits": "[15360]",
+              "impl_bits": "[32256]"
+            },
+            {
+              "index": 0,
+              "ort": "1.0",
+              "impl": "nan",
+              "ort_bits": "[15360]",
+              "impl_bits": "[32256]"
+            },
+            {
+              "index": 0,
+              "ort": "1.0",
+              "impl": "nan",
+              "ort_bits": "[15360]",
+              "impl_bits": "[32256]"
+            }
+          ]
+        },
+        {
+          "case": "float16: NaN operand, quiet, payload 1",
+          "elements_differing": 1,
+          "attrs": {
+            "kernel_shape": [
+              1
+            ],
+            "strides": [
+              1
+            ]
+          },
+          "first_differences": [
+            {
+              "index": 0,
+              "ort": "-inf",
+              "impl": "nan",
+              "ort_bits": "[64512]",
+              "impl_bits": "[32257]"
+            },
+            {
+              "index": 0,
+              "ort": "-inf",
+              "impl": "nan",
+              "ort_bits": "[64512]",
+              "impl_bits": "[32257]"
+            },
+            {
+              "index": 0,
+              "ort": "-inf",
+              "impl": "nan",
+              "ort_bits": "[64512]",
+              "impl_bits": "[32257]"
+            }
+          ]
+        },
+        {
+          "case": "float16: NaN operand, quiet, payload 1, sign set",
+          "elements_differing": 1,
+          "attrs": {
+            "kernel_shape": [
+              1
+            ],
+            "strides": [
+              1
+            ]
+          },
+          "first_differences": [
+            {
+              "index": 0,
+              "ort": "-inf",
+              "impl": "nan",
+              "ort_bits": "[64512]",
+              "impl_bits": "[65025]"
+            },
+            {
+              "index": 0,
+              "ort": "-inf",
+              "impl": "nan",
+              "ort_bits": "[64512]",
+              "impl_bits": "[65025]"
+            },
+            {
+              "index": 0,
+              "ort": "-inf",
+              "impl": "nan",
+              "ort_bits": "[64512]",
+              "impl_bits": "[65025]"
+            }
+          ]
+        },
+        {
+          "case": "float16: NaN operand, signalling",
+          "elements_differing": 1,
+          "attrs": {
+            "kernel_shape": [
+              1
+            ],
+            "strides": [
+              1
+            ]
+          },
+          "first_differences": [
+            {
+              "index": 0,
+              "ort": "-inf",
+              "impl": "nan",
+              "ort_bits": "[64512]",
+              "impl_bits": "[31745]"
+            },
+            {
+              "index": 0,
+              "ort": "-inf",
+              "impl": "nan",
+              "ort_bits": "[64512]",
+              "impl_bits": "[31745]"
+            },
+            {
+              "index": 0,
+              "ort": "-inf",
+              "impl": "nan",
+              "ort_bits": "[64512]",
+              "impl_bits": "[31745]"
+            }
+          ]
+        },
+        {
+          "case": "float32: signed zeros",
+          "elements_differing": 2,
+          "attrs": {
+            "kernel_shape": [
+              2
+            ],
+            "strides": [
+              2
+            ]
+          },
+          "first_differences": [
+            {
+              "index": 0,
+              "ort": "0.0",
+              "impl": "-0.0",
+              "ort_bits": "[0]",
+              "impl_bits": "[2147483648]"
+            },
+            {
+              "index": 0,
+              "ort": "0.0",
+              "impl": "-0.0",
+              "ort_bits": "[0]",
+              "impl_bits": "[2147483648]"
+            },
+            {
+              "index": 0,
+              "ort": "0.0",
+              "impl": "-0.0",
+              "ort_bits": "[0]",
+              "impl_bits": "[2147483648]"
+            },
+            {
+              "index": 0,
+              "ort": "0.0",
+              "impl": "-0.0",
+              "ort_bits": "[0]",
+              "impl_bits": "[2147483648]"
+            }
+          ]
+        },
+        {
+          "case": "float32: nan",
+          "elements_differing": 2,
+          "attrs": {
+            "kernel_shape": [
+              2
+            ],
+            "strides": [
+              2
+            ]
+          },
+          "first_differences": [
+            {
+              "index": 0,
+              "ort": "1.0",
+              "impl": "nan",
+              "ort_bits": "[1065353216]",
+              "impl_bits": "[2143289344]"
+            },
+            {
+              "index": 0,
+              "ort": "1.0",
+              "impl": "nan",
+              "ort_bits": "[1065353216]",
+              "impl_bits": "[2143289344]"
+            },
+            {
+              "index": 0,
+              "ort": "1.0",
+              "impl": "nan",
+              "ort_bits": "[1065353216]",
+              "impl_bits": "[2143289344]"
+            },
+            {
+              "index": 0,
+              "ort": "1.0",
+              "impl": "nan",
+              "ort_bits": "[1065353216]",
+              "impl_bits": "[2143289344]"
+            }
+          ]
+        },
+        {
+          "case": "float32: subnormals",
+          "elements_differing": 1,
+          "attrs": {
+            "kernel_shape": [
+              2
+            ],
+            "strides": [
+              2
+            ]
+          },
+          "first_differences": [
+            {
+              "index": 0,
+              "ort": "5.877472e-39",
+              "impl": "5.877472e-39",
+              "ort_bits": "[4194304]",
+              "impl_bits": "[4194304]"
+            },
+            {
+              "index": 0,
+              "ort": "5.877472e-39",
+              "impl": "5.877472e-39",
+              "ort_bits": "[4194304]",
+              "impl_bits": "[4194304]"
+            },
+            {
+              "index": 1,
+              "ort": "0.0",
+              "impl": "-0.0",
+              "ort_bits": "[0]",
+              "impl_bits": "[2147483648]"
+            }
+          ]
+        },
+        {
+          "case": "float32: NaN operand, quiet, payload 1",
+          "elements_differing": 1,
+          "attrs": {
+            "kernel_shape": [
+              1
+            ],
+            "strides": [
+              1
+            ]
+          },
+          "first_differences": [
+            {
+              "index": 0,
+              "ort": "-3.4028235e+38",
+              "impl": "nan",
+              "ort_bits": "[4286578687]",
+              "impl_bits": "[2143289345]"
+            },
+            {
+              "index": 0,
+              "ort": "-3.4028235e+38",
+              "impl": "nan",
+              "ort_bits": "[4286578687]",
+              "impl_bits": "[2143289345]"
+            },
+            {
+              "index": 0,
+              "ort": "-3.4028235e+38",
+              "impl": "nan",
+              "ort_bits": "[4286578687]",
+              "impl_bits": "[2143289345]"
+            }
+          ]
+        },
+        {
+          "case": "float32: NaN operand, quiet, payload 1, sign set",
+          "elements_differing": 1,
+          "attrs": {
+            "kernel_shape": [
+              1
+            ],
+            "strides": [
+              1
+            ]
+          },
+          "first_differences": [
+            {
+              "index": 0,
+              "ort": "-3.4028235e+38",
+              "impl": "nan",
+              "ort_bits": "[4286578687]",
+              "impl_bits": "[4290772993]"
+            },
+            {
+              "index": 0,
+              "ort": "-3.4028235e+38",
+              "impl": "nan",
+              "ort_bits": "[4286578687]",
+              "impl_bits": "[4290772993]"
+            },
+            {
+              "index": 0,
+              "ort": "-3.4028235e+38",
+              "impl": "nan",
+              "ort_bits": "[4286578687]",
+              "impl_bits": "[4290772993]"
+            }
+          ]
+        },
+        {
+          "case": "float32: NaN operand, signalling",
+          "elements_differing": 1,
+          "attrs": {
+            "kernel_shape": [
+              1
+            ],
+            "strides": [
+              1
+            ]
+          },
+          "first_differences": [
+            {
+              "index": 0,
+              "ort": "-3.4028235e+38",
+              "impl": "nan",
+              "ort_bits": "[4286578687]",
+              "impl_bits": "[2139095041]"
+            },
+            {
+              "index": 0,
+              "ort": "-3.4028235e+38",
+              "impl": "nan",
+              "ort_bits": "[4286578687]",
+              "impl_bits": "[2139095041]"
+            },
+            {
+              "index": 0,
+              "ort": "-3.4028235e+38",
+              "impl": "nan",
+              "ort_bits": "[4286578687]",
+              "impl_bits": "[2139095041]"
+            }
+          ]
+        },
+        {
+          "case": "float64: signed zeros",
+          "elements_differing": 2,
+          "attrs": {
+            "kernel_shape": [
+              2
+            ],
+            "strides": [
+              2
+            ]
+          },
+          "first_differences": [
+            {
+              "index": 0,
+              "ort": "0.0",
+              "impl": "-0.0",
+              "ort_bits": "[0]",
+              "impl_bits": "[9223372036854775808]"
+            },
+            {
+              "index": 0,
+              "ort": "0.0",
+              "impl": "-0.0",
+              "ort_bits": "[0]",
+              "impl_bits": "[9223372036854775808]"
+            },
+            {
+              "index": 0,
+              "ort": "0.0",
+              "impl": "-0.0",
+              "ort_bits": "[0]",
+              "impl_bits": "[9223372036854775808]"
+            },
+            {
+              "index": 0,
+              "ort": "0.0",
+              "impl": "-0.0",
+              "ort_bits": "[0]",
+              "impl_bits": "[9223372036854775808]"
+            }
+          ]
+        },
+        {
+          "case": "float64: subnormals",
+          "elements_differing": 1,
+          "attrs": {
+            "kernel_shape": [
+              2
+            ],
+            "strides": [
+              2
+            ]
+          },
+          "first_differences": [
+            {
+              "index": 0,
+              "ort": "1.1125369292536007e-308",
+              "impl": "1.1125369292536007e-308",
+              "ort_bits": "[2251799813685248]",
+              "impl_bits": "[2251799813685248]"
+            },
+            {
+              "index": 0,
+              "ort": "1.1125369292536007e-308",
+              "impl": "1.1125369292536007e-308",
+              "ort_bits": "[2251799813685248]",
+              "impl_bits": "[2251799813685248]"
+            },
+            {
+              "index": 1,
+              "ort": "0.0",
+              "impl": "-0.0",
+              "ort_bits": "[0]",
+              "impl_bits": "[9223372036854775808]"
+            }
+          ]
+        }
+      ],
+      "open": [
+        {
+          "case": "int64: extremes",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+          "attrs": {
+            "kernel_shape": [
+              2
+            ],
+            "strides": [
+              2
+            ]
+          }
+        },
+        {
+          "case": "int64: rank-3, kernel 2, stride 1",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+          "attrs": {
+            "kernel_shape": [
+              2
+            ],
+            "strides": [
+              1
+            ],
+            "pads": [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "int64: rank-3, kernel 2, stride 2",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+          "attrs": {
+            "kernel_shape": [
+              2
+            ],
+            "strides": [
+              2
+            ],
+            "pads": [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "int64: rank-3, kernel 2, stride 1, pads 1",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+          "attrs": {
+            "kernel_shape": [
+              2
+            ],
+            "strides": [
+              1
+            ],
+            "pads": [
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "case": "int64: rank-4, kernel 2x2, stride 2",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              2,
+              2
+            ],
+            "pads": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "int64: rank-4, kernel 2x2, stride 1",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              1,
+              1
+            ],
+            "pads": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "int64: rank-4, kernel 3x3, stride 1, pads 1",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+          "attrs": {
+            "kernel_shape": [
+              3,
+              3
+            ],
+            "strides": [
+              1,
+              1
+            ],
+            "pads": [
+              1,
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "case": "int64: rank-4, kernel 1x1",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+          "attrs": {
+            "kernel_shape": [
+              1,
+              1
+            ],
+            "strides": [
+              1,
+              1
+            ],
+            "pads": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "int64: rank-5, kernel 2x2x2, stride 1",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2,
+              2
+            ],
+            "strides": [
+              1,
+              1,
+              1
+            ],
+            "pads": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "float16: rank-4, zero-sized spatial dim, pads cover",
+          "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0,4}\n",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              1,
+              1
+            ],
+            "pads": [
+              1,
+              1,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "float32: rank-4, zero-sized spatial dim, pads cover",
+          "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0,4}\n",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              1,
+              1
+            ],
+            "pads": [
+              1,
+              1,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "float64: rank-4, zero-sized spatial dim, pads cover",
+          "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0,4}\n",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              1,
+              1
+            ],
+            "pads": [
+              1,
+              1,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "int8: rank-4, zero-sized spatial dim, pads cover",
+          "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0,4}\n",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              1,
+              1
+            ],
+            "pads": [
+              1,
+              1,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "int64: rank-4, zero-sized spatial dim, pads cover",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              1,
+              1
+            ],
+            "pads": [
+              1,
+              1,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "uint8: rank-4, zero-sized spatial dim, pads cover",
+          "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0,4}\n",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              1,
+              1
+            ],
+            "pads": [
+              1,
+              1,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "int64: rank-4, zero-sized batch",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              2,
+              2
+            ],
+            "pads": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "float16: rank-4, zero-sized channel",
+          "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4,4}\n",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              2,
+              2
+            ],
+            "pads": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "float32: rank-4, zero-sized channel",
+          "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4,4}\n",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              2,
+              2
+            ],
+            "pads": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "float64: rank-4, zero-sized channel",
+          "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4,4}\n",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              2,
+              2
+            ],
+            "pads": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "int8: rank-4, zero-sized channel",
+          "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4,4}\n",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              2,
+              2
+            ],
+            "pads": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "int64: rank-4, zero-sized channel",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              2,
+              2
+            ],
+            "pads": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "uint8: rank-4, zero-sized channel",
+          "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4,4}\n",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              2,
+              2
+            ],
+            "pads": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "int64: rank-4, kernel equals the spatial extent",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+          "attrs": {
+            "kernel_shape": [
+              3,
+              3
+            ],
+            "strides": [
+              1,
+              1
+            ],
+            "pads": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "case": "int64: rank-4, stride larger than the kernel",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+          "attrs": {
+            "kernel_shape": [
+              2,
+              2
+            ],
+            "strides": [
+              3,
+              3
+            ],
+            "pads": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "nan_payload": []
+    },
+    "sweeps": [
+      {
+        "sweep": "the document's worked examples",
+        "summary": "5 examples, as documented vs ORT vs implementation",
+        "failures": [
+          {
+            "who": "float Example 2 (NaN, -inf)",
+            "detail": "documented [nan, 3.0], ORT [1.0, 3.0]"
+          }
+        ]
+      },
+      {
+        "sweep": "the shape formula (document vs ORT vs implementation)",
+        "summary": "64 shape/attribute combinations",
+        "failures": [
+          {
+            "who": "shape (1, 1, 4, 4) {'kernel_shape': [1, 1], 'strides': [1, 1], 'pads': [1, 1, 1, 1]}",
+            "detail": "ONNX Runtime refused: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+          },
+          {
+            "who": "shape (1, 1, 4, 4) {'kernel_shape': [1, 1], 'strides': [2, 2], 'pads': [1, 1, 1, 1]}",
+            "detail": "ONNX Runtime refused: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+          },
+          {
+            "who": "shape (2, 3, 5, 7) {'kernel_shape': [1, 1], 'strides': [1, 1], 'pads': [1, 1, 1, 1]}",
+            "detail": "ONNX Runtime refused: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+          },
+          {
+            "who": "shape (2, 3, 5, 7) {'kernel_shape': [1, 1], 'strides': [2, 2], 'pads': [1, 1, 1, 1]}",
+            "detail": "ONNX Runtime refused: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+          },
+          {
+            "who": "shape (1, 2, 1, 1) {'kernel_shape': [1, 1], 'strides': [1, 1], 'pads': [1, 1, 1, 1]}",
+            "detail": "ONNX Runtime refused: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+          },
+          {
+            "who": "shape (1, 2, 1, 1) {'kernel_shape': [1, 1], 'strides': [2, 2], 'pads': [1, 1, 1, 1]}",
+            "detail": "ONNX Runtime refused: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+          },
+          {
+            "who": "shape (1, 1, 6, 6) {'kernel_shape': [1, 1], 'strides': [1, 1], 'pads': [1, 1, 1, 1]}",
+            "detail": "ONNX Runtime refused: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+          },
+          {
+            "who": "shape (1, 1, 6, 6) {'kernel_shape': [1, 1], 'strides': [2, 2], 'pads': [1, 1, 1, 1]}",
+            "detail": "ONNX Runtime refused: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+          },
+          {
+            "who": "shape (1, 1, 3) {'kernel_shape': [1], 'strides': [1], 'pads': [1, 1]}",
+            "detail": "ONNX Runtime refused: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+          },
+          {
+            "who": "shape (1, 1, 3) {'kernel_shape': [1], 'strides': [2], 'pads': [1, 1]}",
+            "detail": "ONNX Runtime refused: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+          },
+          {
+            "who": "shape (2, 2, 5) {'kernel_shape': [1], 'strides': [1], 'pads': [1, 1]}",
+            "detail": "ONNX Runtime refused: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+          },
+          {
+            "who": "shape (2, 2, 5) {'kernel_shape': [1], 'strides': [2], 'pads': [1, 1]}",
+            "detail": "ONNX Runtime refused: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+          },
+          {
+            "who": "shape (1, 1, 2, 3, 4) {'kernel_shape': [1, 1, 1], 'strides': [1, 1, 1], 'pads': [1, 1, 1, 1, 1, 1]}",
+            "detail": "ONNX Runtime refused: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+          },
+          {
+            "who": "shape (1, 1, 2, 3, 4) {'kernel_shape': [1, 1, 1], 'strides': [2, 2, 2], 'pads': [1, 1, 1, 1, 1, 1]}",
+            "detail": "ONNX Runtime refused: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+          }
+        ]
+      },
+      {
+        "sweep": "int domain (document vs ORT vs implementation)",
+        "summary": "2 types: int8 exhaustive, uint8 exhaustive",
+        "failures": [
+          {
+            "type": "int64",
+            "who": "ONNX Runtime",
+            "detail": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+          }
+        ]
+      },
+      {
+        "sweep": "the special values of the float types",
+        "summary": "21 cases over 3 types",
+        "failures": [
+          {
+            "type": "float16",
+            "who": "NaN in the window",
+            "detail": "ort [1.0, 3.0], impl [nan, 3.0]"
+          },
+          {
+            "type": "float16",
+            "who": "NaN alone in a window",
+            "detail": "ort [-inf, 1.0, 2.0, 3.0], impl [nan, 1.0, 2.0, 3.0]"
+          },
+          {
+            "type": "float32",
+            "who": "NaN in the window",
+            "detail": "ort [1.0, 3.0], impl [nan, 3.0]"
+          },
+          {
+            "type": "float32",
+            "who": "all -inf",
+            "detail": "ort [-3.4028234663852886e+38, -3.4028234663852886e+38], impl [-inf, -inf]"
+          },
+          {
+            "type": "float32",
+            "who": "subnormals",
+            "detail": "ort [5.877471754111438e-39, 0.0], impl [5.877471754111438e-39, -0.0]"
+          },
+          {
+            "type": "float32",
+            "who": "NaN alone in a window",
+            "detail": "ort [-3.4028234663852886e+38, 1.0, 2.0, 3.0], impl [nan, 1.0, 2.0, 3.0]"
+          },
+          {
+            "type": "float64",
+            "who": "NaN in the window",
+            "detail": "ort [1.0, 3.0], impl [nan, 3.0]"
+          },
+          {
+            "type": "float64",
+            "who": "subnormals",
+            "detail": "ort [1.1125369292536007e-308, 0.0], impl [1.1125369292536007e-308, -0.0]"
+          }
+        ]
+      }
+    ],
+    "ok": false
+  },
+  "test_ok": false,
+  "coverage": {
+    "real": 111,
+    "float": 69,
+    "int": 28,
+    "uint": 14
+  },
+  "uncovered": [],
+  "rebuild_cases": false,
+  "cases_unusable": "",
+  "fail_signature": "[\"6bb29b037cf9ffe1d9442d833f217cf8\", \"36f0156239ff556de6348e7c68dc1850\", \"bcb953526c5accd3e426d15ebd21f4b2\"]|[\"float16: NaN operand, quiet, payload 1\", \"float16: NaN operand, quiet, payload 1, sign set\", \"float16: NaN operand, signalling\", \"float16: nan\", \"float32: NaN operand, quiet, payload 1\", \"float32: NaN operand, quiet, payload 1, sign set\", \"float32: NaN operand, signalling\", \"float32: nan\", \"float32: signed zeros\", \"float32: subnormals\", \"float64: signed zeros\", \"float64: subnormals\"]|[\"int domain (document vs ORT vs implementation)\", \"the document's worked examples\", \"the shape formula (document vs ORT vs implementation)\", \"the special values of the float types\"]",
+  "previous_failure": "[\"6bb29b037cf9ffe1d9442d833f217cf8\", \"36f0156239ff556de6348e7c68dc1850\", \"0bf458c679cff27c79356eba42d19719\"]|[\"float16: NaN operand, quiet, payload 1\", \"float16: NaN operand, quiet, payload 1, sign set\", \"float16: NaN operand, signalling\", \"float16: nan\", \"float16: nan with -inf\", \"float32: NaN operand, quiet, payload 1\", \"float32: NaN operand, quiet, payload 1, sign set\", \"float32: NaN operand, signalling\", \"float32: all -inf\", \"float32: all null\", \"float32: nan\", \"float32: nan with -inf\", \"float32: signed zeros\", \"float64: all null\", \"float64: signed zeros\"]|[\"sweep_int_domain\", \"sweep_real_section\", \"the document's worked examples\", \"the shape formula of the document\", \"the special values of every type\", \"zero-sized dimensions\"]",
+  "case_rounds": 2,
+  "report_runs": 10,
+  "verdict": "test",
+  "diagnosis": "The failing cases and sweeps do not test the document: the document states plainly that a window covering a NaN gives NaN, that a window of all -inf gives -inf, and that a window of all nulls gives a null whose sign is unspecified \u2014 yet the case module compares against ONNX Runtime, which does not implement those rules (ORT returns 1.0 for a NaN window, -3.4e38 for an all -inf window, and +0 for an all -0 window). The sweeps also feed the runtime shapes and pads the runtime refuses (pads >= kernel, zero-sized non-batch dimensions) and pass `strides` of the wrong length for the worked examples, and `sweep_int_domain` reshapes 131072 elements into 256.",
+  "instruction": "Fix the case module, not the document. (1) In `sweep_special_values`, `sweep_int_domain`, and the `float16/float32/float64: nan`, `nan with -inf`, `all -inf`, `all null`, `signed zeros`, and `NaN operand ...` cases, stop comparing against ONNX Runtime for the special values: the document's rules (NaN window -> NaN; all -inf window -> -inf; all-null window -> a null of unspecified sign; +0 and -0 equal) are the expectation, and the runtime's results (1.0, -3.4e38, +0) are not. Compare the implementation against `doc_maxpool` only, and record the runtime's disagreement in the sweep summary as not reference-checked rather than as a failure. (2) In `sweep_shape_formula` and `sweep_zero_sized`, skip (do not report as failures) the shapes the runtime refuses: pads >= kernel_shape, and any zero-sized dimension other than the batch axis; keep them in COVERAGE as open. (3) In `_spec_examples`, pass `strides` of length m for every example (the 2-D examples currently pass `[2, 2]` where the runtime expects the attribute to match the spatial rank) \u2014 or drop the runtime call for the worked examples and check them against the documented values alone. (4) In `sweep_int_domain`, build the exhaustive int8/uint8 pair tensor with the correct element count (256*256 pairs, not 131072 reshaped to 256) before running. (5) In `sweep_real_section`, do not construct an object-dtype array; the real section has no ONNX type and must be checked against exact arithmetic only.",
+  "iteration": 1,
+  "spec_round": 3,
+  "seen_amendments": [
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Make the two lines name the same opset, e.g. change the Contents line to \\\"Based on ONNX [MaxPool version 14](https://onnx.ai/onnx/operators/onnx__MaxPool.html#maxpool-14).\\\"\", \"section\": \"Contents / Revision\", \"severity\": \"blocking\", \"what\": \"The Contents line says \\\"Based on ONNX documentation [MaxPool version 12]\\\" while the Revision line says \\\"based on ONNX opset 14\\\".\", \"why\": \"The guidelines require the reference to the ONNX definition to be given with the opset the specification is based on, and the revision line to give the opset it is based on; the two must be consistent.\"}, {\"fix\": \"Add the same sentence (\\\"the operator is applicable to any $m \\\\ge 1$\\\") to the Function section of the float, int and uint sections, or remove it from the real section and state it once in a place all sections refer to.\", \"section\": \"**MaxPool** (real), Function\", \"severity\": \"blocking\", \"what\": \"The real section states \\\"the operator is applicable to any $m \\\\ge 1$\\\", while the float, int and uint sections state no such applicability condition and their Function sections are otherwise identical.\", \"why\": \"The real section is the reference for the other sections; a condition stated only there and not in the sections that carry the tags leaves the machine-type sections without the applicability statement their constraints rely on.\"}]",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Make the two lines name the same opset, e.g. change the Contents line to \\\"Based on ONNX [MaxPool version 14](https://onnx.ai/onnx/operators/onnx__MaxPool.html#maxpool-14).\\\"\", \"section\": \"Contents / Revision\", \"severity\": \"blocking\", \"what\": \"The Contents line says \\\"Based on ONNX documentation [MaxPool version 12]\\\" while the Revision line says \\\"based on ONNX opset 14\\\".\", \"why\": \"The guidelines require the reference to the ONNX definition to be given with the opset the specification is based on, and the revision line to give the opset it is based on; the two must be consistent.\"}, {\"fix\": \"Add the same sentence (\\\"the operator is applicable to any $m \\\\ge 1$\\\") to the Function section of the float, int and uint sections, or remove it from the real section and state it once in a place all sections refer to.\", \"section\": \"**MaxPool** (real), Function\", \"severity\": \"blocking\", \"what\": \"The real section states \\\"the operator is applicable to any $m \\\\ge 1$\\\", while the float, int and uint sections state no such applicability condition and their Function sections are otherwise identical.\", \"why\": \"The real section is the reference for the other sections; a condition stated only there and not in the sections that carry the tags leaves the machine-type sections without the applicability statement their constraints rely on.\"}]",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Make the two lines name the same opset, e.g. change the Contents line to \\\"Based on ONNX [MaxPool version 14](https://onnx.ai/onnx/operators/onnx__MaxPool.html#maxpool-14).\\\"\", \"section\": \"Contents / Revision\", \"severity\": \"blocking\", \"what\": \"The Contents line says \\\"Based on ONNX documentation [MaxPool version 12]\\\" while the Revision line says \\\"based on ONNX opset 14\\\".\", \"why\": \"The guidelines require the reference to the ONNX definition to be given with the opset the specification is based on, and the revision line to give the opset it is based on; the two must be consistent.\"}, {\"fix\": \"Add the same sentence (\\\"the operator is applicable to any $m \\\\ge 1$\\\") to the Function section of the float, int and uint sections, or remove it from the real section and state it once in a place all sections refer to.\", \"section\": \"**MaxPool** (real), Function\", \"severity\": \"blocking\", \"what\": \"The real section states \\\"the operator is applicable to any $m \\\\ge 1$\\\", while the float, int and uint sections state no such applicability condition and their Function sections are otherwise identical.\", \"why\": \"The real section is the reference for the other sections; a condition stated only there and not in the sections that carry the tags leaves the machine-type sections without the applicability statement their constraints rely on.\"}]",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Make the two lines name the same opset, e.g. change the Contents line to \\\"Based on ONNX [MaxPool version 14](https://onnx.ai/onnx/operators/onnx__MaxPool.html#maxpool-14).\\\"\", \"section\": \"Contents / Revision\", \"severity\": \"blocking\", \"what\": \"The Contents line says \\\"Based on ONNX documentation [MaxPool version 12]\\\" while the Revision line says \\\"based on ONNX opset 14\\\".\", \"why\": \"The guidelines require the reference to the ONNX definition to be given with the opset the specification is based on, and the revision line to give the opset it is based on; the two must be consistent.\"}, {\"fix\": \"Add the same sentence (\\\"the operator is applicable to any $m \\\\ge 1$\\\") to the Function section of the float, int and uint sections, or remove it from the real section and state it once in a place all sections refer to.\", \"section\": \"**MaxPool** (real), Function\", \"severity\": \"blocking\", \"what\": \"The real section states \\\"the operator is applicable to any $m \\\\ge 1$\\\", while the float, int and uint sections state no such applicability condition and their Function sections are otherwise identical.\", \"why\": \"The real section is the reference for the other sections; a condition stated only there and not in the sections that carry the tags leaves the machine-type sections without the applicability statement their constraints rely on.\"}]",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Make the two lines name the same opset, e.g. change the Contents line to \\\"Based on ONNX [MaxPool version 14](https://onnx.ai/onnx/operators/onnx__MaxPool.html#maxpool-14).\\\"\", \"section\": \"Contents / Revision\", \"severity\": \"blocking\", \"what\": \"The Contents line says \\\"Based on ONNX documentation [MaxPool version 12]\\\" while the Revision line says \\\"based on ONNX opset 14\\\".\", \"why\": \"The guidelines require the reference to the ONNX definition to be given with the opset the specification is based on, and the revision line to give the opset it is based on; the two must be consistent.\"}, {\"fix\": \"Add the same sentence (\\\"the operator is applicable to any $m \\\\ge 1$\\\") to the Function section of the float, int and uint sections, or remove it from the real section and state it once in a place all sections refer to.\", \"section\": \"**MaxPool** (real), Function\", \"severity\": \"blocking\", \"what\": \"The real section states \\\"the operator is applicable to any $m \\\\ge 1$\\\", while the float, int and uint sections state no such applicability condition and their Function sections are otherwise identical.\", \"why\": \"The real section is the reference for the other sections; a condition stated only there and not in the sections that carry the tags leaves the machine-type sections without the applicability statement their constraints rely on.\"}]",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Make the two lines name the same opset, e.g. change the Contents line to \\\"Based on ONNX [MaxPool version 14](https://onnx.ai/onnx/operators/onnx__MaxPool.html#maxpool-14).\\\"\", \"section\": \"Contents / Revision\", \"severity\": \"blocking\", \"what\": \"The Contents line says \\\"Based on ONNX documentation [MaxPool version 12]\\\" while the Revision line says \\\"based on ONNX opset 14\\\".\", \"why\": \"The guidelines require the reference to the ONNX definition to be given with the opset the specification is based on, and the revision line to give the opset it is based on; the two must be consistent.\"}, {\"fix\": \"Add the same sentence (\\\"the operator is applicable to any $m \\\\ge 1$\\\") to the Function section of the float, int and uint sections, or remove it from the real section and state it once in a place all sections refer to.\", \"section\": \"**MaxPool** (real), Function\", \"severity\": \"blocking\", \"what\": \"The real section states \\\"the operator is applicable to any $m \\\\ge 1$\\\", while the float, int and uint sections state no such applicability condition and their Function sections are otherwise identical.\", \"why\": \"The real section is the reference for the other sections; a condition stated only there and not in the sections that carry the tags leaves the machine-type sections without the applicability statement their constraints rely on.\"}]",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Make the two lines name the same opset, e.g. change the Contents line to \\\"Based on ONNX [MaxPool version 14](https://onnx.ai/onnx/operators/onnx__MaxPool.html#maxpool-14).\\\"\", \"section\": \"Contents / Revision\", \"severity\": \"blocking\", \"what\": \"The Contents line says \\\"Based on ONNX documentation [MaxPool version 12]\\\" while the Revision line says \\\"based on ONNX opset 14\\\".\", \"why\": \"The guidelines require the reference to the ONNX definition to be given with the opset the specification is based on, and the revision line to give the opset it is based on; the two must be consistent.\"}, {\"fix\": \"Add the same sentence (\\\"the operator is applicable to any $m \\\\ge 1$\\\") to the Function section of the float, int and uint sections, or remove it from the real section and state it once in a place all sections refer to.\", \"section\": \"**MaxPool** (real), Function\", \"severity\": \"blocking\", \"what\": \"The real section states \\\"the operator is applicable to any $m \\\\ge 1$\\\", while the float, int and uint sections state no such applicability condition and their Function sections are otherwise identical.\", \"why\": \"The real section is the reference for the other sections; a condition stated only there and not in the sections that carry the tags leaves the machine-type sections without the applicability statement their constraints rely on.\"}]",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255).\", \"section\": \"**MaxPool** (int)\", \"severity\": \"blocking\", \"what\": \"The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.\", \"why\": \"The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.\"}, {\"fix\": \"Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`.\", \"section\": \"Contents\", \"severity\": \"blocking\", \"what\": \"The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.\", \"why\": \"The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.\"}, {\"fix\": \"Change the `real` Signature to `$X$: input tensor of rank $rX \\\\ge 3$`, matchi",
+    "[{\"fix\": \"Make the two lines name the same opset, e.g. change the Contents line to \\\"Based on ONNX [MaxPool version 14](https://onnx.ai/onnx/operators/onnx__MaxPool.html#maxpool-14).\\\"\", \"section\": \"Contents / Revision\", \"severity\": \"blocking\", \"what\": \"The Contents line says \\\"Based on ONNX documentation [MaxPool version 12]\\\" while the Revision line says \\\"based on ONNX opset 14\\\".\", \"why\": \"The guidelines require the reference to the ONNX definition to be given with the opset the specification is based on, and the revision line to give the opset it is based on; the two must be consistent.\"}, {\"fix\": \"Add the same sentence (\\\"the operator is applicable to any $m \\\\ge 1$\\\") to the Function section of the float, int and uint sections, or remove it from the real section and state it once in a place all sections refer to.\", \"section\": \"**MaxPool** (real), Function\", \"severity\": \"blocking\", \"what\": \"The real section states \\\"the operator is applicable to any $m \\\\ge 1$\\\", while the float, int and uint sections state no such applicability condition and their Function sections are otherwise identical.\", \"why\": \"The real section is the reference for the other sections; a condition stated only there and not in the sections that carry the tags leaves the machine-type sections without the applicability statement their constraints rely on.\"}]"
+  ],
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 29415
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (int)",
+          "what": "The `int` section merges `int8` and `uint8` into one section (`where int is in {`int8`, `uint8`}`), with the justification that 'the sign of the values being irrelevant to the comparison'.",
+          "why": "The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires separate sections for types whose semantics differ. The review checklist's mistake 1 records that this exact merge was rejected twice, the second time with the argument that they differ only by the value chosen in the residue class modulo 2^n. The verdict confirms both families apply here (`int8`, `int64` for `int`; `uint8` for `uint`), so both must be covered, in separate sections with separate anchors, Contents entries, tags, examples, error rows and constraints.",
+          "fix": "Split the `int` section into two sections: `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`. Give each its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example, and its own error-condition table. The `int` section's example must exercise `int8`/`int64` values; the `uint` section's example must exercise `uint8` values (0..255)."
+        },
+        {
+          "severity": "blocking",
+          "section": "Contents",
+          "what": "The Contents list has only three entries (`real`, `float`, `int`), and the `int` entry covers `int8` and `uint8` together.",
+          "why": "The Contents list must have one entry per section, and the sections must be one per family whose semantics differ (l.249, l.255). With `int` and `uint` merged, the Contents list cannot reflect the required separate sections.",
+          "fix": "Add a fourth Contents entry: `- **MaxPool** operator for types [`uint8`](#uint)`, and change the `int` entry to `- **MaxPool** operator for types [`int8`, `int64`](#int)`."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) \u2014 Signature",
+          "what": "The `real` section's Signature says `$X$: input tensor of rank $rX \\ge 1$`, while the `real` section's own Function says 'The number of spatial axes is denoted $m = rX - 2$; the operator is applicable to any $m \\ge 1$' and the constraint `E_MAXPOOL_REAL_CONSTR_X_0010` says 'The rank of $X$ is at least $3$'.",
+          "why": "The Signature is specifying information (l.100) and must agree with the Function section and the constraints. A rank-1 tensor has $m = -1$ spatial axes, which contradicts the Function's $m \\ge 1$ and the constraint's rank $\\ge 3$. A reader cannot tell which rank is required.",
+          "fix": "Change the `real` Signature to `$X$: input tensor of rank $rX \\ge 3$`, matching the `float` and `int` sections and the constraint `E_MAXPOOL_REAL_CONSTR_X_0010`."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) \u2014 Example 1 and Example 2",
+          "what": "Example 1 uses a rank-2 tensor `X` (a 4\u00d74 matrix) and Example 2 uses a rank-1 tensor `X` (a 1\u00d73 row), both in the `real` section, whose constraint `E_MAXPOOL_REAL_CONSTR_X_0010` requires rank at least 3.",
+          "why": "An example must be a value of the type under discussion and must not contradict the section it illustrates (checklist, per example). A rank-2 or rank-1 tensor is not a valid input to the operator as the `real` section specifies it.",
+          "fix": "Rewrite the `real` examples with rank-3 tensors (batch, channel, spatial), e.g. a `1\u00d71\u00d74\u00d74` tensor for Example 1 and a `1\u00d71\u00d73` tensor for Example 2, and adjust the stated `m`, `dK_t`, `s_t`, `pads` and `dY` values accordingly."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (float) \u2014 Example 1",
+          "what": "Example 1 uses a rank-2 tensor `X` (a 4\u00d74 matrix) in the `float` section, whose constraint `E_MAXPOOL_FLOAT_CONSTR_X_0010` requires rank at least 3.",
+          "why": "Same as above: the example contradicts the section's own rank constraint.",
+          "fix": "Rewrite the `float` Example 1 with a rank-3 tensor, e.g. a `1\u00d71\u00d74\u00d74` tensor, and adjust the stated parameters accordingly."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (int) \u2014 Example 1",
+          "what": "Example 1 uses a rank-2 tensor `X` (a 4\u00d74 matrix) in the `int` section, whose constraint `E_MAXPOOL_INT_CONSTR_X_0010` requires rank at least 3.",
+          "why": "Same as above: the example contradicts the section's own rank constraint.",
+          "fix": "Rewrite the `int` Example 1 with a rank-3 tensor, e.g. a `1\u00d71\u00d74\u00d74` tensor, and adjust the stated parameters accordingly."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 38440
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "Contents / Revision",
+          "what": "The Contents line says \"Based on ONNX documentation [MaxPool version 12]\" while the Revision line says \"based on ONNX opset 14\".",
+          "why": "The guidelines require the reference to the ONNX definition to be given with the opset the specification is based on, and the revision line to give the opset it is based on; the two must be consistent.",
+          "fix": "Make the two lines name the same opset, e.g. change the Contents line to \"Based on ONNX [MaxPool version 14](https://onnx.ai/onnx/operators/onnx__MaxPool.html#maxpool-14).\""
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real), Function",
+          "what": "The real section states \"the operator is applicable to any $m \\ge 1$\", while the float, int and uint sections state no such applicability condition and their Function sections are otherwise identical.",
+          "why": "The real section is the reference for the other sections; a condition stated only there and not in the sections that carry the tags leaves the machine-type sections without the applicability statement their constraints rely on.",
+          "fix": "Add the same sentence (\"the operator is applicable to any $m \\ge 1$\") to the Function section of the float, int and uint sections, or remove it from the real section and state it once in a place all sections refer to."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 3,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 38575
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": true,
+      "blocking": []
+    },
+    {
+      "agent": "implementer",
+      "iteration": 1,
+      "path": "agents/runs/MaxPool/iter-001-impl.py",
+      "decisions_count": 1
+    },
+    {
+      "agent": "tester",
+      "iteration": 1,
+      "ok": false,
+      "coverage": {
+        "real": 114,
+        "float": 78,
+        "int": 24,
+        "uint": 12
+      },
+      "uncovered": [],
+      "cases": 114,
+      "mismatched": 16,
+      "report": "agents/runs/MaxPool/iter-001-report-4.json"
+    },
+    {
+      "agent": "diagnoser",
+      "verdict": "test",
+      "reason": "The failing cases are the NaN and special-value cases of the float sections, and the harness's own report shows ONNX Runtime returning 1.0 for a window containing NaN, -3.4e38 for a window of all -inf, and a sign for a window of zeros \u2014 i.e. the runtime's MaxPool kernel does not implement the maximum of the values of the type. The document decides these cases explicitly ('When a window covers an element that is NaN, the result of that window is NaN', '+inf is greater than every finite value', 'A window whose elements are all null gives a null result; its sign is not specified'), so the cases that compare against ORT on these operands misread the document: they test the runtime, not the specification. The int64 sweep failures are the runtime refusing a type it has no kernel for, which is open, not a mismatch.",
+      "instruction": "In the case module, stop comparing the special-value operands against ONNX Runtime. (1) In `sweep_special_values`, replace the `run_ort_batch` reference with the document's own maximum (`_max_of` over the window, as `doc_maxpool` already does) and compare the implementation against that; keep the NaN-equal-to-NaN bit comparison, and treat a differing NaN payload as reported, not failed. (2) In `sweep_spec_examples`, for 'float Example 2' (X = [1.0, NaN, 3.0, -inf], k=[2], s=[2]) compare the implementation against the documented [[NaN, 3.0]] only; drop the ORT comparison for that example, since ORT returns [[1.0, 3.0]] and the document's sentence 'When a window covers an element that is NaN, the result of that window is NaN' is the arbiter. (3) In `sweep_shape_formula`, catch the runtime's `InvalidGraph` refusal per type as the sweeps already do for the open cases, record it in the sweep summary as not reference-checked, and keep `int64` in `COVERAGE`; do not report it as a failure. (4) Fix `sweep_int_domain`: the reshape `(1,1,2,256)` is wrong for the 65536-pair arrays \u2014 build the exhaustive pairs as shape `(1, 1, 2, 65536)` (or loop over the 256 values of one operand), and fix `sweep_real_examples`, which fails with `Invalid integer data type 'O'` because it builds an object-dtype array.",
+      "confidence": "high"
+    },
+    {
+      "agent": "tester",
+      "iteration": 1,
+      "ok": false,
+      "coverage": {
+        "real": 156,
+        "float": 93,
+        "int": 42,
+        "uint": 21
+      },
+      "uncovered": [],
+      "cases": 156,
+      "mismatched": 15,
+      "report": "agents/runs/MaxPool/iter-001-report-8.json"
+    },
+    {
+      "agent": "diagnoser",
+      "verdict": "test",
+      "reason": "The failing cases and sweeps do not test the document: the document states plainly that a window covering a NaN gives NaN, that a window of all -inf gives -inf, and that a window of all nulls gives a null whose sign is unspecified \u2014 yet the case module compares against ONNX Runtime, which does not implement those rules (ORT returns 1.0 for a NaN window, -3.4e38 for an all -inf window, and +0 for an all -0 window). The sweeps also feed the runtime shapes and pads the runtime refuses (pads >= kernel, zero-sized non-batch dimensions) and pass `strides` of the wrong length for the worked examples, and `sweep_int_domain` reshapes 131072 elements into 256.",
+      "instruction": "Fix the case module, not the document. (1) In `sweep_special_values`, `sweep_int_domain`, and the `float16/float32/float64: nan`, `nan with -inf`, `all -inf`, `all null`, `signed zeros`, and `NaN operand ...` cases, stop comparing against ONNX Runtime for the special values: the document's rules (NaN window -> NaN; all -inf window -> -inf; all-null window -> a null of unspecified sign; +0 and -0 equal) are the expectation, and the runtime's results (1.0, -3.4e38, +0) are not. Compare the implementation against `doc_maxpool` only, and record the runtime's disagreement in the sweep summary as not reference-checked rather than as a failure. (2) In `sweep_shape_formula` and `sweep_zero_sized`, skip (do not report as failures) the shapes the runtime refuses: pads >= kernel_shape, and any zero-sized dimension other than the batch axis; keep them in COVERAGE as open. (3) In `_spec_examples`, pass `strides` of length m for every example (the 2-D examples currently pass `[2, 2]` where the runtime expects the attribute to match the spatial rank) \u2014 or drop the runtime call for the worked examples and check them against the documented values alone. (4) In `sweep_int_domain`, build the exhaustive int8/uint8 pair tensor with the correct element count (256*256 pairs, not 131072 reshaped to 256) before running. (5) In `sweep_real_section`, do not construct an object-dtype array; the real section has no ONNX type and must be checked against exact arithmetic only.",
+      "confidence": "high"
+    },
+    {
+      "agent": "tester",
+      "iteration": 1,
+      "ok": false,
+      "coverage": {
+        "real": 111,
+        "float": 69,
+        "int": 28,
+        "uint": 14
+      },
+      "uncovered": [],
+      "cases": 111,
+      "mismatched": 12,
+      "report": "agents/runs/MaxPool/iter-001-report-10.json"
+    }
+  ],
+  "trace": [
+    "writer round 1 -> agents/runs/MaxPool/maxpool.md",
+    "checker: not ok",
+    "writer round 2 -> agents/runs/MaxPool/maxpool.md",
+    "checker: not ok",
+    "writer round 3 -> agents/runs/MaxPool/maxpool.md",
+    "checker: ok",
+    "implementer iteration 1 -> agents/runs/MaxPool/iter-001-impl.py",
+    "tester iteration 1: fail",
+    "diagnoser: test",
+    "tester iteration 1: fail",
+    "diagnoser: test",
+    "tester iteration 1: fail",
+    "finish: cases-stuck"
+  ],
+  "stopped": "the case set still fails after the tester revised it 2 time(s)",
+  "outcome": "cases-stuck"
+}

@@ -85,6 +85,16 @@ LOST_SECTION_SPEC = SPEC.replace(
     "- **Neg** operator for type [real](#real)\n"
     "- **Neg** operator for types [`float16`, `float`, `double`](#float)\n")
 
+# The document a model returns when it gives a family a type ONNX does not admit for the
+# operator -- in both of the shapes the MaxPool document used: the Contents entry, and the
+# sentence that opens the section.  `Neg` admits no `uint8` and no `uint16`; the driver's
+# authority on that is the operator's own schema.  Scenario 29.
+WRONG_TYPE_SPEC = SPEC.replace(
+    "- **Neg** operator for type [real](#real)\n",
+    "- **Neg** operator for type [real](#real)\n"
+    "- **Neg** operator for types [`uint8`, `uint16`](#uint)\n").replace(
+    "C[i] = -A[i]", "where uint is in {`uint8`, `uint16`}\n\n$$\nC[i] = -A[i]")
+
 # An operator that is not element-wise: its node carries attributes and has a second output.
 # Scenario 26 runs these through the real harness.
 MAXPOOL_CASES = '''
@@ -153,7 +163,7 @@ class Scenario:
                     "blank_cases_until_nothink", "blank_impl_until_nothink", "fragment_cases",
                     "truncated_impl", "change_cases", "timeout_cases", "not_python_cases",
                     "truncated_cases", "junk_cases", "raising_sweeps", "vacuous_cases",
-                    "lose_section", "lose_section_after"):
+                    "lose_section", "lose_section_after", "wrong_type_spec"):
             setattr(self, key, kwargs.get(key))
         self.writer_calls = 0
         self.verifier_calls = 0
@@ -173,7 +183,13 @@ class Scenario:
 
     # -- the model -------------------------------------------------------
     def ask(self, system, user, settings, max_tokens=None, thinking="auto"):
-        if "specification writer" in system:
+        # the role is the first line of the system prompt — `You are the **adjudicator**.`
+        # — and not any name that happens to appear in the prompt's body: the adjudicator's
+        # prompt says which agent must have consulted ONNX's own reference implementation,
+        # and a dispatch on substrings answered that call with a case module (seen on
+        # 2026-10-04, scenario 28).
+        role = system.strip().splitlines()[0] if system.strip() else ""
+        if "specification writer" in role:
             self.writer_calls += 1
             self.seen.append("writer")
             if self.writer_calls <= (self.truncate_answers or 0):
@@ -183,10 +199,13 @@ class Scenario:
             if self.lose_section_after and self.writer_calls > self.lose_section_after:
                 # an amendment that drops the sections it never got to
                 return "Here is the document:\n\n%s" % LOST_SECTION_SPEC
+            if self.wrong_type_spec and self.writer_calls <= self.wrong_type_spec:
+                # a family whose types include one the operator's schema does not admit
+                return "Here is the document:\n\n%s" % WRONG_TYPE_SPEC
             if self.writer_calls > 1 and self.change_spec:
                 return SPEC.replace("Revision 2026-10-04", "Revision 2026-10-05")
             return SPEC
-        if "guidelines-compliance verifier" in system:
+        if "guidelines-compliance verifier" in role:
             self.seen.append("verifier")
             self.verifier_calls += 1
             if self.verifier == "garbage" or (self.verifier == "garbage_once"
@@ -194,7 +213,7 @@ class Scenario:
                 return "I have read the document and I have no verdict to give."
             # every mode but "bad" is a verifier that is satisfied with the document
             return VERIFIER_BAD if self.verifier == "bad" else VERIFIER_OK
-        if "blind implementer" in system:
+        if "blind implementer" in role:
             self.implementer_calls += 1
             self.seen.append("implementer")
             self.thinking_seen.append(("implementer", thinking))
@@ -212,7 +231,7 @@ class Scenario:
                 # the deliberation eats the whole budget, on every call that has one
                 return ""
             return "Here is the module:\n\n```python\n%s```\n" % IMPL
-        if "test agent" in system:
+        if "test agent" in role:
             self.tester_calls += 1
             self.seen.append("tester")
             self.thinking_seen.append(("tester", thinking))
@@ -248,7 +267,7 @@ class Scenario:
                 return ("```python\nCOVERAGE = {\"real\": 3}\n```\n\nThe module:\n\n"
                         "```python\n%s```" % cases)
             return "```python\n%s```" % cases
-        if "adjudicator" in system:
+        if "adjudicator" in role:
             self.diagnoser_calls += 1
             self.seen.append("diagnoser")
             return json.dumps({"verdict": self.diagnosis, "reason": "because",
@@ -489,6 +508,15 @@ def main() -> int:
     lines = graph.family_verdicts("Neg", 14)
     check("one line per family", len(lines), 4)
     check("no empty list of types", any("(``)" in line for line in lines), False)
+    # and the admitted set is the *first input's* constraint, not the union of every
+    # constraint the operator has: MaxPool's `tensor(int64)` constraint is the type of its
+    # `Indices` output, and the union told the writer and the verifier that `int64` was a
+    # data type. Measured on 2026-10-04, in the MaxPool run.
+    mp = graph.type_constraints_text("MaxPool", 14)
+    check("MaxPool's int family is int8 alone",
+          "`int`: applies — the types this operator admits are `int8`." in mp, True)
+    check("and int64 is named as not admitted",
+          "(`int16`, `int32`, `int64`) are not admitted" in mp, True)
 
     print("\n13. a COVERAGE dictionary the module computes for itself")
     # the reader must see the dictionary as the module leaves it: a case set that counts its
@@ -952,6 +980,64 @@ def main() -> int:
     check("writer calls", s.writer_calls, 2)
     check("the document on disk is the whole one",
           harness.missing_sections(Path(state["spec_path"]).read_text(encoding="utf-8")), [])
+
+    print("\n28. a prompt that names another agent is still answered by its own")
+    # The fake model is addressed by the role on the first line of the system prompt, and
+    # not by a name anywhere in the prompt's body.  Measured on 2026-10-04: the adjudicator's
+    # prompt was given the name of the test agent -- it now says who must have consulted
+    # ONNX's own reference implementation -- and a dispatch on substrings answered the
+    # adjudicator's call with a case module, which the node read as a `stop` and which turned
+    # scenario 3 into `adjudicated-stop`.
+    s = Scenario(verifier="ok", diagnosis="spec")
+    adjudicator = graph.prompt("diagnoser.md")
+    check("the adjudicator's prompt names the test agent", "test agent" in adjudicator, True)
+    check("and it opens with its own role",
+          adjudicator.strip().splitlines()[0], "You are the **adjudicator**. A test has failed. Two artifacts could be at fault — the")
+    answer = s.ask(adjudicator, "", None)
+    check("so the adjudicator is the agent that answers it", s.diagnoser_calls, 1)
+    check("and the tester was not called", s.tester_calls, 0)
+    check("with a verdict, not a case module", json.loads(answer).get("verdict"), "spec")
+
+    print("\n29. a type ONNX does not admit is refused at the document")
+    # The driver's authority on the admitted set is the operator's own schema, and the
+    # schema's answer is the *first input's* type parameter: `MaxPool`'s `T` admits `float16`,
+    # `float`, `double`, `int8` and `uint8`, while its `tensor(int64)` constraint is the type
+    # of the `Indices` output.  Measured on 2026-10-04: the union of the constraints is what
+    # the writer and the verifier had been given, and the MaxPool run's document duly wrote
+    # `where int is in {int8, int64}` and defended it in a worked example -- the driver had
+    # told it so.  The authority is checked here, and so is the refusal.
+    line_only = SPEC.replace("C[i] = -A[i]",
+                             "where uint is in {`uint8`}\n\n$$\nC[i] = -A[i]")
+    check("the admitted set of MaxPool is its first input's type parameter",
+          sorted(graph.admitted_types("MaxPool", 14)),
+          ["double", "float", "float16", "int8", "uint8"])
+    check("and not the union of its constraints",
+          "int64" in graph.admitted_types("MaxPool", 14), False)
+    check("a document that announces nothing is not refused",
+          graph._announces_only(SPEC, "Neg", 14), "")
+    check("the types are read from the Contents and from the family line",
+          sorted(graph.announced_types(WRONG_TYPE_SPEC)), ["uint16", "uint8"])
+    check("and the document is refused for them",
+          graph._announces_only(WRONG_TYPE_SPEC, "Neg", 14),
+          "the document announces a type ONNX does not admit for Neg: `uint16`, `uint8` "
+          "(ONNX admits `bfloat16`, `double`, `float`, `float16`, `int16`, `int32`, `int64`, "
+          "`int8`)")
+    check("a family line on its own is read as well",
+          graph._announces_only(line_only, "Neg", 14),
+          "the document announces a type ONNX does not admit for Neg: `uint8` "
+          "(ONNX admits `bfloat16`, `double`, `float`, `float16`, `int16`, `int32`, `int64`, "
+          "`int8`)")
+    check("the retry says which family to correct",
+          "Correct the Contents entry" in
+          graph._writer_retry_note(graph._announces_only(line_only, "Neg", 14)), True)
+
+    # and the writer is sent back for it, as it is for an answer that never finished
+    s = Scenario(verifier="ok", fail_times=0, wrong_type_spec=1)
+    state = run(s)
+    check("outcome", outcome(state), "converged")
+    check("writer calls", s.writer_calls, 2)
+    check("and the document on disk announces the admitted types only",
+          graph.announced_types(Path(state["spec_path"]).read_text(encoding="utf-8")), set())
 
     print("\nall scenarios hold")
     return 0

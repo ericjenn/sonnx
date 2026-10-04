@@ -114,8 +114,9 @@ implementation. Repair it, and return the whole module again. Stating the same c
 not a repair, and the run will spend its remaining rounds on it and then stop.
 
 The usual defect of a case set that is otherwise faithful is that it makes ONNX Runtime the
-bit-exact reference where the reference is not exact. A kernel is free to be less accurate
-than the document, and several are. **Measured in this repository on 2026-10-04: the CPU
+bit-exact reference where the reference is not exact — and the next section is the other
+half of it, where the reference is not the arbiter of a *value* at all. A kernel is free to
+be less accurate than the document, and several are. **Measured in this repository on 2026-10-04: the CPU
 runtime's `Asin` for `float32` returns `-0.52359873` for `-0.5`, one unit in the last place
 below the correctly rounded value `-0.5235988`** — while the document specifies
 `round(arcsin(x))` with roundTiesToEven, so the implementation's value is the one the document
@@ -134,6 +135,92 @@ What to do with such an operand, in order of preference:
 
 A case whose operands the document's own constraints rule out belongs in neither list: it is
 *open*, which is not a check either.
+
+## A value the two implementations of ONNX decide differently
+
+The interpreter has `onnx`, and therefore ONNX's **own reference implementation** of the
+operator you are testing:
+
+```python
+from onnx.reference import ReferenceEvaluator
+ReferenceEvaluator(model).run(None, {"X": x})
+```
+
+It is a second implementation of the same operator, written by the ONNX project, and it is
+independent of the runtime the harness compares against. It is what tells you which of the
+two is in doubt when a case fails, and you must ask it before you let a special value fail
+anybody. **Measured in this repository on 2026-10-04, on `MaxPool` at opset 14, over a
+`float32` window of four elements with `kernel_shape [2, 2]` and `strides [1, 1]`, the values
+`1.0, 2.0, 3.0, 4.0` written row by row** — where the special value sits is part of the
+measurement, and that is the first thing the table says:
+
+| the window | ONNX Runtime | the reference implementation |
+| --- | --- | --- |
+| `{NaN, 2, 3, 4}`, the NaN first | `4.0` | `4.0` |
+| `{1, 2, 3, NaN}`, the same NaN last | `NaN` | `3.0` |
+| `{-inf, -inf, -inf, -inf}` | `-3.4028235e+38` | `-inf` |
+| the same all `-inf` with `kernel_shape [1, 1]`, or over a `3x3` input with `strides [2, 2]` | `-inf` | `-inf` |
+| `{NaN, -inf, -inf, -inf}` | `-3.4028235e+38` | `-inf` |
+| `{1.0, NaN}` with `kernel_shape [1, 2]` | `1.0` | `1.0` |
+| `{NaN, NaN, NaN, NaN}` | `NaN` | `zero-size array to reduction operation maximum which has no identity` |
+
+- **The reference implementation is the definite one, and it is what the document is judged
+  against.** It excludes the NaN elements of a window and takes the maximum of the rest —
+  `_op_common_pool` filters them with `~np.isnan` before `np.max`, which is also how it
+  excludes the padded elements — and it returns `-inf` for a window of all `-inf`, at every
+  shape and in every row of the table. A document that states a value and contradicts that is
+  a defect of the **document**, and the way to report it is a **failing sweep**: the document's
+  own rule, applied element by element by your sweep, against the reference implementation's
+  value for the same window, with both values in the sweep's summary and in the failure's
+  `detail`. Never rewrite such a case into one that passes, and never drop the row from the
+  sweep: a disagreement you have measured and reported is the finding, and a disagreement you
+  have removed is a document that converges wrong.
+- **The runtime's answer depends on where the special value sits, so its agreement is an
+  accident.** The first two rows are one window with one NaN moved a place: the runtime
+  returns `4.0` in the first and `NaN` in the second, and an all-`-inf` window gives
+  `-3.4028235e+38` — the lowest finite value of `float32`, which is the maximum of no window —
+  at one `kernel_shape` and `-inf` at another, while the runtime's own `float64` and `float16`
+  kernels return `-inf` for both. A case in `cases()` whose expectation is the runtime's answer
+  is therefore a case whose expectation is an accident of position or of shape. Such a window
+  belongs to a **sweep**, decided by the reference implementation — or by the document's own
+  rule computed independently, the two agreeing — with the runtime's differing value recorded
+  in the sweep's summary as *recorded, not required*, and with the sweep failing only where the
+  document and the reference implementation disagree with each other. Keep the windows in
+  `COVERAGE`.
+- **A window neither implementation can decide is still a window the document must decide.**
+  The all-NaN row is that case: the reference implementation raises, the runtime returns `NaN`,
+  and a document that leaves a window of nothing but NaNs unstated leaves a case undecided.
+  Say which it is in the sweep's summary — the raising reference, the runtime's value, the
+  sentence of the document if there is one — and decide the sweep by the document.
+- `onnx.reference` is a reference, not an oracle: it has its own defects, it refuses cases the
+  document decides, and it is one measurement, not a verdict. What you report is the
+  measurement — the values, from the implementations, for the same window and the same
+  position.
+
+## The admitted set is the schema's
+
+The document's type families are the operator's `T` in ONNX, and the two can be compared
+without running anything:
+
+```python
+import onnx
+schema = onnx.defs.get_schema(OP, OPSET)
+{constraint.type_param_str: list(constraint.allowed_type_strs) for constraint in schema.type_constraints}
+```
+
+**Measured in this repository on 2026-10-04: `MaxPool` admits `tensor(float16)`,
+`tensor(float)`, `tensor(double)`, `tensor(int8)` and `tensor(uint8)`, and no `int64`** — the
+schema's second constraint is `tensor(int64)` for the `Indices` *output*. The document of the
+MaxPool run gave its `(int)` section as ``where int is in {`int8`, `int64`}`` and its worked
+example asserted that the `int8` values "are also values of `int64`", and ONNX Runtime
+refused every such case at model resolution — `INVALID_GRAPH ... Type Error: Type
+'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid`.
+That refusal is **not** the refusal of *A type the runtime does not implement*: there the
+document is right and the build is narrow, here the document admits a type ONNX does not, and
+a case set that drops the type to make the run pass converges on the wrong document. Write
+the sweep — the document's declared families against the schema's, failing with the
+difference in its `who` and its `detail` — keep every case of every type the document
+announces, and let the run be sent back to the document.
 
 ## A case set that compared nothing
 
@@ -213,7 +300,10 @@ array. The accepted case set of **Asin** does this (`Decimal(x)` on the float, i
 `_exact_asin_value`). Before a case or a sweep fails an implementation for a departure of one
 or two units, compute the reference a second way — from the float's exact value, another
 series, another formula (`acos(x) = π/2 − asin(x)` and `asin(x) = atan(x/√(1−x²))` are two) —
-and if the two disagree, the reference is what is in doubt, not the implementation.
+and if the two disagree, the reference is what is in doubt, not the implementation. Where
+what is in doubt is not a rounding but the value a special operand takes, the second opinion
+is ONNX's own reference implementation, and *A value the two implementations of ONNX decide
+differently* above is where to take it.
 
 ## The real-number section
 

@@ -1,0 +1,686 @@
+{
+  "spec": "agents/runs/MaxPool/maxpool.md",
+  "op": "MaxPool",
+  "opset": 14,
+  "impl": "agents/runs/MaxPool/iter-001-impl.py",
+  "entry": "maxpool",
+  "generated": "2026-10-04T12:36:37Z",
+  "cases": {
+    "total": 132,
+    "passed": 91,
+    "mismatched": [],
+    "open": [
+      {
+        "case": "int64: extremes",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        }
+      },
+      {
+        "case": "int64: ordinary",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        }
+      },
+      {
+        "case": "int64: ties",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        }
+      },
+      {
+        "case": "int64: rank 3, kernel 2, stride 1",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: rank 3, kernel 2, stride 2",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        }
+      },
+      {
+        "case": "int64: rank 3, kernel 3, stride 1",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            3
+          ],
+          "strides": [
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: rank 3, pads",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: rank 3, pads both ends",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            3
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: rank 4, kernel 2x2, stride 2x2",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            2,
+            2
+          ]
+        }
+      },
+      {
+        "case": "int64: rank 4, kernel 2x2, stride 1x1",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: rank 4, pads",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            1,
+            1
+          ],
+          "pads": [
+            1,
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: rank 4, batch 2, channels 2",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: rank 4, kernel 3x3, stride 2x2",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            3,
+            3
+          ],
+          "strides": [
+            2,
+            2
+          ]
+        }
+      },
+      {
+        "case": "int64: rank 5, kernel 2x2x2",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2,
+            2
+          ],
+          "strides": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: rank 5, kernel 2x2x2, stride 2x2x2",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2,
+            2
+          ],
+          "strides": [
+            2,
+            2,
+            2
+          ]
+        }
+      },
+      {
+        "case": "int64: rank 5, pads",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2,
+            2
+          ],
+          "strides": [
+            1,
+            1,
+            1
+          ],
+          "pads": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "float16: zero-sized spatial, padded",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "float32: zero-sized spatial, padded",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "float64: zero-sized spatial, padded",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "int8: zero-sized spatial, padded",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: zero-sized spatial, padded",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "uint8: zero-sized spatial, padded",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "float16: zero-sized spatial, kernel 1",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            1
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "float32: zero-sized spatial, kernel 1",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            1
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "float64: zero-sized spatial, kernel 1",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            1
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "int8: zero-sized spatial, kernel 1",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            1
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "int64: zero-sized spatial, kernel 1",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            1
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "uint8: zero-sized spatial, kernel 1",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            1
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "int64: zero-sized batch",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ]
+        }
+      },
+      {
+        "case": "float16: zero-sized channel",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ]
+        }
+      },
+      {
+        "case": "float32: zero-sized channel",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ]
+        }
+      },
+      {
+        "case": "float64: zero-sized channel",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ]
+        }
+      },
+      {
+        "case": "int8: zero-sized channel",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: zero-sized channel",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ]
+        }
+      },
+      {
+        "case": "uint8: zero-sized channel",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ]
+        }
+      },
+      {
+        "case": "float16: zero-sized spatial in rank 4",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0,5}\n",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            1,
+            1
+          ],
+          "pads": [
+            1,
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "float32: zero-sized spatial in rank 4",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0,5}\n",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            1,
+            1
+          ],
+          "pads": [
+            1,
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "float64: zero-sized spatial in rank 4",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0,5}\n",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            1,
+            1
+          ],
+          "pads": [
+            1,
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "int8: zero-sized spatial in rank 4",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0,5}\n",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            1,
+            1
+          ],
+          "pads": [
+            1,
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "int64: zero-sized spatial in rank 4",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            1,
+            1
+          ],
+          "pads": [
+            1,
+            1,
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "uint8: zero-sized spatial in rank 4",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0,5}\n",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            1,
+            1
+          ],
+          "pads": [
+            1,
+            1,
+            0,
+            0
+          ]
+        }
+      }
+    ],
+    "nan_payload": []
+  },
+  "sweeps": [
+    {
+      "sweep": "the shape formula of the document",
+      "summary": "57 shapes checked against ORT and the implementation, 49 open (the runtime refuses pads >= kernel_shape)",
+      "failures": []
+    },
+    {
+      "sweep": "zero-sized dimensions",
+      "summary": "1 shapes checked against ORT, 5 open (the runtime refuses a zero-sized spatial dimension or pads >= kernel_shape)",
+      "failures": [
+        {
+          "who": "shape (1, 1, 0) {'kernel_shape': [2], 'strides': [1], 'pads': [1, 1]}",
+          "detail": "document (1, 1, 1), implementation (1, 1, 0)"
+        }
+      ]
+    },
+    {
+      "sweep": "the special values of every type (document, not the runtime)",
+      "summary": "float16 13 values (the runtime disagrees: not reference-checked); float32 13 values (the runtime disagrees: not reference-checked); float64 13 values (the runtime disagrees: not reference-checked); int8 7 values; int64 7 values (the runtime refused the model: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid.); uint8 7 values",
+      "failures": []
+    },
+    {
+      "sweep": "sweep_int_domain",
+      "error": "ValueError: cannot reshape array of size 131072 into shape (1,1,2,256)",
+      "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 271, in check_sweeps\n    out.append(sweep(impl))\n               ~~~~~^^^^^^\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/cases.py\", line 366, in sweep_int_domain\n    x = np.stack([a, b], axis=0).astype(dt).reshape(1, 1, 2, len(xs))\nValueError: cannot reshape array of size 131072 into shape (1,1,2,256)\n"
+    },
+    {
+      "sweep": "sweep_spec_examples",
+      "error": "ValueError: Must provide matching length window_shape and axis; got 2 window_shape elements and 1 axes elements.",
+      "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 271, in check_sweeps\n    out.append(sweep(impl))\n               ~~~~~^^^^^^\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/cases.py\", line 443, in sweep_spec_examples\n    got = np.asarray(impl.maxpool(x, **attrs))\n                     ~~~~~~~~~~~~^^^^^^^^^^^^\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/iter-001-impl.py\", line 274, in maxpool\n    windows = np.lib.stride_tricks.sliding_window_view(\n        Xp, tuple(ks), axis=tuple(range(2, 2 + m)))\nValueError: Must provide matching length window_shape and axis; got 2 window_shape elements and 1 axes elements.\n"
+    },
+    {
+      "sweep": "sweep_real_section",
+      "error": "IndexError: tuple index out of range",
+      "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 271, in check_sweeps\n    out.append(sweep(impl))\n               ~~~~~^^^^^^\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/cases.py\", line 484, in sweep_real_section\n    want = _exact_maxpool(x, attrs[\"kernel_shape\"], attrs[\"strides\"],\n                          attrs.get(\"pads\", [0] * (2 * (len(x[0][0]) and 1))))\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/cases.py\", line 510, in _exact_maxpool\n    h = tuple(j[t] * strides[t] + k[t] - pads[t] for t in range(m))\n        ^^^^^\nIndexError: tuple index out of range\n"
+    }
+  ],
+  "ok": false
+}

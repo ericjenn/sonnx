@@ -1,0 +1,1016 @@
+{
+  "spec": "agents/runs/MaxPool/maxpool.md",
+  "op": "MaxPool",
+  "opset": 14,
+  "impl": "agents/runs/MaxPool/iter-001-impl.py",
+  "entry": "maxpool",
+  "generated": "2026-10-04T12:30:03Z",
+  "cases": {
+    "total": 108,
+    "passed": 76,
+    "mismatched": [
+      {
+        "case": "example: float Example 2",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          }
+        ]
+      },
+      {
+        "case": "float16: signed zeros",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            2,
+            2
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[0]"
+          },
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[0]"
+          },
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[0]"
+          },
+          {
+            "index": 1,
+            "ort": "-0.0",
+            "impl": "0.0",
+            "ort_bits": "[32768]",
+            "impl_bits": "[0]"
+          }
+        ]
+      },
+      {
+        "case": "float16: NaN operand, quiet, payload 1",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[32257]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[32257]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[32257]"
+          }
+        ]
+      },
+      {
+        "case": "float16: NaN operand, quiet, payload 1, sign set",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[65025]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[65025]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[65025]"
+          }
+        ]
+      },
+      {
+        "case": "float16: NaN operand, signalling",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[31745]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[31745]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[31745]"
+          }
+        ]
+      },
+      {
+        "case": "float32: NaN operand, quiet, payload 1",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          }
+        ]
+      },
+      {
+        "case": "float32: NaN operand, quiet, payload 1, sign set",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          }
+        ]
+      },
+      {
+        "case": "float32: NaN operand, signalling",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          }
+        ]
+      },
+      {
+        "case": "float64: signed zeros",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            2,
+            2
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[0]"
+          },
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[0]"
+          },
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[0]"
+          },
+          {
+            "index": 1,
+            "ort": "0.0",
+            "impl": "-0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[9223372036854775808]"
+          }
+        ]
+      }
+    ],
+    "open": [
+      {
+        "case": "int64: extremes",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            2,
+            2
+          ]
+        }
+      },
+      {
+        "case": "float16: zero-sized spatial dimension, pads cover the window",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "float16: zero-sized channel dimension",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        }
+      },
+      {
+        "case": "float32: zero-sized spatial dimension, pads cover the window",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "float32: zero-sized channel dimension",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        }
+      },
+      {
+        "case": "float64: zero-sized spatial dimension, pads cover the window",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "float64: zero-sized channel dimension",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        }
+      },
+      {
+        "case": "int8: zero-sized spatial dimension, pads cover the window",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "int8: zero-sized channel dimension",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        }
+      },
+      {
+        "case": "int64: rank-3, kernel 2, stride 1",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: rank-3, kernel 3, stride 2, pads",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            3
+          ],
+          "strides": [
+            2
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: rank-4, kernel 2x2, stride 2",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            2,
+            2
+          ]
+        }
+      },
+      {
+        "case": "int64: rank-4, kernel 3x3, stride 1, pads",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            3,
+            3
+          ],
+          "strides": [
+            1,
+            1
+          ],
+          "pads": [
+            1,
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: rank-5, kernel 2x2x2, stride 2",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2,
+            2
+          ],
+          "strides": [
+            2,
+            2,
+            2
+          ]
+        }
+      },
+      {
+        "case": "int64: batch and channel > 1",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            2,
+            2
+          ]
+        }
+      },
+      {
+        "case": "int64: zero-sized spatial dimension, pads cover the window",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: zero-sized batch dimension",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        }
+      },
+      {
+        "case": "int64: zero-sized channel dimension",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        }
+      },
+      {
+        "case": "int64: window larger than the input, pads cover it",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            3
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "int64: stride larger than the kernel",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            3
+          ]
+        }
+      },
+      {
+        "case": "int64: default attributes (kernel_shape only)",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (in0) of operator (MaxPool) in node (node0) is invalid.",
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ]
+        }
+      },
+      {
+        "case": "uint8: zero-sized spatial dimension, pads cover the window",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "uint8: zero-sized channel dimension",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ]
+        }
+      }
+    ],
+    "nan_payload": [
+      {
+        "case": "float64: NaN operand, quiet, payload 1"
+      },
+      {
+        "case": "float64: NaN operand, quiet, payload 1, sign set"
+      },
+      {
+        "case": "float64: NaN operand, signalling"
+      }
+    ]
+  },
+  "sweeps": [
+    {
+      "sweep": "the shape formula and window coverage (document vs ORT vs implementation)",
+      "summary": "22 shapes checked over 6 types",
+      "failures": [
+        {
+          "who": "float16 {'kernel_shape': [2, 3], 'strides': [3, 1], 'pads': [0, 2, 2, 1]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float16 {'kernel_shape': [2, 2], 'strides': [3, 3], 'pads': [2, 2, 1, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float16 {'kernel_shape': [1, 2], 'strides': [3, 3], 'pads': [2, 1, 0, 0]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float16 {'kernel_shape': [3, 2, 1], 'strides': [3, 1, 1], 'pads': [1, 2, 2, 2, 2, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float16 {'kernel_shape': [3, 2, 2], 'strides': [2, 2, 1], 'pads': [2, 2, 2, 0, 0, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float16 {'kernel_shape': [1], 'strides': [1], 'pads': [2, 1]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float32 {'kernel_shape': [3, 2, 1], 'strides': [2, 1, 1], 'pads': [2, 2, 2, 0, 0, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float32 {'kernel_shape': [1, 2], 'strides': [2, 2], 'pads': [2, 0, 2, 0]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float32 {'kernel_shape': [2], 'strides': [1], 'pads': [2, 1]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float32 {'kernel_shape': [2, 2, 1], 'strides': [1, 2, 3], 'pads': [2, 1, 2, 1, 1, 1]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float32 {'kernel_shape': [1], 'strides': [2], 'pads': [0, 1]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float32 {'kernel_shape': [1], 'strides': [2], 'pads': [1, 1]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float32 {'kernel_shape': [1, 2], 'strides': [1, 3], 'pads': [2, 0, 2, 0]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float32 {'kernel_shape': [1], 'strides': [3], 'pads': [2, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float64 {'kernel_shape': [3, 2], 'strides': [3, 3], 'pads': [0, 1, 2, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float64 {'kernel_shape': [1, 3, 3], 'strides': [3, 2, 1], 'pads': [0, 2, 0, 2, 2, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float64 {'kernel_shape': [2, 2], 'strides': [1, 1], 'pads': [2, 1, 1, 1]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float64 {'kernel_shape': [3, 2, 1], 'strides': [3, 2, 1], 'pads': [2, 1, 1, 1, 0, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float64 {'kernel_shape': [2, 2], 'strides': [1, 3], 'pads': [2, 1, 1, 1]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float64 {'kernel_shape': [3, 1, 2], 'strides': [2, 3, 1], 'pads': [2, 0, 2, 0, 0, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "int8 {'kernel_shape': [2, 1], 'strides': [2, 1], 'pads': [1, 1, 1, 1]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "int8 {'kernel_shape': [3, 3, 2], 'strides': [3, 2, 1], 'pads': [2, 1, 2, 1, 0, 0]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "int8 {'kernel_shape': [3, 1, 2], 'strides': [2, 1, 1], 'pads': [1, 2, 1, 1, 2, 0]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "int8 {'kernel_shape': [1, 3], 'strides': [3, 3], 'pads': [1, 1, 1, 0]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "int8 {'kernel_shape': [2, 1, 3], 'strides': [3, 3, 2], 'pads': [0, 1, 2, 2, 1, 1]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "int8 {'kernel_shape': [1], 'strides': [2], 'pads': [0, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "int8 {'kernel_shape': [2, 3], 'strides': [1, 3], 'pads': [2, 1, 0, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "int8 {'kernel_shape': [1, 3, 1], 'strides': [3, 3, 2], 'pads': [1, 2, 0, 2, 1, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "int64 {'kernel_shape': [3, 3, 1], 'strides': [3, 3, 1], 'pads': [1, 0, 1, 0, 2, 2]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [3, 3, 3], 'strides': [1, 1, 1], 'pads': [0, 1, 1, 0, 1, 1]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [3, 3, 3], 'strides': [3, 2, 1], 'pads': [1, 2, 1, 2, 1, 0]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [3, 3, 2], 'strides': [2, 2, 1], 'pads': [1, 2, 2, 1, 2, 1]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [2, 1, 1], 'strides': [1, 1, 1], 'pads': [0, 0, 2, 0, 1, 2]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [3, 3, 1], 'strides': [3, 3, 3], 'pads': [2, 1, 1, 0, 2, 1]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [3, 2], 'strides': [1, 1], 'pads': [0, 2, 0, 1]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [3], 'strides': [3], 'pads': [1, 0]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [3], 'strides': [2], 'pads': [0, 2]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [3, 3], 'strides': [3, 3], 'pads': [1, 0, 2, 2]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [1, 1], 'strides': [3, 2], 'pads': [1, 0, 1, 2]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [3, 2, 2], 'strides': [2, 2, 1], 'pads': [2, 2, 0, 1, 1, 2]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "uint8 {'kernel_shape': [3, 2, 1], 'strides': [1, 2, 1], 'pads': [1, 0, 0, 2, 1, 1]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "uint8 {'kernel_shape': [3, 3, 2], 'strides': [2, 2, 1], 'pads': [0, 1, 2, 0, 0, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "uint8 {'kernel_shape': [1], 'strides': [3], 'pads': [1, 0]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "uint8 {'kernel_shape': [2, 1, 1], 'strides': [1, 3, 3], 'pads': [2, 2, 0, 1, 0, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "uint8 {'kernel_shape': [2, 1], 'strides': [1, 2], 'pads': [2, 0, 2, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "uint8 {'kernel_shape': [1, 1, 3], 'strides': [1, 1, 2], 'pads': [0, 0, 2, 0, 2, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "uint8 {'kernel_shape': [1, 3], 'strides': [3, 3], 'pads': [1, 1, 2, 0]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "uint8 {'kernel_shape': [3, 3, 1], 'strides': [1, 3, 1], 'pads': [1, 1, 0, 1, 0, 1]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "uint8 {'kernel_shape': [1], 'strides': [2], 'pads': [0, 1]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "uint8 {'kernel_shape': [1, 2], 'strides': [2, 3], 'pads': [2, 2, 1, 0]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        }
+      ]
+    },
+    {
+      "sweep": "the formula, element by element (document vs ORT vs implementation)",
+      "summary": "13 tensors checked over 6 types",
+      "failures": [
+        {
+          "who": "float16 {'kernel_shape': [2, 3], 'strides': [3, 2], 'pads': [0, 2, 1, 0]} (document vs ORT)",
+          "detail": "document [[[[0.53466796875, 1.3466796875]]]], ORT [[[[0.53466796875, 0.53466796875]]]]"
+        },
+        {
+          "who": "float16 {'kernel_shape': [2, 3], 'strides': [3, 2], 'pads': [0, 2, 1, 0]} (document vs implementation)",
+          "detail": "document [[[[0.53466796875, 1.3466796875]]]], implementation [[[[0.53466796875, 0.53466796875]]]]"
+        },
+        {
+          "who": "float16 {'kernel_shape': [2], 'strides': [2], 'pads': [2, 0]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float32 {'kernel_shape': [1], 'strides': [3], 'pads': [1, 0]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float64 {'kernel_shape': [1], 'strides': [3], 'pads': [1, 0]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "float64 {'kernel_shape': [3, 3], 'strides': [1, 2], 'pads': [1, 0, 0, 2]} (document vs ORT)",
+          "detail": "document [[[[1.1334530533551435, 0.6191958345977955], [0.800920783494965, 0.6191958345977955]], [[1.2122376070303693, 0.2925618542451205], [1.2122376070303693, -0.5490610421734936]]], [[[0.6171417504937137, 0.3409502798850323], [0.6171417504937137, 0.3409502798850323]], [[2.4113973276498024, 1.4617439986819403], [1.4617439986819403, 1.4617439986819403]]]], ORT [[[[1.1334530533551435, 0.6191958345977955], [1.1334530533551435, 0.6191958345977955]], [[1.2122376070303693, 0.2925618542451205], [1.2122376070303693, 0.2925618542451205]]], [[[0.6171417504937137, 0.3409502798850323], [0.6171417504937137, 0.3409502798850323]], [[2.4113973276498024, 1.4617439986819403], [2.4113973276498024, 1.4617439986819403]]]]"
+        },
+        {
+          "who": "float64 {'kernel_shape': [3, 3], 'strides': [1, 2], 'pads': [1, 0, 0, 2]} (document vs implementation)",
+          "detail": "document [[[[1.1334530533551435, 0.6191958345977955], [0.800920783494965, 0.6191958345977955]], [[1.2122376070303693, 0.2925618542451205], [1.2122376070303693, -0.5490610421734936]]], [[[0.6171417504937137, 0.3409502798850323], [0.6171417504937137, 0.3409502798850323]], [[2.4113973276498024, 1.4617439986819403], [1.4617439986819403, 1.4617439986819403]]]], implementation [[[[1.1334530533551435, 0.6191958345977955], [1.1334530533551435, 0.6191958345977955]], [[1.2122376070303693, 0.2925618542451205], [1.2122376070303693, 0.2925618542451205]]], [[[0.6171417504937137, 0.3409502798850323], [0.6171417504937137, 0.3409502798850323]], [[2.4113973276498024, 1.4617439986819403], [2.4113973276498024, 1.4617439986819403]]]]"
+        },
+        {
+          "who": "float64 {'kernel_shape': [3, 2], 'strides': [3, 3], 'pads': [2, 2, 0, 0]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "int8 {'kernel_shape': [1], 'strides': [3], 'pads': [0, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "int8 {'kernel_shape': [2], 'strides': [3], 'pads': [0, 2]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "int64 {'kernel_shape': [3], 'strides': [1], 'pads': [1, 1]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [1], 'strides': [3], 'pads': [0, 0]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [3, 1], 'strides': [1, 2], 'pads': [1, 0, 1, 0]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [1], 'strides': [3], 'pads': [0, 2]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "int64 {'kernel_shape': [1], 'strides': [2], 'pads': [0, 0]}",
+          "detail": "the runtime refused the model: InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(int64)' of input parameter (X) of operator (MaxPool) in node (maxpool0) is invalid."
+        },
+        {
+          "who": "uint8 {'kernel_shape': [3], 'strides': [2], 'pads': [1, 0]} (document vs ORT)",
+          "detail": "document [[[235, 235, 201]], [[229, 240, 195]]], ORT [[[225, 235, 201]], [[229, 240, 240]]]"
+        },
+        {
+          "who": "uint8 {'kernel_shape': [3], 'strides': [2], 'pads': [1, 0]} (document vs implementation)",
+          "detail": "document [[[235, 235, 201]], [[229, 240, 195]]], implementation [[[225, 235, 201]], [[229, 240, 240]]]"
+        },
+        {
+          "who": "uint8 {'kernel_shape': [1], 'strides': [3], 'pads': [0, 1]}",
+          "detail": "the runtime refused the model: Fail: [ONNXRuntimeError] : 1 : FAIL : Exception during initialization: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:88 onnxruntime::PoolAttributes::PoolAttributes(const KernelInfoType&, const std::string&, int) [with KernelInfoType = onnxruntime::OpKernelInfo; std::string = std::__cxx11::basic_string<char>] pads[dim] < kernel_shape[dim] && pads[dim + kernel_shape.size()] < kernel_shape[dim] was false. Pad should be smaller than kernel.\n"
+        },
+        {
+          "who": "uint8 {'kernel_shape': [3], 'strides': [3], 'pads': [1, 2]} (document vs ORT)",
+          "detail": "document [[[185, 147]]], ORT [[[185, 180]]]"
+        },
+        {
+          "who": "uint8 {'kernel_shape': [3], 'strides': [3], 'pads': [1, 2]} (document vs implementation)",
+          "detail": "document [[[185, 147]]], implementation [[[185, 180]]]"
+        }
+      ]
+    },
+    {
+      "sweep": "the special values of every type",
+      "summary": "3 types: NaN, +inf, -inf, +0, -0, the extremes",
+      "failures": [
+        {
+          "who": "float16 (document vs ORT)",
+          "detail": "document [[[0.0, inf, nan, 6.103515625e-05, 1.0]]], ORT [[[0.0, inf, 65504.0, 6.103515625e-05, 1.0]]]"
+        },
+        {
+          "who": "float32 (document vs ORT)",
+          "detail": "document [[[0.0, inf, nan, 1.1754943508222875e-38, 1.0]]], ORT [[[0.0, inf, 3.4028234663852886e+38, 1.1754943508222875e-38, 1.0]]]"
+        },
+        {
+          "who": "float32 (document vs implementation)",
+          "detail": "document [[[0.0, inf, nan, 1.1754943508222875e-38, 1.0]]], implementation [[[-0.0, inf, nan, 1.1754943508222875e-38, 1.0]]]"
+        },
+        {
+          "who": "float64 (document vs implementation)",
+          "detail": "document [[[0.0, inf, nan, 2.2250738585072014e-308, 1.0]]], implementation [[[-0.0, inf, nan, 2.2250738585072014e-308, 1.0]]]"
+        }
+      ]
+    },
+    {
+      "sweep": "the document's worked examples",
+      "summary": "6 examples, as documented vs ORT vs implementation",
+      "failures": [
+        {
+          "who": "float Example 2",
+          "detail": "documented [[[nan, 3.0]]], ORT [[[1.0, 3.0]]]"
+        }
+      ]
+    },
+    {
+      "sweep": "sweep_real_section",
+      "error": "IndexError: list index out of range",
+      "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 271, in check_sweeps\n    out.append(sweep(impl))\n               ~~~~~^^^^^^\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/cases.py\", line 408, in sweep_real_section\n    want = doc_maxpool(xa, attrs[\"kernel_shape\"], attrs[\"strides\"],\n                       attrs.get(\"pads\", [0] * (2 * (xa.ndim - 2))))\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/cases.py\", line 133, in doc_maxpool\n    if not doc_window_coverage_ok(x.shape, kernel_shape, pads):\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nIndexError: list index out of range\n"
+    }
+  ],
+  "ok": false
+}

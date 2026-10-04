@@ -118,6 +118,30 @@ able to implement the operator from the specification alone). Record what it dec
   outside the operator's domain (incompatible shapes, mixed dtypes), i.e. a precondition, which the
   specification covers through a constraint tag rather than through an error condition. Record it as
   such; do not turn it into a runtime case.
+- **A refusal the schema makes, not the build.** The two refusals read alike and mean opposite
+  things. `NOT_IMPLEMENTED` — no kernel for that type in this build — says nothing about the
+  specification, which specifies every type the operator admits. `INVALID_GRAPH`, at model
+  resolution, is the *schema* refusing: `Type Error: Type 'tensor(int64)' of input parameter (X) of
+  operator (MaxPool) ... is invalid`, where `MaxPool`'s `T` admits `float16`, `float`, `double`,
+  `int8` and `uint8` and no `int64` (its `tensor(int64)` constraint is the type of the `Indices`
+  output). If the specification admits a type the schema does not, that is defect (1), and the
+  amendment is the type list — measured on 2026-10-04, the MaxPool document's `(int)` section read
+  `where int is in {int8, int64}`.
+- **A disagreement on a value is a question for the second implementation.** Where the specification
+  states a value and ONNX Runtime produces another, ask ONNX's own reference implementation
+  (`onnx.reference.ReferenceEvaluator`, in the same environment) before amending anything. If it
+  agrees with the runtime, the specification is at fault. If it agrees with the *specification*, the
+  runtime's kernel is the outlier and amending the document would be the mistake: the disagreement
+  belongs in the report as a runtime defect, and the case that compares the two bit patterns is not a
+  defect of the specification. Measured on 2026-10-04, on `MaxPool` at opset 14: for a `float32`
+  window `{NaN, 2, 3, 4}` the document said NaN and both implementations returned `4.0` (the
+  reference filters the NaN elements out before `np.max`) — so the document was wrong and the case
+  set right — while the same four values with the NaN written last give `3.0` from the reference
+  implementation and `NaN` from ONNX Runtime, and a window of all `-inf` gives `-inf` from the
+  reference implementation and `-3.4028235e+38` from ONNX Runtime at `kernel_shape [2, 2]` but
+  `-inf` at `[1, 1]`, on the same input. The runtime's answer moves with the position of the special
+  value and with the shape; the reference implementation's does not, and it is the one to amend
+  against.
 - **An open case the implementation had to decide** is defect (2): the specification should either
   decide it, or state that it is undecided and give the set of conforming results (l.319).
 - **A `DECISION:` point that is not a defect.** Most decisions a blind reader records are interface
@@ -155,5 +179,6 @@ State, for each finding: the case, what the specification said, what the referen
 does, which kind of defect it is, and the amendment made. State the environment and the exact
 coverage (which types over which domains) so the reader can judge how much of the operator was
 actually exercised. Say plainly that the loop shows a fresh reader of the specification agrees with
-ONNX Runtime 1.30 on the cases covered — not that the specification is correct.
+ONNX Runtime 1.30 — and with ONNX's own reference implementation where the two of them agree — on
+the cases covered: not that the specification is correct.
 `verification/add/` is the worked example of all five steps.

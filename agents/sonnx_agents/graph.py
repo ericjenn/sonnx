@@ -17,6 +17,7 @@ nodes decide when the loop stops; the models decide only the content of the arti
 from __future__ import annotations
 
 import ast
+import itertools
 import json
 import re
 import subprocess
@@ -134,17 +135,36 @@ def _strip_tensor(type_str: str) -> str:
 
 
 def admitted_types(op: str, opset: int) -> set[str]:
-    """The ONNX type names the operator admits, without the `tensor(...)` wrapper."""
+    """The ONNX type names the operator admits for its **data tensor**, without wrapper.
+
+    The constraint of the operator's first input, and not the union of every constraint it
+    has: an operator may carry a second one for a tensor that is not the data.  `MaxPool`
+    admits `tensor(float16)`, `tensor(float)`, `tensor(double)`, `tensor(int8)` and
+    `tensor(uint8)` for `X`, and its second constraint — `I`, `tensor(int64)` — is the type of
+    the `Indices` *output*.  The union was what the writer and the verifier were given, and it
+    is the answer the MaxPool run's document wrote down: its `(int)` section read `where int
+    is in {`int8`, `int64`}`, its worked example asserted that the `int8` values "are also
+    values of `int64`", and three reviews of the verifier passed it — while ONNX Runtime
+    refused every `int64` case at model resolution (`INVALID_GRAPH ... Type Error: Type
+    'tensor(int64)' of input parameter (X) of operator (MaxPool) ... is invalid`), which the
+    case set spent the whole test side of the run on and the adjudicator twice read as the
+    case set's defect.  Measured on 2026-10-04.
+    """
     try:
         from onnx import defs
 
         schema = defs.get_schema(op, max_inclusive_version=opset)
     except Exception:
         return set()
-    admitted = set()
-    for constraint in schema.type_constraints:
-        admitted.update(_strip_tensor(t) for t in constraint.allowed_type_strs)
-    return admitted
+    allowed = {constraint.type_param_str: constraint.allowed_type_strs
+               for constraint in schema.type_constraints}
+    # the type parameter of the first input, which is ONNX's `T` wherever it is named that
+    params = [i.type_str for i in schema.inputs if i.type_str]
+    param = params[0] if params and params[0] in allowed else ("T" if "T" in allowed else "")
+    types = allowed.get(param)
+    if types is None:  # an operator whose first input names no parameter: all of them
+        types = [t for group in allowed.values() for t in group]
+    return {_strip_tensor(t) for t in types}
 
 
 def family_verdicts(op: str, opset: int) -> list[str]:
@@ -334,6 +354,70 @@ def _not_a_document(spec: str) -> str:
     return ""
 
 
+# The two shapes in which a document announces the types it covers, both fixed by the
+# profile's document rules: the Contents entry of a family, and the line that opens the
+# family's section.  Nothing else in a document is read for a type.
+_CONTENTS_FAMILY = re.compile(r"^\s*-\s+\*\*[^*]+\*\*\s+operator for types?\s+"
+                              r"\[([^\]]+)\]\(#[^)]+\)\s*$", re.M)
+_FAMILY_LINE = re.compile(r"^\s*where\s+(?:int|uint|float|real)\s+is\s+in\s+\{([^}]*)\}", re.M)
+
+
+def announced_types(spec: str) -> set[str]:
+    """The ONNX type names the document announces, from those two shapes alone.
+
+    `real` is not a type of the machine and is left out.  A document that says
+    `` where int is in {`int8`, `int64`} `` announces both, and this is where the
+    announcement is read — not from the prose around it.
+    """
+    names = set()
+    for match in itertools.chain(_CONTENTS_FAMILY.finditer(spec), _FAMILY_LINE.finditer(spec)):
+        for name in re.split(r"[,]|\band\b", match.group(1).replace("`", "")):
+            name = name.strip()
+            if name and name != "real":
+                names.add(name)
+    return names
+
+
+def _announces_only(spec: str, op: str, opset: int) -> str:
+    """Why the document announces a type the operator does not admit, or "" when it does not.
+
+    The document's type families are the schema's `T`, and a document that announces more is
+    a document that contradicts ONNX — but the runtime's refusal reads like a build that
+    lacks a kernel, so it is answered in the wrong place.  Measured on 2026-10-04 in the
+    **MaxPool** run: `MaxPool` admits `float16`, `float`, `double`, `int8` and `uint8` (its
+    `tensor(int64)` constraint is the type of the `Indices` *output*), the document's `(int)`
+    section read `where int is in {`int8`, `int64`}` and its worked example asserted that the
+    `int8` values "are also values of `int64`", and the case set spent the whole test side of
+    the run on `INVALID_GRAPH ... Type 'tensor(int64)' of input parameter (X) of operator
+    (MaxPool) ... is invalid` — a refusal the adjudicator read as the tester's, twice, while
+    the verifier's three reviews passed the document.  The answer is asked for again instead,
+    where the schema's own list of admitted types is one sentence away from the writer.
+    """
+    admitted = admitted_types(op, opset)
+    if not admitted:
+        return ""
+    extra = sorted(announced_types(spec) - admitted)
+    if not extra:
+        return ""
+    return ("the document announces a type ONNX does not admit for %s: %s (ONNX admits %s)"
+            % (op, ", ".join("`%s`" % name for name in extra),
+               ", ".join("`%s`" % name for name in sorted(admitted))))
+
+
+def _writer_retry_note(problem: str) -> str:
+    """What the writer is told when its answer cannot be written to disk."""
+    if problem.startswith("the document announces"):
+        return ("Your previous answer announces a type ONNX does not admit for this operator: "
+                "%s. Correct the Contents entry of that family and the sentence that opens its "
+                "section, and return the whole document again — every other sentence as it is."
+                % problem)
+    return ("Your previous answer was cut off before the end of the document and cannot be "
+            "used: %s. Return the *complete* document: every section the Contents lists, every "
+            "red span closed by its `[END]`, every example. If the document does not fit in "
+            "one answer, make the prose shorter — never leave a section out and never stop "
+            "before the last `## Outputs`." % problem)
+
+
 def write_spec(state: SpecState, settings: Settings) -> dict:
     """The specification writer: one full document, replacing whatever was there."""
     spec_path = Path(state.get("spec_path") or settings.resolved_spec_path())
@@ -364,31 +448,27 @@ def write_spec(state: SpecState, settings: Settings) -> dict:
     system, question = (prompt("writer.md") + "\n\n" + guidelines_context(), "\n\n".join(task))
     answer = _artifact(settings, system, question, "writer  round %d" % round_number)
     spec = extract.extract_markdown(answer)
-    problem = _not_a_document(spec)
+    problem = _not_a_document(spec) or _announces_only(spec, settings.op, settings.opset)
     for attempt in range(settings.max_writer_retries):
         if not problem:
             break
-        # a model answer can stop in the middle of the document.  The skill's linter reads
-        # exactly these two counts and would catch it, but only after spending a round of
-        # the loop; the document must not be written to disk as if it were a document.
+        # a model answer can stop in the middle of the document, or announce a type family
+        # ONNX does not have.  The skill's linter reads the first of the two and would catch
+        # it, but only after spending a round of the loop; neither answer must be written to
+        # disk as if it were a document.
         log(settings, "writer  round %d: %s; asking again" % (round_number, problem))
-        answer = ask(settings, system, question + "\n\n## Note\n\nYour previous answer was "
-                     "cut off before the end of the document and cannot be used: %s. Return the "
-                     "*complete* document: every section the Contents lists, every red span "
-                     "closed by its `[END]`, every example. If the document does not fit in "
-                     "one answer, make the prose shorter — never leave a section out and "
-                     "never stop before the last `## Outputs`." % problem,
+        answer = ask(settings, system, question + "\n\n## Note\n\n" + _writer_retry_note(problem),
                      max_tokens=settings.max_tokens * 2, thinking=settings.thinking)
         spec = extract.extract_markdown(answer)
-        problem = _not_a_document(spec)
+        problem = _not_a_document(spec) or _announces_only(spec, settings.op, settings.opset)
     if problem:
         if current:
-            # a complete document is never replaced by a cut-off one
+            # a whole document is never replaced by one that is not a document
             log(settings, "writer  round %d: %s, after %d attempt(s); the document on disk "
                 "is kept" % (round_number, problem, settings.max_writer_retries))
             spec = current
         else:
-            log(settings, "writer  round %d: the first draft arrived incomplete: %s"
+            log(settings, "writer  round %d: the first draft arrived unusable: %s"
                 % (round_number, problem))
     if spec != current:
         harness.write_spec(spec_path, spec)

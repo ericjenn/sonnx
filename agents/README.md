@@ -337,6 +337,44 @@ verifier; a document that reaches the implementer has passed both.
   and the platform returns those — so three false failures of an implementation that is right
   to the last bit. `Decimal(v)` on the float is exact, and is what the accepted **Asin** case
   set uses; `Decimal(repr(v))`, `Decimal(str(v))` and the literal that built the array are not.
+- **ONNX has two implementations, and the reference implementation is the definite one.**
+  ONNX Runtime is what the harness compares against, and `onnx.reference` — in the same
+  interpreter, so the tester can always ask it — is the ONNX project's own second
+  implementation of the same operator. Measured on 2026-10-04, in the **MaxPool** run, over a
+  `float32` window with `kernel_shape [2, 2]`: `{NaN, 2, 3, 4}` gives `4.0` from the runtime
+  and `4.0` from the reference implementation (`_op_common_pool` filters the NaN elements out
+  before `np.max`, which is also how it excludes the padded elements) while the document said
+  NaN — the document at fault, and the adjudicator's two `test` verdicts would have laundered
+  it. The runtime's agreement there is an accident of position: the same four values with the
+  NaN written last give `NaN` from the runtime and `3.0` from the reference implementation, and
+  a window of all `-inf` gives `-3.4028235e+38` from the runtime at `kernel_shape [2, 2]` and
+  `-inf` at `[1, 1]`, on the same input, and `-inf` from the reference implementation at every
+  shape. So the reference implementation is what the document is judged against and what a
+  sweep decides a special value by, with the runtime's differing value recorded beside it; the
+  tester is told the measurements, and the adjudicator is told both sides, because the verdict
+  cannot be read off the shape of the failure.
+- **A type ONNX does not admit is a defect of the document, not a narrow build.** The
+  document's type families are the operator's `T` in the schema, and `onnx.defs.get_schema`
+  states it without running anything. Measured on 2026-10-04: `MaxPool` admits `float16`,
+  `float`, `double`, `int8` and `uint8` and **no `int64`** — its `tensor(int64)` constraint is
+  the type of the `Indices` *output* — and the run's document gave its `(int)` section as
+  `where int is in {int8, int64}` and asserted in its worked example that the `int8` values
+  "are also values of `int64`". ONNX Runtime refused every such case at model resolution with
+  `INVALID_GRAPH ... Type Error: Type 'tensor(int64)' of input parameter (X) of operator
+  (MaxPool) ... is invalid`, which reads like the `NOT_IMPLEMENTED` of *A type the runtime
+  does not implement* and is the opposite of it: there the document is right and the build is
+  narrow, here the document admits a type ONNX does not. The tester now checks the document's
+  families against the schema's in a sweep and fails it, the adjudicator is told the refusal
+  is the schema's, and the run is sent back to the document rather than converging on it.
+  **The driver's own authority is the schema's first input, and it was wrong.** The admitted
+  set handed to the writer and the verifier was the union of every type constraint the
+  operator has, so for `MaxPool` it read `int8, int64` — the driver itself had written the
+  `int64` the document then defended, which is the traceable cause of the run's whole test
+  side. `graph.admitted_types` now takes the type parameter of the *first* input (`T`, or
+  `T1` where the operator renames it) and falls back to the union only for an operator whose
+  first input names no parameter; the writer's retry loop refuses a document that announces a
+  type outside it, with the same mechanism that refuses an answer cut off in the middle, and
+  `type_constraints_text` now tells the verifier `MaxPool`'s `int` family is `int8` alone.
 - **A sweep has a budget, and an unbounded one is a defect of the case module.** The harness
   runs the case module under a time limit and kills a run that does not finish inside it, and
   the run attributes the kill to the tester — the case module is what decides how long a run
@@ -357,8 +395,9 @@ verifier; a document that reaches the implementer has passed both.
   a NaN, an infinity or an operand outside the domain and reaching for `Decimal` only for a
   finite operand the document admits.
 - **The loop cannot say the document is right.** It can only say that a fresh reader of it
-  agrees with ONNX Runtime on the cases covered. The run record carries the coverage so the
-  reader can judge how much of the operator was exercised.
+  agrees with ONNX Runtime — and with ONNX's own reference implementation where the two
+  agree — on the cases covered. The run record carries the coverage so the reader can judge
+  how much of the operator was exercised.
 
 ## The one place this system goes beyond the skill
 
@@ -456,7 +495,7 @@ agents/runs/<Op>/
 
 Every agent is replaced by a canned answer and the two harness programs by canned verdicts,
 so the test exercises exactly the part a model must not decide: which node runs after
-which, and which guard stops the loop. Twenty-seven scenarios: convergence, an unresolved review
+which, and which guard stops the loop. Twenty-nine scenarios: convergence, an unresolved review
 finding, an amendment that changes nothing, the two correction routes, the unchanged-document
 guard, the uncovered-section guard, a repair of a broken case module, an adjudicated stop,
 the iteration cap, a writer answer that stops in the middle of the document (twice: the
@@ -489,7 +528,17 @@ and two outputs end to end on the real harness (a node built with `kernel_shape`
 the document compared by position, a wrong second output reported under its own name, and the
 attributes recorded in the report), and a writer's answer that keeps the Contents of the document
 but not its sections (the revision on disk is the one with the sections, and the writer is asked
-again before the round is spent). A last section asserts the family
+again before the round is spent), and a prompt that names another agent (the adjudicator's prompt
+says which agent must have consulted ONNX's own reference implementation, and the fake answers it
+by the role on the first line rather than by a name in the body: a dispatch on substrings answered
+that call with a case module, which the node read as a `stop` and which turned scenario 3 into
+`adjudicated-stop`), and a document that gives a family a type ONNX does not admit for the
+operator — in the Contents and in the sentence that opens the section (the admitted set is read
+from the schema's *first input*, so `uint8` is refused for **Neg**, `int64` is not an admitted
+MaxPool type, and the writer is asked again for the families to correct). A last section asserts
+the family
 verdicts the verifier is handed, computed from the operator's schema: **Neg** has no `uint`
-family, **Add** has one, **Sin** has neither `int` nor `uint`; and a `COVERAGE` dictionary
+family, **Add** has one, **Sin** has neither `int` nor `uint`, and **MaxPool**'s `int` family is
+`int8` alone — its `tensor(int64)` constraint is the type of the `Indices` output, not a data
+type; and a `COVERAGE` dictionary
 the case module computes for itself is read as the module leaves it.
