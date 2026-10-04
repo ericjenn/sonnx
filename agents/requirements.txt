@@ -1,0 +1,10 @@
+# The multi-agent system: the graph and the model client.
+langgraph==1.2.12
+langchain-anthropic==1.7.5
+langchain-core==1.6.6
+
+# What the skill's own harness needs: specloop.py runs a one-node ONNX model under
+# onnxruntime, and the case modules it loads are written with numpy.
+numpy==2.5.3
+onnx==1.23.1
+onnxruntime==1.30.0

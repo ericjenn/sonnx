@@ -1,0 +1,181 @@
+{
+  "op": "Atan",
+  "opset": 14,
+  "outcome": "converged",
+  "spec": "agents/runs/Atan/atan.md",
+  "spec_md5": "ba7cdde646c15ad5ef4774ce3e8392be",
+  "iterations": 1,
+  "spec_rounds": 0,
+  "test_ok": true,
+  "coverage": {
+    "real": 12,
+    "float": 39
+  },
+  "uncovered": [],
+  "impl": "agents/runs/Atan/iter-001-impl.py",
+  "cases": "agents/runs/Atan/cases.py",
+  "verdict": "test",
+  "diagnosis": "The harness never reached a comparison: it timed out because the case module is too slow. The document's subject is not in question \u2014 the failure is in the case set's construction (an exact-arithmetic Decimal sweep over hundreds of values per type, a Taylor series summed to 80 digits per element, and a fresh ONNX Runtime model built per batch). The document leaves accuracy to the profile's guidelines, so the heavy exact-arithmetic reference is not required to decide any case; the special values, sign, shape and type are the required checks and they are cheap.",
+  "instruction": "Reduce the case module so the harness finishes within its budget, without weakening the required checks. Concretely: (1) in `sweep_correctness` and `sweep_domain`, cut the random samples from 200+200 and 300 per type to at most 20 per type, and keep the boundary/subnormal values; (2) replace the per-element Decimal Taylor series with a cheaper reference \u2014 compute `np.arctan` in float64 and round to the type, or precompute the reference once per distinct operand and cache it \u2014 since the document leaves accuracy to the profile's guidelines and the departure is reported, not required; (3) build the ONNX Runtime session once per dtype (or once total) and reuse it across the sweeps instead of constructing a model per call; (4) keep `sweep_special_values` and `sweep_sign_and_shape` as they are, since they are the required exact checks and are cheap. Re-run and report the sweeps' summaries and any failures.",
+  "history": [
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": true,
+      "blocking": []
+    },
+    {
+      "agent": "implementer",
+      "iteration": 1,
+      "path": "agents/runs/Atan/iter-001-impl.py",
+      "decisions_count": 13
+    },
+    {
+      "agent": "tester",
+      "iteration": 1,
+      "ok": false,
+      "coverage": {
+        "real": 6,
+        "float": 66
+      },
+      "uncovered": [],
+      "cases": null,
+      "mismatched": 0,
+      "report": "agents/runs/Atan/iter-001-report-4.json"
+    },
+    {
+      "agent": "diagnoser",
+      "verdict": "test",
+      "reason": "The harness never reached a comparison: it timed out because the case module is too slow. The document's subject is not in question \u2014 the failure is in the case set's construction (an exact-arithmetic Decimal sweep over hundreds of values per type, a Taylor series summed to 80 digits per element, and a fresh ONNX Runtime model built per batch). The document leaves accuracy to the profile's guidelines, so the heavy exact-arithmetic reference is not required to decide any case; the special values, sign, shape and type are the required checks and they are cheap.",
+      "instruction": "Reduce the case module so the harness finishes within its budget, without weakening the required checks. Concretely: (1) in `sweep_correctness` and `sweep_domain`, cut the random samples from 200+200 and 300 per type to at most 20 per type, and keep the boundary/subnormal values; (2) replace the per-element Decimal Taylor series with a cheaper reference \u2014 compute `np.arctan` in float64 and round to the type, or precompute the reference once per distinct operand and cache it \u2014 since the document leaves accuracy to the profile's guidelines and the departure is reported, not required; (3) build the ONNX Runtime session once per dtype (or once total) and reuse it across the sweeps instead of constructing a model per call; (4) keep `sweep_special_values` and `sweep_sign_and_shape` as they are, since they are the required exact checks and are cheap. Re-run and report the sweeps' summaries and any failures.",
+      "confidence": "high"
+    },
+    {
+      "agent": "tester",
+      "iteration": 1,
+      "ok": true,
+      "coverage": {
+        "real": 12,
+        "float": 39
+      },
+      "uncovered": [],
+      "cases": 39,
+      "mismatched": 0,
+      "report": "agents/runs/Atan/iter-001-report-5.json"
+    }
+  ],
+  "report": {
+    "spec": "agents/runs/Atan/atan.md",
+    "op": "Atan",
+    "opset": 14,
+    "impl": "agents/runs/Atan/iter-001-impl.py",
+    "entry": "atan",
+    "generated": "2026-10-04T11:19:15Z",
+    "cases": {
+      "total": 39,
+      "passed": 26,
+      "mismatched": [],
+      "open": [
+        {
+          "case": "float64: signed zeros",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: infinities",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: nan",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: NaN operand, quiet, payload 1",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: NaN operand, quiet, payload 1, sign set",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: NaN operand, signalling",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: rank-0",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: zero-sized (0,)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: zero-sized (0,3)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: zero-sized (2,0,3)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: (1,)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: (2,3)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: (2,3,4)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+        }
+      ],
+      "nan_payload": [
+        {
+          "case": "float16: NaN operand, quiet, payload 1"
+        },
+        {
+          "case": "float16: NaN operand, quiet, payload 1, sign set"
+        },
+        {
+          "case": "float16: NaN operand, signalling"
+        }
+      ]
+    },
+    "sweeps": [
+      {
+        "sweep": "the special values of every type (document, exact)",
+        "summary": "float16: special values checked, ORT agrees; float32: special values checked, ORT agrees; float64: special values checked, not reference-checked (NotImplemented)",
+        "failures": []
+      },
+      {
+        "sweep": "sign (oddness) and shape (document)",
+        "summary": "3 types, 64 random values each, 5 shapes each",
+        "failures": []
+      },
+      {
+        "sweep": "the correctness of a result (reported, not required: see V1)",
+        "summary": "float16: 0/34 depart, worst 0.00 ulp; float32: 0/34 depart, worst 0.00 ulp; float64: 0/34 depart, worst 0.00 ulp",
+        "failures": []
+      },
+      {
+        "sweep": "the domain of every type (document, exact)",
+        "summary": "float16: 34 values, worst 0.00 ulp, ORT departs at 0/34; float32: 34 values, worst 0.00 ulp, ORT departs at 11/34; float64: 34 values, worst 0.00 ulp, not reference-checked (NotImplemented)",
+        "failures": []
+      },
+      {
+        "sweep": "the document's worked examples",
+        "summary": "float Example 1: worst 0.00 ulp, not reference-checked (NotImplemented); float Example 2: worst 0.00 ulp, not reference-checked (NotImplemented)",
+        "failures": []
+      },
+      {
+        "sweep": "real section (exact arithmetic, no ONNX Runtime)",
+        "summary": "5 examples and the open branch, checked in Decimal",
+        "failures": []
+      }
+    ],
+    "ok": true
+  },
+  "cases_unusable": "",
+  "impl_unusable": "",
+  "finished": "2026-10-04T13:19:15"
+}

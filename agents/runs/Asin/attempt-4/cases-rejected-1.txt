@@ -1,0 +1,9 @@
+# the module defines no `cases()` function
+
+I'll start by exploring the repository to understand the environment.
+
+```bash
+pwd; ls -la
+```
+
+Let me lookaround.

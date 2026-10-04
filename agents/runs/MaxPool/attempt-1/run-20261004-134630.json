@@ -1,0 +1,139 @@
+{
+  "op": "MaxPool",
+  "opset": 14,
+  "outcome": "unresolved-review",
+  "spec": "agents/runs/MaxPool/maxpool.md",
+  "spec_md5": "a07a21ebd73b6db5fc0e15cc9f6dc22c",
+  "iterations": 0,
+  "spec_rounds": 3,
+  "test_ok": null,
+  "coverage": null,
+  "uncovered": null,
+  "impl": null,
+  "cases": null,
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 33862
+    },
+    {
+      "agent": "checker",
+      "lint_ok": false,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (int, int)",
+          "what": "The `int` and `uint` families are merged into one section, headed `# **MaxPool** (int, int)` with the `where` line `where int is in {`int8`, `uint8`}.`",
+          "why": "The guidelines define `int` and `uint` as two distinct families (l.205) and require that types whose semantics differ be given separate sections, with separate anchors, Contents entries, tags, examples, error rows and constraints (l.255); the tags carry the family name, so a merged section cannot tag correctly. The checklist records this as mistake 1, rejected twice by the user.",
+          "fix": "Split the section into `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}.` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}.`, each with its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own examples and its own error-condition table; keep the one-line justification of each section."
+        },
+        {
+          "severity": "blocking",
+          "section": "Contents / **MaxPool** (int, int)",
+          "what": "The `int` section covers only `int8` and `uint8`, while ONNX admits `int64` for this operator; `int64` appears nowhere in the document.",
+          "why": "The verdict computed from the schema says the `int` family applies with the types `int8` and `int64`; a SONNX type that ONNX admits must be covered by the section of its family, and the `where` line must list the types of the family in backticks (checklist, per family).",
+          "fix": "In the `int` section, write `where int is in {`int8`, `int64`}.` and add an example using `int64` values; the linter's finding on line 473 (missing `int16`, `int32`, `int64`) is subsumed by this, but only `int64` is to be added \u2014 `int16` and `int32` are not admitted by ONNX for this operator and must not appear."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) / **MaxPool** (float) / **MaxPool** (int, int), Function",
+          "what": "The `Indices` output is specified only as \"the index of an element of $X$\" (constraint `E_MAXPOOL_*_CONSTR_Indices_0020`), and the `storage_order` constraint refers to `E_MAXPOOL_REAL_FUNC_0020` for \"the index of an element of $X$\", but no such statement exists: the Function section never says how the $n$-tuple index is converted into the single integer that `Indices` holds.",
+          "why": "The Function section must state, for every case that applies, what the operator does; the `Indices` output is part of the operator's semantics, and the document itself declares (in the `storage_order` attribute) that the conversion is given by a Function statement that is missing. The linter already reports the dangling reference `E_MAXPOOL_REAL_FUNC_0020`; the missing statement is what a program cannot see.",
+          "fix": "Add to each Function section a tagged statement `[E_MAXPOOL_<FAMILY>_FUNC_0020]` giving the value of `Indices[b, c, m_2, ..., m_{rX-1}]` as the row-major linear index of $(b, c, u_2, ..., u_{rX-1})$ in $X$, i.e. $((b \\cdot dX_1 + c) \\cdot dX_2 + u_2) \\cdots + u_{rX-1}$, and keep the `storage_order` constraint's reference to that tag."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 48101
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "Contents / Revision",
+          "what": "The Contents line says 'Based on ONNX documentation [MaxPool version 12]' while the Revision line says 'based on ONNX opset 14'.",
+          "why": "The guidelines require the reference to the ONNX definition to be inserted in the Contents section with the opset(s) on which the specification is based, and the revision line to give the opset it is based on; the two must be consistent.",
+          "fix": "Make the two lines name the same opset: either change the Contents line to 'Based on ONNX [MaxPool version 14](...)' or change the Revision line to 'based on ONNX opset 12'."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) \u2014 Function, E_MAXPOOL_REAL_FUNC_0010",
+          "what": "The real section's Function states the maximum over the window but never states what the operator does when the window covers no element of X, other than declaring it 'not a case of this operator'; the zero-sized-dimension paragraph says the case 'is ruled out by the constraint on the shape of X given in the Inputs section', but the real section's Inputs constraints (E_MAXPOOL_REAL_CONSTR_X_0010, _0020) only require rank \u2265 3 and non-empty spatial dimensions \u2014 the constraint that rules out an empty window is E_MAXPOOL_REAL_CONSTR_pads_0030, which is in the Attributes section, not the Inputs section.",
+          "why": "The guidelines require every case that applies to the operator to be decided, and a case that is ruled out to be ruled out by a named precondition; the disposition must name the constraint tag that actually rules it out.",
+          "fix": "In the zero-sized-dimensions paragraph of the real section, refer to the constraint that rules the case out, i.e. E_MAXPOOL_REAL_CONSTR_pads_0030 (padding smaller than the kernel), or add the corresponding constraint to the Inputs section and refer to it."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (float) \u2014 Function, E_MAXPOOL_FLOAT_FUNC_0010",
+          "what": "The float section's Function gives the maximum of a set of floating-point values with the case analysis 'NaN if S contains a NaN; +Inf if S contains +Inf and no NaN; the value of S that is not smaller than any other otherwise', but the 'otherwise' case does not decide the result when the window covers both -0 and +0 and no other value: the text then says 'the result is -0 or +0, and which of the two is left to the implementer'.",
+          "why": "The guidelines require the specification to state, for every case that applies, what the operator does, and to declare the cases it leaves to each implementer together with the set of conforming results; here the case is neither decided nor declared as left open with a set of conforming results \u2014 the reader is left to choose between -0 and +0 without a stated set.",
+          "fix": "Either decide the case (e.g. state that the result is +0 when the window covers both -0 and +0 and no other value) or declare it explicitly as left to the implementer, stating that both -0 and +0 are conforming results."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (int) \u2014 Function, E_MAXPOOL_INT_FUNC_0010",
+          "what": "The int section's Function states the maximum over the window but never states what the operator does when the window covers no element of X, other than declaring it 'not a case of this operator'; the zero-sized-dimension paragraph says the case 'is ruled out by the constraint on the shape of X given in the Inputs section', but the int section's Inputs constraints (E_MAXPOOL_INT_CONSTR_X_0010, _0020) only require rank \u2265 3 and non-empty spatial dimensions \u2014 the constraint that rules out an empty window is E_MAXPOOL_INT_CONSTR_pads_0030, which is in the Attributes section, not the Inputs section.",
+          "why": "Same as for the real section: the disposition must name the constraint tag that actually rules the case out.",
+          "fix": "In the zero-sized-dimensions paragraph of the int section, refer to E_MAXPOOL_INT_CONSTR_pads_0030, or add the corresponding constraint to the Inputs section and refer to it."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (uint) \u2014 Function, E_MAXPOOL_UINT_FUNC_0010",
+          "what": "The uint section's Function states the maximum over the window but never states what the operator does when the window covers no element of X, other than declaring it 'not a case of this operator'; the zero-sized-dimension paragraph says the case 'is ruled out by the constraint on the shape of X given in the Inputs section', but the uint section's Inputs constraints (E_MAXPOOL_UINT_CONSTR_X_0010, _0020) only require rank \u2265 3 and non-empty spatial dimensions \u2014 the constraint that rules out an empty window is E_MAXPOOL_UINT_CONSTR_pads_0030, which is in the Attributes section, not the Inputs section.",
+          "why": "Same as for the real and int sections: the disposition must name the constraint tag that actually rules the case out.",
+          "fix": "In the zero-sized-dimensions paragraph of the uint section, refer to E_MAXPOOL_UINT_CONSTR_pads_0030, or add the corresponding constraint to the Inputs section and refer to it."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 3,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 12673
+    },
+    {
+      "agent": "checker",
+      "lint_ok": false,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "Contents / #float, #int, #uint",
+          "what": "The Contents list announces four sections (real, float, int, uint) but the document contains only the `real` section; the `float`, `int` and `uint` sections are absent.",
+          "why": "The guidelines require one section per applicable set of types, each with its own anchor, Contents entry, tags, examples, error rows and constraints; the verdict says `float`, `int` and `uint` all apply to this operator, so each must be covered.",
+          "fix": "Write the three missing sections (`#float` for `float16`, `float`, `double`; `#int` for `int8`, `int64`; `#uint` for `uint8`), each with its own anchor, signature, restrictions, Function, examples, error conditions, attributes, inputs and outputs, and its own tags."
+        },
+        {
+          "severity": "blocking",
+          "section": "Function (real), zero-sized dimensions",
+          "what": "The paragraph says a spatial dimension of $X$ may have size $0$, that the window then covers no index of $X$, and that the case is ruled out by constraints on the shape of $X$ and on the padding \u2014 but the constraint `E_MAXPOOL_REAL_CONSTR_X_0020` is never declared, and no constraint on the shape of $X$ excludes a zero-sized spatial dimension.",
+          "why": "A case must be decided by the specification: either the zero-sized dimension is part of the nominal behavior (with the value of the result stated) or it is ruled out by a declared precondition. The document does neither, and it refers to a tag that does not exist.",
+          "fix": "Declare the constraint `E_MAXPOOL_REAL_CONSTR_X_0020` on input $X$ with a statement that each spatial dimension of $X$ is at least $1$ (or state the value of $Y$ when a spatial dimension is $0$), and make the Function paragraph refer to that declared tag."
+        },
+        {
+          "severity": "blocking",
+          "section": "Function (real), `Indices` output",
+          "what": "The formula for `Indices` uses $(u_2, ..., u_{rX-1})$ defined as \"the element such that $u_{j+2} \\in W_{j+2}$ for each spatial axis $j$ and $X[b, c, u_2, ..., u_{rX-1}] = Y[b, c, m_2, ..., m_{rX-1}]$\", which several elements of the window satisfy when the maximum occurs more than once; the following sentence leaves the choice to the implementer, but the formula itself is written as if the index were determined.",
+          "why": "A case that is left open must be stated as such and give the set of conforming results; here the formula presents a single value while the prose says any of several is conforming, so the two statements disagree.",
+          "fix": "State in the formula's `where` list that $(u_2, ..., u_{rX-1})$ is any index of $X$ in the window whose element equals $Y[b, c, m_2, ..., m_{rX-1}]$, so that the formula and the following sentence agree."
+        }
+      ]
+    }
+  ],
+  "report": null,
+  "cases_unusable": null,
+  "impl_unusable": null,
+  "finished": "2026-10-04T13:46:30"
+}

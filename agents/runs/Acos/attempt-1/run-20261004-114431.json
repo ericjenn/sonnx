@@ -1,0 +1,81 @@
+{
+  "op": "Acos",
+  "opset": 14,
+  "outcome": "unresolved-review",
+  "spec": "agents/runs/Acos/acos.md",
+  "spec_md5": "b21da4dbe91215a1fda6c29f481af9d2",
+  "iterations": 0,
+  "spec_rounds": 3,
+  "test_ok": null,
+  "coverage": null,
+  "uncovered": null,
+  "impl": null,
+  "cases": null,
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/Acos/acos.md",
+      "characters": 12492
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Acos** (float) \u2014 Function, Part 2",
+          "what": "The case analysis has a gap: the case `round(acos(X[i]))` is stated for every operand that is not NaN and satisfies |X[i]| \u2264 1, but the formula gives no case for the operands that are not NaN and satisfy |X[i]| \u2264 1 while the rounding of acos(X[i]) is not representable \u2014 the formula's `otherwise` branch is the only one left, and it is stated as `round(acos(X[i]))` without saying what happens when that rounding is not a value of the type of X.",
+          "why": "Guidelines, 'Function', Part 2: 'States, for every case that applies to the operator, what the operator does' \u2014 a case analysis must have no gap; the checklist requires that for every pair of operands exactly one case applies and that the intervals tile the reachable set.",
+          "fix": "Add the missing case to the formula, e.g. a third branch `\\text{round}(\\text{acos}(X[i]))` for the operands in [-1,1] and a branch stating the result for the operands whose rounded arccosine is not representable in the type of X (or state in the prose that the rounding of acos(X[i]) is always representable in the type of X, which the 'never an infinity and never subnormal' paragraph already argues)."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "agents/runs/Acos/acos.md",
+      "characters": 12664
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Acos** (float) \u2014 Function, Part 2",
+          "what": "The case analysis has a gap: the case `round(acos(X[i]))` is stated for every operand that is not NaN and not `|X[i]| > 1`, which includes the subnormal operands of the type, but the formula gives no case for them; the prose below ('The result is never an infinity and never subnormal') asserts a property of the result rather than deciding the value for those operands.",
+          "why": "Guidelines, 'Function', Part 2: 'States, for every case that applies to the operator, what the operator does' \u2014 a case analysis must have no gap, and a reader must not have to choose a value the document does not state.",
+          "fix": "Either extend the formula's second case to cover the subnormal operands explicitly (e.g. a case `\\text{round}(\\text{acos}(X[i]))` stated for all operands in `[-1,1]`, with a where-bullet stating that for a subnormal operand the exact arccosine is rounded to the type of $X$ with the exponent range of that type, so that the result is the nearest value of the type), or add a sentence in the prose that decides the subnormal case by naming the value the result takes."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 3,
+      "path": "agents/runs/Acos/acos.md",
+      "characters": 13377
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Acos** (float) \u2014 Function, Part 2",
+          "what": "The case analysis of the float formula has a gap: the case `round(acos(X[i]))` is stated for every operand that is not NaN and satisfies |X[i]| \u2264 1, but the formula's first case is `X[i] is NaN or |X[i]| > 1`, so the two cases do not tile the reachable set \u2014 the operand values with |X[i]| \u2264 1 that are not NaN are covered, but the formula gives no case for the operand whose value is exactly \u00b11 in the sense of the rounding direction: the prose below ('The bounds of the domain') decides X[i]=1 \u2192 +0 and X[i]=-1 \u2192 nearest value of \u03c0, but the formula itself leaves the reader to choose between the two cases for X[i] = 1 and X[i] = -1, since |X[i]| > 1 is false for them and the `otherwise` branch is the only one that applies \u2014 which is correct, but the formula does not state that the result for X[i] = 1 is +0 rather than the rounded value of acos(1) = 0, and the two differ only by the sign of zero.",
+          "why": "Guidelines, 'Function' Part 2: 'States, for every case that applies to the operator, what the operator does' and the checklist 'A case analysis has no gap: for every pair of operands exactly one case applies (check the bounds of each case, and that the intervals tile the reachable set)'. The formula's two cases do not decide the sign of the result at X[i] = 1, which the prose then decides outside the formula.",
+          "fix": "Add a case to the formula for X[i] = 1 giving +0, or state in the formula's `where` bullets that the `otherwise` case at X[i] = 1 yields +0 (the rounding of the exact value 0 is +0), so that the sign of the result at the domain bound is decided inside the case analysis."
+        }
+      ]
+    }
+  ],
+  "report": null,
+  "finished": "2026-10-04T11:44:31"
+}

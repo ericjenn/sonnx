@@ -1,0 +1,245 @@
+{
+  "spec": "agents/runs/Atan/atan.md",
+  "op": "Atan",
+  "opset": 14,
+  "impl": "agents/runs/Atan/iter-001-impl.py",
+  "entry": "atan",
+  "generated": "2026-10-04T10:07:51Z",
+  "cases": {
+    "total": 75,
+    "passed": 47,
+    "mismatched": [
+      {
+        "case": "float32: ordinary",
+        "elements_differing": 3,
+        "first_differences": [
+          {
+            "index": 1,
+            "ort": "0.7853981",
+            "impl": "0.7853982",
+            "ort_bits": "[1061752794]",
+            "impl_bits": "[1061752795]"
+          },
+          {
+            "index": 2,
+            "ort": "-0.7853981",
+            "impl": "-0.7853982",
+            "ort_bits": "[3209236442]",
+            "impl_bits": "[3209236443]"
+          },
+          {
+            "index": 3,
+            "ort": "0.46364754",
+            "impl": "0.4636476",
+            "ort_bits": "[1055744822]",
+            "impl_bits": "[1055744824]"
+          }
+        ]
+      },
+      {
+        "case": "float32: (2,3)",
+        "elements_differing": 3,
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[0]"
+          },
+          {
+            "index": 1,
+            "ort": "0.7853981",
+            "impl": "0.7853982",
+            "ort_bits": "[1061752794]",
+            "impl_bits": "[1061752795]"
+          },
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[0]"
+          },
+          {
+            "index": 2,
+            "ort": "1.1071489",
+            "impl": "1.1071488",
+            "ort_bits": "[1066252046]",
+            "impl_bits": "[1066252045]"
+          }
+        ]
+      },
+      {
+        "case": "float32: (2,3,4)",
+        "elements_differing": 12,
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[0]"
+          },
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[0]"
+          },
+          {
+            "index": 1,
+            "ort": "0.7853981",
+            "impl": "0.7853982",
+            "ort_bits": "[1061752794]",
+            "impl_bits": "[1061752795]"
+          },
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[0]"
+          }
+        ]
+      }
+    ],
+    "open": [
+      {
+        "case": "float64: signed zeros",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: infinities",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: nan",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: ordinary",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: the document's Example 1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: the document's Example 2",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: largest finite",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: smallest normal",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: smallest subnormal",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: subnormal range",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rounding boundary of the result",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: tie above the boundary",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: just below the boundary",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: large magnitudes",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: tiny magnitudes",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, quiet, payload 1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, quiet, payload 1, sign set",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, signalling",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rank-0",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: (1,)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: (2,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: (2,3,4)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: zero-sized: (0,)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: zero-sized: (0,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: zero-sized: (2,0,4)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      }
+    ],
+    "nan_payload": [
+      {
+        "case": "float16: NaN operand, quiet, payload 1"
+      },
+      {
+        "case": "float16: NaN operand, quiet, payload 1, sign set"
+      },
+      {
+        "case": "float16: NaN operand, signalling"
+      }
+    ]
+  },
+  "sweeps": [
+    {
+      "sweep": "sweep_value_families",
+      "error": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'atan0'",
+      "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 199, in check_sweeps\n    out.append(sweep(impl))\n               ~~~~~^^^^^^\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Atan/cases.py\", line 143, in sweep_value_families\n    ref = run_ort_batch(a)\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Atan/cases.py\", line 49, in run_ort_batch\n    sess = ort.InferenceSession(model.SerializeToString(),\n                                providers=[\"CPUExecutionProvider\"])\nonnxruntime.capi.onnxruntime_pybind11_state.NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'atan0'\n"
+    },
+    {
+      "sweep": "sweep_spec_examples",
+      "error": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'atan0'",
+      "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 199, in check_sweeps\n    out.append(sweep(impl))\n               ~~~~~^^^^^^\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Atan/cases.py\", line 170, in sweep_spec_examples\n    ref = run_ort_batch(a)\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Atan/cases.py\", line 49, in run_ort_batch\n    sess = ort.InferenceSession(model.SerializeToString(),\n                                providers=[\"CPUExecutionProvider\"])\nonnxruntime.capi.onnxruntime_pybind11_state.NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'atan0'\n"
+    },
+    {
+      "sweep": "sweep_real_examples",
+      "error": "TypeError: loop of ufunc does not support argument 0 of type Fraction which has no callable arctan method",
+      "traceback": "AttributeError: 'Fraction' object has no attribute 'arctan'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 199, in check_sweeps\n    out.append(sweep(impl))\n               ~~~~~^^^^^^\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Atan/cases.py\", line 217, in sweep_real_examples\n    got1 = np.asarray(impl.atan(a1))\n                      ~~~~~~~~~^^^^\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Atan/iter-001-impl.py\", line 113, in atan\n    return np.arctan(input)\n           ~~~~~~~~~^^^^^^^\nTypeError: loop of ufunc does not support argument 0 of type Fraction which has no callable arctan method\n"
+    },
+    {
+      "sweep": "odd and range (real section)",
+      "summary": "skipped: mpmath unavailable",
+      "failures": []
+    }
+  ],
+  "ok": false
+}

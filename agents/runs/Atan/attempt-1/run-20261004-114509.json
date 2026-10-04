@@ -1,0 +1,88 @@
+{
+  "op": "Atan",
+  "opset": 14,
+  "outcome": "unresolved-review",
+  "spec": "agents/runs/Atan/atan.md",
+  "spec_md5": "8a8fde0cc44ab8a812938f22214275ad",
+  "iterations": 0,
+  "spec_rounds": 3,
+  "test_ok": null,
+  "coverage": null,
+  "uncovered": null,
+  "impl": null,
+  "cases": null,
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/Atan/atan.md",
+      "characters": 11760
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Atan** (float) \u2014 Function",
+          "what": "The case analysis gives `output[i] = input[i]` for a `+0` or `-0` operand, but the arctangent of a null operand is null, and the formula's `otherwise` branch would give `round(arctan input[i])`; the two are consistent only because the null case is listed first, yet the case is stated as an identity on the operand rather than as the value of the result, and the prose below it ('the arctangent of a null operand is that same null, sign included') is the only place the sign is decided.",
+          "why": "Guidelines, 'Function' Part 2: the specification shall state, for every case that applies, what the operator does; the special values of the floating-point types shall be decided by the specification. The case is decided, but the formula states the operand, not the result, and the sign of the null result is left to the prose.",
+          "fix": "Replace the `+0`/`-0` case by `+0` if `input[i]` is `+0` and `-0` if `input[i]` is `-0`, so that the formula itself gives the value of the result, sign included."
+        },
+        {
+          "severity": "blocking",
+          "section": "**Atan** (float) \u2014 Error conditions",
+          "what": "The row 'Underflow ... nominal: specified by E_ATAN_FLOAT_FUNC_0010, the result is the value of the type nearest to the arctangent of the operand, which is subnormal when the operand is subnormal' restates the Function statement instead of referring to its tag, and the claim that the result is subnormal when the operand is subnormal is not what the Function section says.",
+          "why": "Guidelines, 'Error conditions': a disposition refers to the statement that specifies the condition; it does not restate it, since a restatement is a second formulation of the same rule and the two may drift apart. Here the restatement also adds a claim the Function section does not make.",
+          "fix": "Reduce the disposition to the tag reference alone: 'nominal: specified by [E_ATAN_FLOAT_FUNC_0010](#E_ATAN_FLOAT_FUNC_0010)', and drop the clause about subnormal operands."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "agents/runs/Atan/atan.md",
+      "characters": 12049
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Atan** (float) \u2014 Function",
+          "what": "The case analysis gives `round(arctan input[i])` for the finite non-zero operands, but the rounding of the arctangent of a finite operand is not the only case: the formula's `otherwise` branch covers every finite operand, and the prose does not state the result for a finite operand whose arctangent rounds to a subnormal or to zero \u2014 the underflow row of the error table declares this 'nominal: specified by E_ATAN_FLOAT_FUNC_0010', but the Function section does not specify it.",
+          "why": "Guidelines, 'Function' Part 2: 'States, for every case that applies to the operator, what the operator does'; and 'Error conditions' step 1: a condition declared nominal must really be specified in the Function section. The underflow disposition points at a statement that does not decide the case.",
+          "fix": "Either add the underflow case to the formula (e.g. a case stating that when the rounded arctangent is below the smallest normal value the result is the nearest subnormal or zero of the type of `input`, with the sign of the operand), or change the underflow row's disposition to state that the result is the value of the type of `input` nearest to the arctangent, as given by the `otherwise` case of the formula."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 3,
+      "path": "agents/runs/Atan/atan.md",
+      "characters": 12571
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Atan** (float) \u2014 Function",
+          "what": "The case analysis gives `round(arctan input[i])` for every finite non-zero operand, but the rounding of the arctangent of a finite operand is not decided: the formula's `round` is defined only as 'the value of $x$ rounded to the nearest value of the type of $input$ using roundTiesToEven', and the prose 'Underflow' paragraph leaves the reader a choice between a subnormal value and a zero of the sign of the operand when the arctangent is at most half the smallest subnormal value.",
+          "why": "Guidelines, 'Function' Part 2: 'States, for every case that applies to the operator, what the operator does' and 'Declares the cases it leaves to each implementer. A case that the specification does not decide shall be stated as such, together with the set of results that conform.' The tie case of the rounding is a case the reader must choose, and the document neither decides it nor declares it open.",
+          "fix": "In the `where` bullet defining `round`, state the tie rule explicitly: 'when the arctangent is exactly halfway between two values of the type of $input$, the result is the value whose least significant bit is even (roundTiesToEven)'. Alternatively, if the tie is to be left open, add a sentence declaring it open and giving the set of conforming results (the two neighbouring values of the type)."
+        }
+      ]
+    }
+  ],
+  "report": null,
+  "finished": "2026-10-04T11:45:09"
+}

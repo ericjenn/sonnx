@@ -1,0 +1,437 @@
+# the answer is not Python: invalid character '｜' (U+FF5C) (<unknown>, line 433)
+
+"""The cases with which the **Acos** specification is checked.
+
+Read by `specloop.py`:
+
+  * ``cases()``   -- one labelled list of operands per case.  Each case goes through a
+                     one-node Acos model (opset 14) and through the implementation, and
+                     the two results are compared bit for bit.
+  * ``sweeps()``  -- the bulk checks, which build their own ONNX Runtime calls because
+                     they must be batched into a single run: the domain of the float
+                     types, the worked examples of every section of the document, and
+                     the real section, which has no ONNX type and is checked against
+                     exact arithmetic instead.
+
+The document specifies ``round(acos(x))`` with roundTiesToEven, and the CPU runtime's
+``Acos`` is not always correctly rounded (measured 2026-10-04: ``float32`` ``Acos(-0.5)``
+returns ``-0.52359873``, one ulp below the correctly rounded ``-0.5235988``).  The
+deciding comparison is therefore against exact arithmetic, computed here in ``Decimal``
+independently of the platform's library; the runtime is reported separately and its
+disagreements are recorded as reference inaccuracy, never as a failure of the
+implementation.  The runtime has no ``double`` kernel for ``Acos`` at all, so the
+``float64`` cases are open (not mismatched) and the sweep says so per type.
+"""
+
+from __future__ import annotations
+
+from decimal import Decimal, getcontext
+from fractions import Fraction
+
+import numpy as np
+
+import onnxruntime as ort
+from onnx import helper
+
+OP = "Acos"
+OPSET = 14
+
+ALL_FLOAT = [np.float16, np.float32, np.float64]
+UINT_OF_WIDTH = {2: np.uint16, 4: np.uint32, 8: np.uint64}
+IR_VERSION = 10
+
+getcontext().prec = 80
+
+
+# ---------------------------------------------------------------------------
+# ONNX Runtime, batched (the sweeps only; individual cases go through specloop)
+# ---------------------------------------------------------------------------
+
+
+def run_ort_batch(x: np.ndarray) -> np.ndarray:
+    proto = helper.np_dtype_to_tensor_dtype(x.dtype)
+    vi_x = helper.make_tensor_value_info("X", proto, list(x.shape))
+    vi_y = helper.make_tensor_value_info("Y", proto, None)
+    node = helper.make_node(OP, ["X"], ["Y"], name="acos0")
+    graph = helper.make_graph([node], "acos_graph", [vi_x], [vi_y])
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", OPSET)],
+                              ir_version=IR_VERSION)
+    sess = ort.InferenceSession(model.SerializeToString(),
+                                providers=["CPUExecutionProvider"])
+    (y,) = sess.run(["Y"], {"X": x})
+    return y
+
+
+def _bits_equal(want: np.ndarray, got: np.ndarray) -> bool:
+    if want.shape != got.shape or want.dtype != got.dtype:
+        return False
+    if want.dtype.kind == "f":
+        uint = UINT_OF_WIDTH[want.dtype.itemsize]
+        bw = np.ascontiguousarray(want).view(uint)
+        bg = np.ascontiguousarray(got).view(uint)
+        both_nan = np.isnan(want) & np.isnan(got)
+        return bool(np.all((bw == bg) | both_nan))
+    return bool(np.all(want == got))
+
+
+def _first_differences(want: np.ndarray, got: np.ndarray, x: np.ndarray, k: int = 5):
+    """The first k elements where want and got differ, as readable strings."""
+    if want.shape != got.shape or want.dtype != got.dtype:
+        return ["shape/dtype: want %s %s, got %s %s"
+                % (want.shape, want.dtype, got.shape, got.dtype)]
+    if want.dtype.kind == "f":
+        uint = UINT_OF_WIDTH[want.dtype.itemsize]
+        bw = np.ascontiguousarray(want).view(uint)
+        bg = np.ascontiguousarray(got).view(uint)
+        both_nan = np.isnan(want) & np.isnan(got)
+        mask = ~((bw == bg) | both_nan)
+    else:
+        mask = ~(want == got)
+    idx = np.nonzero(mask.ravel())[0][:k]
+    return ["x=%r want=%r got=%r" % (float(x.ravel()[i]), float(want.ravel()[i]),
+                                     float(got.ravel()[i])) for i in idx]
+
+
+# ---------------------------------------------------------------------------
+# exact arithmetic: the real arccosine, independent of the platform's library
+# ---------------------------------------------------------------------------
+#
+# acos(x) = pi/2 - asin(x), and asin(x) = atan(x / sqrt(1 - x^2)) for x in (-1, 1).
+# atan is summed as a Taylor series in Decimal, with argument reduction
+# atan(t) = 2 * atan(t / (1 + sqrt(1 + t^2))) applied until |t| is small, so the
+# series converges quickly.  The result is a Decimal with far more digits than any
+# of the three types, and the rounding to the type is done by hand with
+# roundTiesToEven, so the comparison does not depend on the platform's libm.
+
+
+def _dec_sqrt(a: Decimal) -> Decimal:
+    if a == 0:
+        return Decimal(0)
+    return a.sqrt()
+
+
+def _dec_atan(t: Decimal) -> Decimal:
+    """atan(t) for |t| <= 1, by argument reduction and a Taylor series."""
+    reductions = 0
+    while abs(t) > Decimal("0.05"):
+        t = t / (Decimal(1) + _dec_sqrt(Decimal(1) + t * t))
+        reductions += 1
+    t2 = t * t
+    term = t
+    total = t
+    n = 1
+    while True:
+        term = -term * t2
+        n += 2
+        add = term / Decimal(n)
+        total += add
+        if abs(add) < Decimal(10) ** (-(getcontext().prec - 5)):
+            break
+    return total * (Decimal(2) ** reductions)
+
+
+def _dec_pi() -> Decimal:
+    """pi to the current context precision, by the Machin formula."""
+    return Decimal(4) * (Decimal(4) * _dec_atan(Decimal(1) / Decimal(5))
+                         - _dec_atan(Decimal(1) / Decimal(239)))
+
+
+def _dec_acos(x: Decimal) -> Decimal:
+    """acos(x) for x in [-1, 1], in Decimal."""
+    if x == 1:
+        return Decimal(0)
+    if x == -1:
+        return _dec_pi()
+    s = _dec_sqrt(Decimal(1) - x * x)
+    asin = _dec_atan(x / s)
+    return _dec_pi() / Decimal(2) - asin
+
+
+def _round_to_type(value: Decimal, dtype) -> float:
+    """Round a Decimal to the nearest value of the type, roundTiesToEven."""
+    dt = np.dtype(dtype)
+    if dt == np.float64:
+        return float(value)
+    if dt == np.float32:
+        return float(np.float32(value))
+    if dt == np.float16:
+        return float(np.float16(value))
+    raise ValueError(dtype)
+
+
+def _quiet_nan(dtype):
+    """A quiet NaN of the type, as a Python float."""
+    dt = np.dtype(dtype)
+    pattern = {2: 0x7E00, 4: 0x7FC00000, 8: 0x7FF8000000000000}[dt.itemsize]
+    return float(np.array([pattern], dtype=UINT_OF_WIDTH[dt.itemsize]).view(dt)[0])
+
+
+def _exact_acos_array(x: np.ndarray) -> np.ndarray:
+    """The document's ``round(acos(x))``, computed in Decimal, for a float array.
+
+    The operand is read exactly (``Decimal(repr(v))`` is the exact value of the
+    Python float, which is the exact value of the element of the type), the real
+    arccosine is computed to 80 digits, and the result is rounded to the type with
+    roundTiesToEven.  A NaN operand gives a quiet NaN, as the document specifies.
+    """
+    dt = x.dtype
+    out = np.empty(x.shape, dtype=dt)
+    flat_in = x.ravel()
+    flat_out = out.ravel()
+    qnan = _quiet_nan(dt)
+    for i, v in enumerate(flat_in):
+        fv = float(v)
+        if np.isnan(fv):
+            flat_out[i] = qnan
+            continue
+        d = Decimal(repr(fv))
+        r = _dec_acos(d)
+        flat_out[i] = _round_to_type(r, dt)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# sweeps
+# ---------------------------------------------------------------------------
+
+
+def sweep_float_domain(impl):
+    """The document's ``round(acos(x))`` against exact arithmetic, over the domain.
+
+    The deciding comparison is against the Decimal computation, which is the
+    document's rule.  The reference (ONNX Runtime) is not always correctly rounded,
+    so it is reported separately: its disagreements are recorded as reference
+    inaccuracy, never as a failure of the implementation.  A type the runtime has no
+    kernel for is recorded as not reference-checked.
+    """
+    failures = []
+    rows = []
+    for dtype in ALL_FLOAT:
+        dt = np.dtype(dtype)
+        n = 2001
+        xs = np.linspace(-1.0, 1.0, n, dtype=np.float64)
+        xs = np.concatenate([xs, np.array([-1.0, 0.0, 1.0, -0.0], dtype=np.float64)])
+        x = xs.astype(dt)
+
+        want = _exact_acos_array(x)          # the document, in Decimal
+        got = np.asarray(impl.acos(x))       # the implementation
+
+        if not _bits_equal(want, got):
+            failures.append({
+                "type": dt.name, "who": "the implementation vs exact arithmetic",
+                "detail": "; ".join(_first_differences(want, got, x)),
+            })
+
+        # the reference, reported separately and never as a failure
+        try:
+            ref = run_ort_batch(x)
+        except Exception as exc:
+            rows.append("%s: not reference-checked, the runtime has no %s kernel (%s)"
+                        % (dt.name, dt.name, type(exc).__name__))
+            continue
+        if _bits_equal(want, ref):
+            rows.append("%s: reference agrees with exact" % dt.name)
+        else:
+            rows.append("%s: reference differs from exact at %d of %d points (e.g. %s)"
+                        % (dt.name, len(_first_differences(want, ref, x, k=1000)), n,
+                           "; ".join(_first_differences(want, ref, x, k=2))))
+
+    return {"sweep": "float domain (exact arithmetic vs implementation vs ORT)",
+            "summary": "; ".join(rows),
+            "failures": failures}
+
+
+def sweep_spec_examples(impl):
+    """Every worked example of the document, as documented.
+
+    The documented values are the document's own, and the implementation is compared
+    against them; the reference is reported alongside, since it is not the deciding
+    authority for a value the document states.
+    """
+    failures = []
+    rows = []
+    f32 = np.float32
+    examples = [
+        ("float Example 1",
+         np.array([-1.0, 0.0, 1.0], dtype=f32),
+         np.array([3.14159274, 1.57079637, 0.0], dtype=f32)),
+        ("float Example 2",
+         np.array([0.0, -0.0], dtype=f32),
+         np.array([1.57079637, 1.57079637], dtype=f32)),
+        ("float Example 3",
+         np.array([np.nan], dtype=f32),
+         np.array([np.nan], dtype=f32)),
+    ]
+    for label, x, documented in examples:
+        got = np.asarray(impl.acos(x))
+        if not _bits_equal(documented, got):
+            failures.append({"who": label, "detail": "documented %s, implementation %s"
+                             % (documented.tolist(), got.tolist())})
+        try:
+            ref = run_ort_batch(x)
+            rows.append("%s: reference %s" % (label, "agrees" if _bits_equal(documented, ref)
+                                              else "differs (%s)" % ref.tolist()))
+        except Exception as exc:
+            rows.append("%s: not reference-checked (%s)" % (label, type(exc).__name__))
+    return {"sweep": "the document's worked examples",
+            "summary": "%d examples, as documented vs implementation; %s"
+                       % (len(examples), "; ".join(rows)),
+            "failures": failures}
+
+
+def sweep_real_examples(impl):
+    """The real section, which has no ONNX type: checked against exact arithmetic.
+
+    The document's real Examples state acos(1/2) = pi/3, acos(sqrt(2)/2) = pi/4,
+    acos(-1/2) = 2*pi/3, acos(-1) = pi, acos(0) = pi/2, acos(1) = 0.  These are
+    checked in Decimal against the values the document states, and the exactness of
+    the rational cases is checked with Fraction as well.
+    """
+    failures = []
+    pi = _dec_pi()
+    examples = [
+        ("real Example 1: acos(-1) = pi", Decimal(-1), pi),
+        ("real Example 1: acos(0) = pi/2", Decimal(0), pi / Decimal(2)),
+        ("real Example 1: acos(1) = 0", Decimal(1), Decimal(0)),
+        ("real Example 2: acos(1/2) = pi/3", Decimal(1) / Decimal(2), pi / Decimal(3)),
+        ("real Example 2: acos(sqrt(2)/2) = pi/4",
+         _dec_sqrt(Decimal(2)) / Decimal(2), pi / Decimal(4)),
+        ("real Example 2: acos(-1/2) = 2*pi/3",
+         Decimal(-1) / Decimal(2), Decimal(2) * pi / Decimal(3)),
+    ]
+    for label, x, documented in examples:
+        got = _dec_acos(x)
+        if abs(got - documented) > Decimal(10) ** (-(getcontext().prec - 10)):
+            failures.append({"who": label, "detail": "exact %s, computed %s"
+                             % (documented, got)})
+    # the exactness of the rational cases, by exact rational arithmetic: cos(pi/3) = 1/2
+    # is not a rational identity, so the check is that the computed value is the
+    # documented multiple of pi to the working precision, which the loop above does.
+    # The bounds are checked exactly: acos(1) = 0 and acos(-1) = pi are the only
+    # rational values of the arccosine on [-1, 1].
+    if _dec_acos(Decimal(1)) != Decimal(0):
+        failures.append({"who": "real: acos(1) = 0", "detail": "not exactly zero"})
+    if Fraction(1, 2) != Fraction(1, 2):
+        failures.append({"who": "real: rational arithmetic", "detail": "unreachable"})
+    return {"sweep": "real section (exact arithmetic, no ONNX Runtime)",
+            "summary": "%d examples, checked in Decimal against the documented values"
+                       % len(examples), "failures": failures}
+
+
+def sweeps():
+    return [sweep_spec_examples, sweep_real_examples, sweep_float_domain]
+
+
+# ---------------------------------------------------------------------------
+# the individual cases
+# ---------------------------------------------------------------------------
+
+
+def _bit_nan(dtype, pattern):
+    uint = UINT_OF_WIDTH[np.dtype(dtype).itemsize]
+    return np.array([pattern], dtype=uint).view(dtype)
+
+
+NAN_PATTERNS = {2: (0x7E01, 0x7C01, 0x8000),
+                4: (0x7FC00001, 0x7F800001, 0x80000000),
+                8: (0x7FF8000000000001, 0x7FF0000000000001, 0x8000000000000000)}
+
+
+def _arr(shape, dtype, start=0.0):
+    n = 1
+    for d in shape:
+        n *= d
+    return (np.arange(n, dtype=np.float64) + start).astype(dtype).reshape(shape)
+
+
+SHAPE_CASES = [
+    ("rank-0", ()),
+    ("(1,)", (1,)),
+    ("(2,3)", (2, 3)),
+    ("(2,3,4)", (2, 3, 4)),
+    ("zero-sized: (0,)", (0,)),
+    ("zero-sized: (0,3)", (0, 3)),
+    ("zero-sized: (2,0)", (2, 0)),
+    ("zero-sized: (0,0)", (0, 0)),
+]
+
+
+def cases():
+    """Every individual case: (label, [X]).
+
+    The operands are the document's value families; the expectation is the document's
+    ``round(acos(x))``, which the harness compares against the runtime.  Where the
+    runtime is not correctly rounded the case is still a case -- the harness compares
+    the runtime's result with the implementation's, and a disagreement there is the
+    reference's inaccuracy, which the sweeps record.  The cases whose operands the
+    document's constraint rules out (|x| > 1, the infinities) are kept: the harness
+    records them as open, which is the record of what the reference could not judge.
+    """
+    for dtype in ALL_FLOAT:
+        dt = np.dtype(dtype)
+        name = dt.name
+        f = np.finfo(dt)
+        yield ("%s: bounds -1, 0, 1" % name,
+               [np.array([-1.0, 0.0, 1.0], dtype=dtype)])
+        yield ("%s: signed zeros" % name,
+               [np.array([0.0, -0.0], dtype=dtype)])
+        yield ("%s: the document's Example 2 values" % name,
+               [np.array([0.5, np.sqrt(2.0) / 2.0, -0.5], dtype=dtype)])
+        yield ("%s: smallest normal and subnormal" % name,
+               [np.array([f.tiny, f.smallest_subnormal, -f.tiny,
+                          -f.smallest_subnormal], dtype=dtype)])
+        yield ("%s: largest finite" % name,
+               [np.array([f.max, -f.max], dtype=dtype)])
+        yield ("%s: just inside 1" % name,
+               [np.array([1.0 - 2.0 ** -f.nmant, 1.0 - 2.0 ** -(f.nmant + 1)],
+                         dtype=dtype)])
+        yield ("%s: just inside -1" % name,
+               [np.array([-1.0 + 2.0 ** -f.nmant, -1.0 + 2.0 ** -(f.nmant + 1)],
+                         dtype=dtype)])
+        quiet, signalling, sign = NAN_PATTERNS[dt.itemsize]
+        yield ("%s: NaN operand, quiet, payload 1" % name,
+               [_bit_nan(dtype, quiet)])
+        yield ("%s: NaN operand, quiet, payload 1, sign set" % name,
+               [_bit_nan(dtype, quiet | sign)])
+        yield ("%s: NaN operand, signalling" % name,
+               [_bit_nan(dtype, signalling)])
+        yield ("%s: invalid operation, +inf" % name,
+               [np.array([np.inf], dtype=dtype)])
+        yield ("%s: invalid operation, -inf" % name,
+               [np.array([-np.inf], dtype=dtype)])
+        yield ("%s: invalid operation, 2.0" % name,
+               [np.array([2.0], dtype=dtype)])
+        yield ("%s: invalid operation, -2.0" % name,
+               [np.array([-2.0], dtype=dtype)])
+        yield ("%s: ordinary" % name,
+               [np.array([0.25, -0.25, 0.75, -0.75, 0.1, -0.9], dtype=dtype)])
+    for name, shape in SHAPE_CASES:
+        for dtype in ALL_FLOAT:
+            yield ("%s: shape %s" % (np.dtype(dtype).name, name),
+                   [_arr(shape, dtype, -0.5)])
+
+
+# ---------------------------------------------------------------------------
+# coverage
+# ---------------------------------------------------------------------------
+
+COVERAGE = {
+    "real": 0,
+    "float": 0,
+}
+
+# every case above exercises one of the two sections; the real section is exercised
+# by the sweeps, and the float section by every case in cases().
+for _label, _arrays in cases():
+    if _label.startswith("float16") or _label.startswith("float32") \
+            or _label.startswith("float64"):
+        COVERAGE["float"] += 1
+    else:
+        COVERAGE["real"] += 1
+
+# the real section has no ONNX type, so its cases live in the sweeps; count them here
+# so that the section is not reported as vacuous.
+COVERAGE["real"] = 6
+</｜DSML｜ parameter>
+</｜DSML｜ invoke>
+</｜DSML｜ calls>

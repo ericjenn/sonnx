@@ -1,0 +1,304 @@
+{
+  "spec": "agents/runs/Atan/atan.md",
+  "op": "Atan",
+  "opset": 14,
+  "impl": "agents/runs/Atan/iter-001-impl.py",
+  "entry": "atan",
+  "generated": "2026-10-04T10:28:52Z",
+  "cases": {
+    "total": 72,
+    "passed": 42,
+    "mismatched": [
+      {
+        "case": "float32: infinities",
+        "elements_differing": 2,
+        "first_differences": [
+          {
+            "index": 2,
+            "ort": "0.7853981",
+            "impl": "0.7853982",
+            "ort_bits": "[1061752794]",
+            "impl_bits": "[1061752795]"
+          },
+          {
+            "index": 3,
+            "ort": "-0.7853981",
+            "impl": "-0.7853982",
+            "ort_bits": "[3209236442]",
+            "impl_bits": "[3209236443]"
+          }
+        ]
+      },
+      {
+        "case": "float32: nan",
+        "elements_differing": 1,
+        "first_differences": [
+          {
+            "index": 1,
+            "ort": "0.7853981",
+            "impl": "0.7853982",
+            "ort_bits": "[1061752794]",
+            "impl_bits": "[1061752795]"
+          }
+        ]
+      },
+      {
+        "case": "float32: exact arctangents",
+        "elements_differing": 2,
+        "first_differences": [
+          {
+            "index": 1,
+            "ort": "0.7853981",
+            "impl": "0.7853982",
+            "ort_bits": "[1061752794]",
+            "impl_bits": "[1061752795]"
+          },
+          {
+            "index": 2,
+            "ort": "-0.7853981",
+            "impl": "-0.7853982",
+            "ort_bits": "[3209236442]",
+            "impl_bits": "[3209236443]"
+          }
+        ]
+      },
+      {
+        "case": "float32: same shape (2,3)",
+        "elements_differing": 2,
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "0.46364754",
+            "impl": "0.4636476",
+            "ort_bits": "[1055744822]",
+            "impl_bits": "[1055744824]"
+          },
+          {
+            "index": 0,
+            "ort": "0.46364754",
+            "impl": "0.4636476",
+            "ort_bits": "[1055744822]",
+            "impl_bits": "[1055744824]"
+          },
+          {
+            "index": 0,
+            "ort": "0.46364754",
+            "impl": "0.4636476",
+            "ort_bits": "[1055744822]",
+            "impl_bits": "[1055744824]"
+          },
+          {
+            "index": 1,
+            "ort": "0.9827938",
+            "impl": "0.98279375",
+            "ort_bits": "[1065064544]",
+            "impl_bits": "[1065064543]"
+          }
+        ]
+      },
+      {
+        "case": "float32: rank-1",
+        "elements_differing": 2,
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "0.46364754",
+            "impl": "0.4636476",
+            "ort_bits": "[1055744822]",
+            "impl_bits": "[1055744824]"
+          },
+          {
+            "index": 1,
+            "ort": "0.9827938",
+            "impl": "0.98279375",
+            "ort_bits": "[1065064544]",
+            "impl_bits": "[1065064543]"
+          }
+        ]
+      },
+      {
+        "case": "float32: rank-3",
+        "elements_differing": 10,
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "0.46364754",
+            "impl": "0.4636476",
+            "ort_bits": "[1055744822]",
+            "impl_bits": "[1055744824]"
+          },
+          {
+            "index": 0,
+            "ort": "0.46364754",
+            "impl": "0.4636476",
+            "ort_bits": "[1055744822]",
+            "impl_bits": "[1055744824]"
+          },
+          {
+            "index": 0,
+            "ort": "0.46364754",
+            "impl": "0.4636476",
+            "ort_bits": "[1055744822]",
+            "impl_bits": "[1055744824]"
+          },
+          {
+            "index": 0,
+            "ort": "0.46364754",
+            "impl": "0.4636476",
+            "ort_bits": "[1055744822]",
+            "impl_bits": "[1055744824]"
+          }
+        ]
+      }
+    ],
+    "open": [
+      {
+        "case": "float64: signed zeros",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: infinities",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: nan",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: exact arctangents",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: largest finite",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: smallest normal",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: smallest subnormal",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: subnormal range",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rounding boundary, one ulp above 1.0",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rounding boundary, one ulp below 1.0",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rounding boundary, one ulp above the smallest normal",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rounding boundary, one ulp below the smallest normal",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: not representable (rounded arctangent)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, quiet, payload 1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, quiet, payload 1, sign set",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, signalling",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: same shape (2,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rank-0",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rank-1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rank-3",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: zero-sized: (0,)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: zero-sized: (0,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: zero-sized: (3,0)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: zero-sized: (1,0,2)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      }
+    ],
+    "nan_payload": [
+      {
+        "case": "float16: NaN operand, quiet, payload 1"
+      },
+      {
+        "case": "float16: NaN operand, quiet, payload 1, sign set"
+      },
+      {
+        "case": "float16: NaN operand, signalling"
+      }
+    ]
+  },
+  "sweeps": [
+    {
+      "sweep": "the document's worked examples",
+      "summary": "4 examples, as documented vs ORT vs implementation",
+      "failures": [
+        {
+          "who": "real Example 2",
+          "detail": "documented [1.0471975511965976, 0.5235987755982988], implementation [1.0471975511965976, 0.5235987755982989]"
+        }
+      ]
+    },
+    {
+      "sweep": "float domain (ORT vs implementation)",
+      "summary": "float16 217 values, float32 217 values, float64: not reference-checked (NotImplemented)",
+      "failures": [
+        {
+          "type": "float32",
+          "who": "the implementation vs ONNX Runtime",
+          "detail": "x=np.float32(0.7853981) want=np.float32(0.7853981) got=np.float32(0.7853982); x=np.float32(-0.7853981) want=np.float32(-0.7853981) got=np.float32(-0.7853982); x=np.float32(0.7853983) want=np.float32(0.7853983) got=np.float32(0.78539824); x=np.float32(0.78539807) want=np.float32(0.78539807) got=np.float32(0.7853981)"
+        }
+      ]
+    },
+    {
+      "sweep": "special values (ORT vs implementation)",
+      "summary": "float16 15 values, float32 15 values, float64: not reference-checked (NotImplemented)",
+      "failures": [
+        {
+          "type": "float32",
+          "who": "the implementation vs ONNX Runtime",
+          "detail": "x=np.float32(0.7853983) want=np.float32(0.7853983) got=np.float32(0.78539824)"
+        }
+      ]
+    },
+    {
+      "sweep": "real section (exact rationals and Decimal series, no ONNX Runtime)",
+      "summary": "3 exact examples, 2 transcendental values, oddness",
+      "failures": []
+    }
+  ],
+  "ok": false
+}

@@ -1,0 +1,102 @@
+{
+  "op": "Neg",
+  "opset": 14,
+  "outcome": "unresolved-review",
+  "spec": "agents/runs/Neg/Neg.md",
+  "spec_md5": "4f195b81b576c3d1539c18726b5e3559",
+  "iterations": 0,
+  "spec_rounds": 3,
+  "test_ok": null,
+  "coverage": null,
+  "uncovered": null,
+  "impl": null,
+  "cases": null,
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/Neg/Neg.md",
+      "characters": 12545
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Neg** (float) \u2014 Function",
+          "what": "The case analysis gives the result for NaN, \u00b10 and \u00b1inf, but the last case is written `-X[i]` with the bare minus of \u211d, and the `where` bullet defines it as \"the value of the type of $X$ whose magnitude is that of $X[i]$\" \u2014 the finite case is never stated as the indexed sign change $-_{(\\text{f})}X[i]$ of the type of $X$.",
+          "why": "Guidelines l.110: a bare `-` is the operation on \u211d; the case analysis of a float section must be written with the indexed operation of the type of the operand, otherwise the finite case is stated in \u211d and not in the floating-point type.",
+          "fix": "Write the last case as $-_{(\\text{f})}X[i]$ and keep the `where` bullet defining it as the sign change of the type of $X$ (magnitude unchanged, sign reversed), so that every case of the analysis is an operation of the type of $X$."
+        },
+        {
+          "severity": "blocking",
+          "section": "**Neg** (int) \u2014 Function",
+          "what": "The case analysis is written with the bare `-X[i]` and the bare `-2^{n-1}`, and the `where` bullet defines `-X[i]` as \"the exact negation of the element, the opposite in $\\mathbb{Z}$ of the integer $X[i]$, before the reduction modulo $2^n$\" \u2014 the negation of the signed $n$-bit type is never written as an indexed operation.",
+          "why": "Guidelines l.110 and the checklist's per-formula rule: every operation on a machine type is indexed ($-_{(\\text{i8})}$, \u2026); a bare `-` denotes the operation on \u211d, so the section as written does not state the machine-type negation it means.",
+          "fix": "Write the first case as $-_{(\\text{i}n)}X[i]$ (or $-_{(\\text{i8})}$, \u2026 per type) and define it in the `where` bullet as the negation of the signed $n$-bit type, i.e. the exact negation reduced modulo $2^n$; keep the second case as the value $-2^{n-1}$ of the type."
+        },
+        {
+          "severity": "blocking",
+          "section": "**Neg** (int) \u2014 Function",
+          "what": "The section covers `int8`, `int16`, `int32`, `int64` only; the unsigned types `uint8`, `uint16`, `uint32`, `uint64` have no section, no Contents entry, no tags and no example, although ONNX admits `tensor(uint8)`, `tensor(uint16)`, `tensor(uint32)`, `tensor(uint64)` for **Neg**.",
+          "why": "Guidelines l.205 define `uint` as a family distinct from `int`, and l.255 requires types whose semantics differ to have separate sections; the checklist's mistake 1 records that a merged or missing `uint` section was rejected. The Contents list must have one entry per applicable set of types.",
+          "fix": "Add a `# **Neg** (uint)` section with anchor `<a id=\"uint\"></a>`, its own Contents entry, its one-line justification, its `where` line `where uint is in {`uint8`, `uint16`, `uint32`, `uint64`}.`, its Function statement with tags `E_NEG_UINT_FUNC_*`, its example (e.g. `uint8`: $-0 = 0$, $-1 = 255$, $-128 = 128$), its error-conditions table and its constraints, and state there that the negation of the minimum value $0$ is $0$ and that the result is the exact negation modulo $2^n$ read as an unsigned value."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "agents/runs/Neg/Neg.md",
+      "characters": 17695
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Neg** (uint)",
+          "what": "The whole `uint` section specifies a negation for unsigned types, but ONNX admits no unsigned type for **Neg** (its type list is `bfloat16`, `double`, `float`, `float16`, `int8`, `int16`, `int32`, `int64`).",
+          "why": "The Contents list and the family sections must cover the SONNX types ONNX admits for the operator; a family ONNX does not admit for this operator must not appear in the document (guidelines' Contents section, and the profile's narrower-than-ONNX rule).",
+          "fix": "Remove the `uint` section, its Contents entry, its anchor, its tags and its example; the remaining families are `real`, `float` and `int`."
+        },
+        {
+          "severity": "blocking",
+          "section": "**Neg** (float)",
+          "what": "The `where` line lists `float16`, `float`, `double`, but ONNX admits `bfloat16` for **Neg** and SONNX does not consider it; the section is presented as covering the float family of the operator.",
+          "why": "A SONNX type ONNX admits must be covered by the section of its family; `bfloat16` is outside the profile, so the section must not be read as covering it, and the family statement must be exact about which types it covers.",
+          "fix": "Keep the section as the SONNX `float` family (`float16`, `float`, `double`) and state in the one-line justification that `bfloat16`, admitted by ONNX, is outside the SONNX profile and not covered."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 3,
+      "path": "agents/runs/Neg/Neg.md",
+      "characters": 13213
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Neg** (float) \u2014 Function",
+          "what": "The case analysis writes the NaN case as `\\text{NaN}` and the last case as `-_{(\\text{f})} X[i]`, so the formula does not say which NaN is produced; the prose below adds that it is a quiet NaN, but the formula itself is the specifying statement.",
+          "why": "The guidelines require the special values of the floating-point types to be decided as operands and as results, and a case that is left open to be declared as such with the set of conforming results; the formula's NaN case is a name, not a case analysis.",
+          "fix": "In the first case of the formula write `\\text{quiet NaN}` (or state in the case itself that the result is a quiet NaN of the type of $X$), keeping the following sentence that every quiet NaN of the type of $X$ is a conforming result."
+        }
+      ]
+    }
+  ],
+  "report": null,
+  "finished": "2026-10-04T10:55:31"
+}

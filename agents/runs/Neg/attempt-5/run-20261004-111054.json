@@ -1,0 +1,180 @@
+{
+  "op": "Neg",
+  "opset": 14,
+  "outcome": "uncovered-section",
+  "spec": "agents/runs/Neg/Neg.md",
+  "spec_md5": "bf2ba1b78381c17d01ca611b703ce378",
+  "iterations": 1,
+  "spec_rounds": 2,
+  "test_ok": false,
+  "coverage": {
+    "real": 0,
+    "float": 0,
+    "int": 0
+  },
+  "uncovered": [
+    "float",
+    "int",
+    "real"
+  ],
+  "impl": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Neg/iter-001-impl.py",
+  "cases": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Neg/cases.py",
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/Neg/Neg.md",
+      "characters": 12842
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Neg** (real) / Signature",
+          "what": "\"Definition of operator **Neg** signature:\" \u2014 an announcement that states nothing about the operator.",
+          "why": "The checklist (mistake 4, known divergence 2) and the guidelines' rule against announcements that do not specify: the sentence is not specifying information and is stated in the imperative mood where the present indicative is required.",
+          "fix": "Delete the line \"Definition of operator **Neg** signature:\" and keep the display formula $Y = \\textbf{Neg}(X)$ with its where-list."
+        },
+        {
+          "severity": "blocking",
+          "section": "**Neg** (float) / Signature",
+          "what": "\"Definition of operator **Neg** signature:\" \u2014 same announcement.",
+          "why": "Same rule; the sentence is not part of the specification.",
+          "fix": "Delete the line and keep the formula and its where-list."
+        },
+        {
+          "severity": "blocking",
+          "section": "**Neg** (int) / Signature",
+          "what": "\"Definition of operator **Neg** signature:\" \u2014 same announcement.",
+          "why": "Same rule.",
+          "fix": "Delete the line and keep the formula and its where-list."
+        },
+        {
+          "severity": "blocking",
+          "section": "**Neg** (int) / Function",
+          "what": "The case analysis is written on the exact negation $-X[i]$ in $\\mathbb{Z}$ and on the type of $X$ and $Y$; the second case is stated as \"$-X[i] - 2^n$\" without saying that the subtraction is the subtraction of $\\mathbb{Z}$ and that the result is then read as a signed $n$-bit value.",
+          "why": "The guidelines require every operation on a machine type to be indexed ($+_{(\text{i8})}$, \u2026) and every symbol to be defined; a bare $-$ inside an integer section is the operation on $\\mathbb{R}$ (l.110), which is not what the section means, and the reader cannot tell whether the reduction is a wrap-around or an exact integer subtraction.",
+          "fix": "Write the second case as $-X[i] -_{(\text{i}n)} 2^n$ (or state explicitly that the subtraction is the exact subtraction in $\\mathbb{Z}$ followed by the reading of the result modulo $2^n$ as a signed value), and add a where-bullet defining $-_{(\text{i}n)}$ as the subtraction of the $n$-bit signed type."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "agents/runs/Neg/Neg.md",
+      "characters": 12926
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": true,
+      "blocking": []
+    },
+    {
+      "agent": "implementer",
+      "iteration": 1,
+      "path": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Neg/iter-001-impl.py",
+      "decisions_count": 17
+    },
+    {
+      "agent": "tester",
+      "iteration": 1,
+      "ok": false,
+      "coverage": {
+        "real": 0,
+        "float": 0,
+        "int": 0
+      },
+      "uncovered": [
+        "float",
+        "int",
+        "real"
+      ],
+      "cases": 156,
+      "mismatched": 0,
+      "report": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Neg/iter-001-report.json"
+    }
+  ],
+  "report": {
+    "spec": "agents/runs/Neg/Neg.md",
+    "op": "Neg",
+    "opset": 14,
+    "impl": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Neg/iter-001-impl.py",
+    "entry": "neg",
+    "generated": "2026-10-04T09:10:53Z",
+    "cases": {
+      "total": 156,
+      "passed": 151,
+      "mismatched": [],
+      "open": [
+        {
+          "case": "real: the document's Example",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+        },
+        {
+          "case": "real: signed zeros and integers",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+        },
+        {
+          "case": "real: rationals",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+        },
+        {
+          "case": "real: a rank-0 tensor",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+        },
+        {
+          "case": "real: a zero-sized dimension",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+        }
+      ],
+      "nan_payload": [
+        {
+          "case": "float16: NaN, quiet"
+        },
+        {
+          "case": "float16: NaN, quiet with the sign bit set"
+        },
+        {
+          "case": "float16: NaN, signalling"
+        },
+        {
+          "case": "float16: NaN, signalling with the sign bit set"
+        },
+        {
+          "case": "float16: NaN, several payloads"
+        }
+      ]
+    },
+    "sweeps": [
+      {
+        "sweep": "the document's worked examples",
+        "summary": "4 examples, as documented vs ORT vs implementation",
+        "failures": []
+      },
+      {
+        "sweep": "the float special values (sign flip, bit for bit)",
+        "summary": "float16 18 values, float32 18 values, float64 18 values",
+        "failures": []
+      },
+      {
+        "sweep": "the integer domain (document vs ORT vs implementation)",
+        "summary": "int8 exhaustive, 256 values; int16 207 boundary and random values; int32 207 boundary and random values; int64 207 boundary and random values",
+        "failures": []
+      },
+      {
+        "sweep": "the real section (exact rationals and high-precision decimals, no ONNX Runtime)",
+        "summary": "15 values checked against exact arithmetic",
+        "failures": []
+      }
+    ],
+    "ok": true
+  },
+  "finished": "2026-10-04T11:10:54"
+}

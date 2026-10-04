@@ -1,0 +1,82 @@
+{
+  "op": "Acos",
+  "opset": 14,
+  "outcome": "cases-unusable",
+  "spec": "agents/runs/Acos/acos.md",
+  "spec_md5": "70e60feb6a8fe7cc6403b2c82baf1e52",
+  "iterations": 1,
+  "spec_rounds": 2,
+  "test_ok": false,
+  "coverage": null,
+  "uncovered": null,
+  "impl": "agents/runs/Acos/iter-001-impl.py",
+  "cases": "agents/runs/Acos/cases.py",
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/Acos/acos.md",
+      "characters": 3412
+    },
+    {
+      "agent": "checker",
+      "lint_ok": false,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "Contents / **Acos** (float)",
+          "what": "The Contents list announces a `float` section (`#float`) and the family verdict says `float` applies, but the document contains no `float` section at all \u2014 the file ends inside Example 2 of the real section.",
+          "why": "The guidelines require one section per applicable set of types, each with its own anchor, Contents entry, tags, examples and error rows; the `float` family is applicable to this operator, so its section must exist and be complete.",
+          "fix": "Write the `**Acos** (float)` section with anchor `<a id=\"float\"></a>`, its `where` line listing `float16`, `float`, `double` in backticks, its one-line justification that the three types share one semantics, its Function section (with the float case analysis: the result rounded to the type of the argument, and the special values \u00b10, \u00b1Inf, NaN as operands and as results), its Examples, and its Error conditions table; and finish Example 2 of the real section."
+        },
+        {
+          "severity": "blocking",
+          "section": "**Acos** (float) \u2014 Function",
+          "what": "The float section is absent, so the cases that decide the float behaviour are undecided: what the result is when the operand is a NaN, \u00b1Inf, \u00b10, and how the exact real value is rounded to the type of the argument.",
+          "why": "The guidelines require the specification to state, for every case that applies, what the operator does \u2014 in particular the special values of the floating-point types as operands and as results \u2014 and to declare the cases it leaves open together with the set of conforming results.",
+          "fix": "In the float Function section, state that the result is the value of the real arccosine rounded to the type of the argument with the roundTiesToEven attribute of IEEE 754, that a NaN operand gives a NaN result (every quiet NaN of the type of the argument being a conforming result), and that an operand outside [-1, 1] is ruled out by the constraint on X."
+        },
+        {
+          "severity": "blocking",
+          "section": "Error conditions",
+          "what": "The document has no Error conditions section, so no condition of the required list (invalid operation, overflow, division by zero, and the conditions the operator introduces) has a disposition.",
+          "why": "The guidelines require every condition of the list, and every further condition the operator introduces, to be given a disposition \u2014 nominal behavior naming the Function tag, ruled out by a constraint tag, or an error described in this section \u2014 and the section is required even when there is no error condition.",
+          "fix": "Add an Error conditions section with a table giving each condition and its disposition: the invalid operation of the arccosine (operand outside [-1, 1]) ruled out by the constraint tag on X; overflow not applicable; and, for the float section, the NaN result as nominal behavior, referring to the Function tag rather than restating it."
+        },
+        {
+          "severity": "blocking",
+          "section": "**Acos** (real) \u2014 Function",
+          "what": "The Function section refers to the constraint `E_ACOS_REAL_CONSTR_X_0010` (\"requires every element of X to lie in [-1, 1]\") but no such constraint is declared anywhere in the document.",
+          "why": "A tag referred to must be declared and carry an anchor; the constraint that makes the operator applicable is a precondition and must be stated in the Inputs section of the section it belongs to.",
+          "fix": "Declare the constraint in the Inputs section of the real section: `<a id=\"E_ACOS_REAL_CONSTR_X_0010\"></a>` followed by `[E_ACOS_REAL_CONSTR_X_0010]` Definition domain, with Statement: every element of X lies in [-1, 1]."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "agents/runs/Acos/acos.md",
+      "characters": 11059
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": true,
+      "blocking": []
+    },
+    {
+      "agent": "implementer",
+      "iteration": 1,
+      "path": "agents/runs/Acos/iter-001-impl.py",
+      "decisions_count": 10
+    }
+  ],
+  "report": {
+    "error": "the tester returned no usable case module: the answer is empty (2 attempt(s))"
+  },
+  "finished": "2026-10-04T11:55:54"
+}

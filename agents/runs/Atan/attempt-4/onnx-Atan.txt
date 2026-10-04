@@ -1,0 +1,14 @@
+# ONNX operator definition, as the `onnx` package 1.23.1 states it (schema of opset 7, the opset asked for is 14)
+
+**Atan**, since opset 7.
+
+Calculates the arctangent (inverse of tangent) of the given input tensor, element-wise.
+
+- type constraint `T`: `tensor(float16)`, `tensor(float)`, `tensor(double)`. Constrain input and output types to float tensors.
+
+- Input `input` (`tensor(float16)`, `tensor(float)`, `tensor(double)`): Input tensor
+- Output `output` (`tensor(float16)`, `tensor(float)`, `tensor(double)`): The arctangent of the input tensor computed element-wise
+
+This operator has no attribute.
+
+Documentation page: https://onnx.ai/onnx/operators/onnx__Atan.html

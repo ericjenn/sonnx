@@ -1,0 +1,75 @@
+{
+  "spec": "agents/runs/Neg/Neg.md",
+  "op": "Neg",
+  "opset": 14,
+  "impl": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Neg/iter-001-impl.py",
+  "entry": "neg",
+  "generated": "2026-10-04T09:10:53Z",
+  "cases": {
+    "total": 156,
+    "passed": 151,
+    "mismatched": [],
+    "open": [
+      {
+        "case": "real: the document's Example",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+      },
+      {
+        "case": "real: signed zeros and integers",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+      },
+      {
+        "case": "real: rationals",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+      },
+      {
+        "case": "real: a rank-0 tensor",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+      },
+      {
+        "case": "real: a zero-sized dimension",
+        "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+      }
+    ],
+    "nan_payload": [
+      {
+        "case": "float16: NaN, quiet"
+      },
+      {
+        "case": "float16: NaN, quiet with the sign bit set"
+      },
+      {
+        "case": "float16: NaN, signalling"
+      },
+      {
+        "case": "float16: NaN, signalling with the sign bit set"
+      },
+      {
+        "case": "float16: NaN, several payloads"
+      }
+    ]
+  },
+  "sweeps": [
+    {
+      "sweep": "the document's worked examples",
+      "summary": "4 examples, as documented vs ORT vs implementation",
+      "failures": []
+    },
+    {
+      "sweep": "the float special values (sign flip, bit for bit)",
+      "summary": "float16 18 values, float32 18 values, float64 18 values",
+      "failures": []
+    },
+    {
+      "sweep": "the integer domain (document vs ORT vs implementation)",
+      "summary": "int8 exhaustive, 256 values; int16 207 boundary and random values; int32 207 boundary and random values; int64 207 boundary and random values",
+      "failures": []
+    },
+    {
+      "sweep": "the real section (exact rationals and high-precision decimals, no ONNX Runtime)",
+      "summary": "15 values checked against exact arithmetic",
+      "failures": []
+    }
+  ],
+  "ok": true
+}

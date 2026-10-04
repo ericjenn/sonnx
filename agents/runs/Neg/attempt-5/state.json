@@ -1,0 +1,213 @@
+{
+  "op": "Neg",
+  "opset": 14,
+  "spec": "# Contents\n\n- **Neg** operator for type [real](#real)\n- **Neg** operator for types [`float16`, `float`, `double`](#float)\n- **Neg** operator for types [`int8`, `int16`, `int32`, `int64`](#int)\n\nBased on ONNX documentation [Neg version 14](https://onnx.ai/onnx/operators/onnx__Neg.html#neg-14).\n\nRevision 2026-10-03: first issue of this specification, based on ONNX opset 14.\n\n<a id=\"real\"></a>\n\n# **Neg** (real)\n\n## Signature\n\n $Y = \\textbf{Neg}(X)$\n\n where\n - $X$: tensor whose elements are negated\n - $Y$: result of the element-wise negation of $X$\n\n## Restrictions\n\n[General restrictions](./../common/general_restrictions.md) are applicable.\n\nNo specific restrictions apply to the **Neg** operator.\n\n## Function\n\n<a id=\"E_NEG_REAL_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_NEG_REAL_FUNC_0010]</br></span>\n\n**Part 1.** Operator **Neg** flips the sign of every element of tensor $X$ and stores the result in tensor $Y$.\n\n**Part 2.** Each element of $Y$ is the negation of the element of $X$ that has the same index.\n\nFor any [tensor index](./../common/definitions.md#tensor_index) $i$ of the result $Y$:\n\n$$\nY[i] = -X[i]\n$$\n\nwhere $-X[i]$ is the negation in $\\mathbb{R}$ of the element $X[i]$.\n\nThe negation is exact: $Y[i]$ is the opposite of $X[i]$ in $\\mathbb{R}$, with no approximation.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It has a single element, and $Y$ is the rank-0 tensor whose single element is the negation of that element.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. The corresponding dimension of $Y$ then has size $0$, and $Y$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>\n\nThe effect of the operator is illustrated on the following example.\n\n### Example\n\n$$\nX = \\begin{bmatrix} 1/3 & -2.5 & 0 \\end{bmatrix}\n$$\n\n$$\nY = \\begin{bmatrix} -1/3 & 2.5 & 0 \\end{bmatrix}\n$$\n\nThe negation of $1/3$ is the exact value $-1/3$, and the negation of $-2.5$ is $2.5$; the negation of $0$ is $0$.\n\n## Error conditions\n\nNone of the conditions of the list applies to real numbers: the negation is exact, so that the result is the one specified by [<b><span style=\"font-family: 'Courier New', monospace\">E_NEG_REAL_FUNC_0010</span></b>](#E_NEG_REAL_FUNC_0010) for every operand, and no error can occur. No error condition.\n\n## Attributes\n\nOperator **Neg** has no attribute.\n\n## Inputs\n\n### $\\text{X}$: real tensor\n\nThe tensor whose elements are negated.\n\n#### Constraints\n\nNo constraint.\n\n## Outputs\n\n### $\\text{Y}$: real tensor\n\nTensor $Y$ is the element-wise negation of $X$.\n\n#### Constraints\n\n<a id=\"E_NEG_REAL_CONSTR_Y_0010\"></a>\n- `[E_NEG_REAL_CONSTR_Y_0010]` Shape definition\n  - Statement: Tensor $Y$ has the same shape as $X$.\n\n<a id=\"float\"></a>\n\n# **Neg** (float)\n\nwhere float is in {`float16`, `float`, `double`}.\n\nThe three types share one semantics: the IEEE 754 standard defines the same negation for all of them, and they differ only by their precision and by the range of the values they represent.\n\n## Signature\n\n $Y = \\textbf{Neg}(X)$\n\n where\n - $X$: tensor whose elements are negated\n - $Y$: result of the element-wise negation of $X$\n\n## Restrictions\n\n[General restrictions](./../common/general_restrictions.md) are applicable.\n\nNo specific restrictions apply to the **Neg** operator.\n\n## Function\n\n<a id=\"E_NEG_FLOAT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_NEG_FLOAT_FUNC_0010]</br></span>\n\n**Part 1.** Operator **Neg** flips the sign of every element of tensor $X$ according to IEEE 754 floating-point semantics and stores the result in tensor $Y$.\n\n**Part 2.** Each element of $Y$ is the negation of the element of $X$ that has the same index.\n\nFor any [tensor index](./../common/definitions.md#tensor_index) $i$ of the result $Y$:\n\n$$\nY[i] = -_{(\\text{f})} X[i]\n$$\n\nwhere $-_{(\\text{f})}$ is the negation of the floating-point type of $X$ and $Y$, i.e. $-_{(\\text{f16})}$, $-_{(\\text{f32})}$ or $-_{(\\text{f64})}$ according to that type.\n\nThe negation of IEEE 754 is exact: it changes the sign of the operand and leaves its magnitude unchanged, so that no rounding occurs and the result is always representable in the type of $X$ and $Y$. In particular:\n\n- the negation of $+0$ is $-0$, and the negation of $-0$ is $+0$;\n- the negation of $+\\infty$ is $-\\infty$, and the negation of $-\\infty$ is $+\\infty$;\n- the negation of a finite value is the finite value of the opposite sign and of the same magnitude, whether that value is normal or subnormal;\n- the negation of a NaN is a NaN; the sign and the payload of that NaN are not specified, so that every quiet NaN of the type of $X$ and $Y$ is a conforming result.\n\n**Values of the operands.** The operands may be any of the values of the type, including the special numbers $\\pm 0$, $\\pm\\text{inf}$ and NaN. The cases above give the result for every one of them.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It has a single element, and $Y$ is the rank-0 tensor whose single element is the negation of that element.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. The corresponding dimension of $Y$ then has size $0$, and $Y$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>\n\nThe effect of the operator is illustrated on the following examples.\n\n### Example 1\n\n$$\nX = \\begin{bmatrix} 1.5 & -2.25 & 0.0 & -0.0 \\end{bmatrix}\n$$\n\n$$\nY = \\begin{bmatrix} -1.5 & 2.25 & -0.0 & 0.0 \\end{bmatrix}\n$$\n\nThe negation of a non-zero value is exact. The negation of $+0$ is $-0$ and the negation of $-0$ is $+0$: the sign of a null element is flipped like the sign of any other element.\n\n### Example 2\n\n$$\nX = \\begin{bmatrix} \\text{+inf} & \\text{-inf} & \\text{NaN} \\end{bmatrix}\n$$\n\n$$\nY = \\begin{bmatrix} \\text{-inf} & \\text{+inf} & \\text{NaN} \\end{bmatrix}\n$$\n\nThe negation of an infinity is the infinity of the opposite sign. The negation of a NaN is a NaN, whose sign and payload are not specified.\n\n## Error conditions\n\n| Condition | Disposition |\n| -------- | ------- |\n| Invalid operation, i.e. an operation of IEEE 754 section 7.2 | nominal: the operator performs no such operation, and the negation of a NaN is a NaN, as specified by [<b><span style=\"font-family: 'Courier New', monospace\">E_NEG_FLOAT_FUNC_0010</span></b>](#E_NEG_FLOAT_FUNC_0010) |\n| Overflow, i.e. a result beyond the largest finite value of the type | nominal: the negation of a finite value is finite and of the same magnitude, as specified by [<b><span style=\"font-family: 'Courier New', monospace\">E_NEG_FLOAT_FUNC_0010</span></b>](#E_NEG_FLOAT_FUNC_0010) |\n| Underflow, i.e. a result of a magnitude below the smallest normal value of the type | nominal: the magnitude of the result is that of the operand, as specified by [<b><span style=\"font-family: 'Courier New', monospace\">E_NEG_FLOAT_FUNC_0010</span></b>](#E_NEG_FLOAT_FUNC_0010) |\n| Division by zero | nominal: the operator performs no division, so the condition cannot occur |\n\nEvery condition of the list is part of the nominal behavior of the operator; none of them is an error. No error condition.\n\n## Attributes\n\nOperator **Neg** has no attribute.\n\n## Inputs\n\n### $\\text{X}$: floating-point tensor\n\nThe tensor whose elements are negated.\n\n#### Constraints\n\n<a id=\"E_NEG_FLOAT_CONSTR_X_0010\"></a>\n- `[E_NEG_FLOAT_CONSTR_X_0010]` Type consistency\n  - Statement: Tensors $X$ and $Y$ have the same type.\n\n## Outputs\n\n### $\\text{Y}$: floating-point tensor\n\nTensor $Y$ is the element-wise negation of $X$.\n\n#### Constraints\n\n<a id=\"E_NEG_FLOAT_CONSTR_Y_0010\"></a>\n- `[E_NEG_FLOAT_CONSTR_Y_0010]` Shape definition\n  - Statement: Tensor $Y$ has the same shape as $X$.\n- `[E_NEG_FLOAT_CONSTR_Y_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_NEG_FLOAT_CONSTR_X_0010</span></b>](#E_NEG_FLOAT_CONSTR_X_0010) on tensor $X$.\n\n<a id=\"int\"></a>\n\n# **Neg** (int)\n\nwhere int is in {`int8`, `int16`, `int32`, `int64`}.\n\nThe four types share one semantics: each of them is an $n$-bit signed type, whose values range from $-2^{n-1}$ to $2^{n-1}-1$, and the result of the negation is the value of that type that represents the negation of the element modulo $2^n$.\n\n## Signature\n\n $Y = \\textbf{Neg}(X)$\n\n where\n - $X$: tensor whose elements are negated\n - $Y$: result of the element-wise negation of $X$\n\n## Restrictions\n\n[General restrictions](./../common/general_restrictions.md) are applicable.\n\nNo specific restrictions apply to the **Neg** operator.\n\n## Function\n\n<a id=\"E_NEG_INT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_NEG_INT_FUNC_0010]</br></span>\n\n**Part 1.** Operator **Neg** flips the sign of every element of tensor $X$ and stores the result in tensor $Y$.\n\n**Part 2.** Each element of $Y$ is the negation of the element of $X$ that has the same index. Tensors $X$ and $Y$ have the same signed $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](./../common/definitions.md#tensor_index) $i$ of the result $Y$:\n\n$$\nY[i] =\n\\begin{cases}\n-X[i] & \\text{if } -X[i] \\text{ lies in } [-2^{n-1},\\, 2^{n-1}-1] \\\\\n-X[i] -_{(\\text{i}n)} 2^n & \\text{if } -X[i] \\text{ is greater than } 2^{n-1}-1\n\\end{cases}\n$$\n\nwhere\n- $-X[i]$ is the exact negation in $\\mathbb{Z}$ of the element $X[i]$, before the reduction modulo $2^n$,\n- $-_{(\\text{i}n)}$ is the subtraction of the $n$-bit signed type: the exact difference of its two operands, read as a signed $n$-bit value, i.e. reduced modulo $2^n$ into $[-2^{n-1},\\, 2^{n-1}-1]$,\n- $n$ is the number of bits of the type of $X$ and $Y$.\n\nThe result is thus the exact negation modulo $2^n$, read as a signed value. The values of an $n$-bit signed type lie in $[-2^{n-1}, 2^{n-1}-1]$, so that their exact negation lies in $[-(2^{n-1}-1), 2^{n-1}]$: the second case applies only to the minimum value $-2^{n-1}$ of the type, whose negation $2^{n-1}$ is not a value of the type, and the reduction is applied at most once.\n\n**The negation of the minimum value.** The range of the type is not symmetric about zero: the negation of the minimum value $-2^{n-1}$ is $2^{n-1}$, which is not representable in the type. The result is then $-2^{n-1}$ itself: for `int8`, $-(-128)$ gives $-128$. Tensors $X$ and $Y$ have the same type and no wider type is used, so that the value of $Y$ is that value of the type.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It has a single element, and $Y$ is the rank-0 tensor whose single element is the negation of that element.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. The corresponding dimension of $Y$ then has size $0$, and $Y$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>\n\nThe effect of the operator is illustrated on the following example.\n\n### Example\n\nFor the `int8` type:\n\n$$\nX = \\begin{bmatrix} 5 & -5 & 127 & -128 \\end{bmatrix}\n$$\n\n$$\nY = \\begin{bmatrix} -5 & 5 & -127 & -128 \\end{bmatrix}\n$$\n\nThe negations of $5$, $-5$ and $127$ lie in $[-2^7, 2^7-1]$ and are given by the first case of the definition. The negation of $-128$ is $128$, which is greater than the maximum value $2^7-1=127$ of `int8`, so the second case applies and the result is $128-2^8=-128$: the negation of the minimum value of the type is that value itself.\n\n## Error conditions\n\n| Condition | Disposition |\n| -------- | ------- |\n| Integer overflow, i.e. the negation of the minimum value $-2^{n-1}$ of the type, such as $-(-128)$ for `int8` | nominal: specified by [<b><span style=\"font-family: 'Courier New', monospace\">E_NEG_INT_FUNC_0010</span></b>](#E_NEG_INT_FUNC_0010), the result is $-2^{n-1}$ itself |\n| Division by zero | nominal: the operator performs no division, so the condition cannot occur |\n\nThe only condition of the list that applies to the signed integer types is the overflow, and it is part of the nominal behavior of the operator; there is no error. No error condition.\n\n## Attributes\n\nOperator **Neg** has no attribute.\n\n## Inputs\n\n### $\\text{X}$: signed integer tensor\n\nThe tensor whose elements are negated.\n\n#### Constraints\n\n<a id=\"E_NEG_INT_CONSTR_X_0010\"></a>\n- `[E_NEG_INT_CONSTR_X_0010]` Type consistency\n  - Statement: Tensors $X$ and $Y$ have the same type.\n\n## Outputs\n\n### $\\text{Y}$: signed integer tensor\n\nTensor $Y$ is the element-wise negation of $X$.\n\n#### Constraints\n\n<a id=\"E_NEG_INT_CONSTR_Y_0010\"></a>\n- `[E_NEG_INT_CONSTR_Y_0010]` Shape definition\n  - Statement: Tensor $Y$ has the same shape as $X$.\n- `[E_NEG_INT_CONSTR_Y_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_NEG_INT_CONSTR_X_0010</span></b>](#E_NEG_INT_CONSTR_X_0010) on tensor $X$.\n",
+  "spec_path": "agents/runs/Neg/Neg.md",
+  "spec_md5": "bf2ba1b78381c17d01ca611b703ce378",
+  "lint": {
+    "ok": true,
+    "findings": [],
+    "stdout": "agents/runs/Neg/Neg.md: 329 lines, CRLF\n  sections       : float, int, real\n  red spans      : 3\n  tags declared  : 10 (3 statements, 7 constraints)\n  tag zones      : {'CONSTR_Y': 5, 'CONSTR_X': 2, 'FUNC': 3}\n\nno mechanical finding",
+    "returncode": 0
+  },
+  "review": {
+    "ok": true,
+    "findings": [],
+    "notes": "Checked the three family sections against the verdict: real, float and int apply and are present with their own anchors, Contents entries, tags and examples; uint is absent and correctly absent. The float section indexes the negation as -_{(f)} and decides +0/-0, \u00b1inf and NaN as operands and as results, with the NaN payload left open and the set of conforming results given; the int section decides the minimum-value wrap-around with a tiling two-case formula and an int8 example; the real section decides rank-0 and zero-sized dimensions. Error tables give dispositions by tag rather than restatements, and the int table's overflow row is genuinely specified by the Function section. No bare operator in a machine-type section, no result described in terms of the type of C, no forbidden construct, no announcement. The linter reports nothing mechanical."
+  },
+  "spec_ok": true,
+  "checked_md5": "bf2ba1b78381c17d01ca611b703ce378",
+  "no_progress": false,
+  "review_failed": false,
+  "impl_path": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Neg/iter-001-impl.py",
+  "impl_text": "\"\"\"\nImplementation of the ONNX Neg operator (opset 14) as specified.\n\nThis module implements the Neg operator for the real, float16/float/double,\nand int8/int16/int32/int64 type families. The entry point is `neg`.\n\"\"\"\n\nimport numpy as np\n\n# DECISION: The document describes three type families (real, float, int) but does not\n# specify how a single entry point should dispatch or whether it should handle all.\n# We implement one function `neg` that applies element-wise negation to any numpy array,\n# relying on numpy's type-preserving unary minus. The document says for each family:\n# \"Operator Neg flips the sign of every element of tensor X and stores the result in tensor Y.\"\n# This is the common operation.\n\n# DECISION: The document says \"tensor\" but does not define the concrete data structure.\n# The task requires numpy. We assume numpy arrays and use `np.negative`, which operates\n# element-wise and preserves shape and dtype.\n\n# DECISION: The document says \"real tensor\" but does not specify which numpy dtype\n# corresponds to \"real\". We do not convert; we apply unary minus to the input as-is.\n# The document says \"The negation is exact: Y[i] is the opposite of X[i] in R, with no\n# approximation.\" We rely on the input's own type and numpy's unary minus, which is\n# exact for the types numpy supports.\n\n# DECISION: The document says the sign and payload of a NaN result are not specified.\n# We do not attempt to control them; numpy's unary minus produces a NaN, which is\n# conforming. The document says \"the negation of a NaN is a NaN; the sign and the\n# payload of that NaN are not specified, so that every quiet NaN of the type of X and Y\n# is a conforming result.\"\n\n# DECISION: The document states no error conditions. We perform no validation and do\n# not suppress any warnings that numpy may emit for integer overflow, as the document\n# does not mention warnings. The document says \"No error condition.\"\n\n# DECISION: The document specifies that Y has the same shape as X. We rely on numpy's\n# unary minus preserving shape, including rank-0 and zero-sized dimensions. The document\n# says \"Tensor Y has the same shape as X.\" and \"Tensors with no dimension... Y is the\n# rank-0 tensor...\" and \"Zero-sized dimensions... Y is empty.\"\n\n# DECISION: The document specifies that X and Y have the same type. We rely on numpy's\n# unary minus preserving dtype for signed ints and floats. The document says \"Tensors X\n# and Y have the same type.\"\n\n# DECISION: The document says the operator has no attributes. Our function takes only\n# the input tensor. The document says \"Operator Neg has no attribute.\"\n\n# DECISION: The document references general restrictions but does not include them.\n# We implement only the specific Neg semantics described here. The document says\n# \"General restrictions are applicable.\" but does not provide them.\n\n# DECISION: The document says no specific restrictions apply. We do not restrict input\n# values or shapes. The document says \"No specific restrictions apply to the Neg operator.\"\n\n# DECISION: The document provides examples but does not require special handling. We do\n# not special-case them. The document says \"The effect of the operator is illustrated on\n# the following example.\"\n\n# DECISION: The document is based on ONNX opset 14. We implement the semantics as\n# described. The document says \"Based on ONNX documentation Neg version 14.\"\n\n# DECISION: The document names the input X and the output Y. We use X as the parameter\n# name and return the result. The document says \"Inputs: X: ...\" and \"Outputs: Y: ...\".\n\n# DECISION: The document specifies special floating-point values: +0 -> -0, -0 -> +0,\n# +inf -> -inf, -inf -> +inf. We rely on numpy's IEEE 754 negation for these. The\n# document says \"the negation of +0 is -0, and the negation of -0 is +0; the negation\n# of +inf is -inf, and the negation of -inf is +inf\".\n\n# DECISION: The document specifies the integer minimum value negates to itself. We rely\n# on numpy's two's-complement wrap-around for signed integers, which matches the\n# specified modulo 2^n reduction. The document says \"The negation of the minimum value...\n# The result is then -2^{n-1} itself: for int8, -(-128) gives -128.\"\n\n# DECISION: The document says the negation is exact. We rely on numpy's unary minus,\n# which is exact for the types. The document says \"The negation is exact: Y[i] is the\n# opposite of X[i] in R, with no approximation.\" and \"The negation of IEEE 754 is exact:\n# it changes the sign of the operand and leaves its magnitude unchanged, so that no\n# rounding occurs and the result is always representable in the type of X and Y.\"\n\n# DECISION: The document says invalid operation, overflow, underflow, and division by\n# zero are nominal. We do not perform any operation that would raise these. The document\n# says \"Every condition of the list is part of the nominal behavior of the operator;\n# none of them is an error. No error condition.\"\n\n\ndef neg(X):\n    \"\"\"\n    Neg operator.\n\n    This function implements the ONNX Neg operator (opset 14) as specified for the\n    real, float16/float/double, and int8/int16/int32/int64 type families.\n\n    The document states for the real type family:\n    \"Operator Neg flips the sign of every element of tensor X and stores the result\n    in tensor Y. Each element of Y is the negation of the element of X that has the\n    same index. For any tensor index i of the result Y: Y[i] = -X[i] where -X[i] is\n    the negation in R of the element X[i]. The negation is exact: Y[i] is the\n    opposite of X[i] in R, with no approximation.\"\n\n    For the float type family:\n    \"Operator Neg flips the sign of every element of tensor X according to IEEE 754\n    floating-point semantics and stores the result in tensor Y. Each element of Y is\n    the negation of the element of X that has the same index. For any tensor index i\n    of the result Y: Y[i] = -_(f) X[i] where -_(f) is the negation of the floating-point\n    type of X and Y, i.e. -_(f16), -_(f32) or -_(f64) according to that type. The\n    negation of IEEE 754 is exact: it changes the sign of the operand and leaves its\n    magnitude unchanged, so that no rounding occurs and the result is always\n    representable in the type of X and Y. In particular: the negation of +0 is -0,\n    and the negation of -0 is +0; the negation of +inf is -inf, and the negation of\n    -inf is +inf; the negation of a finite value is the finite value of the opposite\n    sign and of the same magnitude, whether that value is normal or subnormal; the\n    negation of a NaN is a NaN; the sign and the payload of that NaN are not specified,\n    so that every quiet NaN of the type of X and Y is a conforming result.\"\n\n    For the int type family:\n    \"Operator Neg flips the sign of every element of tensor X and stores the result\n    in tensor Y. Each element of Y is the negation of the element of X that has the\n    same index. Tensors X and Y have the same signed n-bit type, and the result is a\n    value of that type. For any tensor index i of the result Y: Y[i] = -X[i] if -X[i]\n    lies in [-2^{n-1}, 2^{n-1}-1]; Y[i] = -X[i] -_(in) 2^n if -X[i] is greater than\n    2^{n-1}-1, where -X[i] is the exact negation in Z of the element X[i], before the\n    reduction modulo 2^n, -_(in) is the subtraction of the n-bit signed type: the\n    exact difference of its two operands, read as a signed n-bit value, i.e. reduced\n    modulo 2^n into [-2^{n-1}, 2^{n-1}-1], and n is the number of bits of the type of\n    X and Y. The result is thus the exact negation modulo 2^n, read as a signed value.\n    The values of an n-bit signed type lie in [-2^{n-1}, 2^{n-1}-1], so that their exact\n    negation lies in [-(2^{n-1}-1), 2^{n-1}]: the second case applies only to the\n    minimum value -2^{n-1} of the type, whose negation 2^{n-1} is not a value of the\n    type, and the reduction is applied at most once. The negation of the minimum value.\n    The range of the type is not symmetric about zero: the negation of the minimum\n    value -2^{n-1} is 2^{n-1}, which is not representable in the type. The result is\n    then -2^{n-1} itself: for int8, -(-128) gives -128. Tensors X and Y have the same\n    type and no wider type is used, so that the value of Y is that value of the type.\"\n\n    The document also states for all type families:\n    \"Tensors with no dimension. A tensor with no dimension (a rank-0 tensor) is a\n    tensor whose shape is empty. It has a single element, and Y is the rank-0 tensor\n    whose single element is the negation of that element.\"\n    \"Zero-sized dimensions. An operand may have a zero-sized dimension. The\n    corresponding dimension of Y then has size 0, and Y is empty.\"\n    \"Operator Neg has no attribute.\"\n    \"No error condition.\"\n\n    The document specifies the shape constraint:\n    \"Tensor Y has the same shape as X.\"\n    and the type consistency constraint:\n    \"Tensors X and Y have the same type.\"\n\n    This implementation uses numpy's unary minus (`np.negative`), which performs\n    element-wise negation, preserves shape, and preserves dtype for the supported\n    types. It does not add any validation or error handling, as the document states\n    no error conditions.\n    \"\"\"\n    return np.negative(X)\n",
+  "decisions": "# DECISION: The document describes three type families (real, float, int) but does not\n# specify how a single entry point should dispatch or whether it should handle all.\n# We implement one function `neg` that applies element-wise negation to any numpy array,\n# relying on numpy's type-preserving unary minus. The document says for each family:\n# \"Operator Neg flips the sign of every element of tensor X and stores the result in tensor Y.\"\n# This is the common operation.\n\n\n# DECISION: The document says \"tensor\" but does not define the concrete data structure.\n# The task requires numpy. We assume numpy arrays and use `np.negative`, which operates\n# element-wise and preserves shape and dtype.\n\n\n# DECISION: The document says \"real tensor\" but does not specify which numpy dtype\n# corresponds to \"real\". We do not convert; we apply unary minus to the input as-is.\n# The document says \"The negation is exact: Y[i] is the opposite of X[i] in R, with no\n# approximation.\" We rely on the input's own type and numpy's unary minus, which is\n# exact for the types numpy supports.\n\n\n# DECISION: The document says the sign and payload of a NaN result are not specified.\n# We do not attempt to control them; numpy's unary minus produces a NaN, which is\n# conforming. The document says \"the negation of a NaN is a NaN; the sign and the\n# payload of that NaN are not specified, so that every quiet NaN of the type of X and Y\n# is a conforming result.\"\n\n\n# DECISION: The document states no error conditions. We perform no validation and do\n# not suppress any warnings that numpy may emit for integer overflow, as the document\n# does not mention warnings. The document says \"No error condition.\"\n\n\n# DECISION: The document specifies that Y has the same shape as X. We rely on numpy's\n# unary minus preserving shape, including rank-0 and zero-sized dimensions. The document\n# says \"Tensor Y has the same shape as X.\" and \"Tensors with no dimension... Y is the\n# rank-0 tensor...\" and \"Zero-sized dimensions... Y is empty.\"\n\n\n# DECISION: The document specifies that X and Y have the same type. We rely on numpy's\n# unary minus preserving dtype for signed ints and floats. The document says \"Tensors X\n# and Y have the same type.\"\n\n\n# DECISION: The document says the operator has no attributes. Our function takes only\n# the input tensor. The document says \"Operator Neg has no attribute.\"\n\n\n# DECISION: The document references general restrictions but does not include them.\n# We implement only the specific Neg semantics described here. The document says\n# \"General restrictions are applicable.\" but does not provide them.\n\n\n# DECISION: The document says no specific restrictions apply. We do not restrict input\n# values or shapes. The document says \"No specific restrictions apply to the Neg operator.\"\n\n\n# DECISION: The document provides examples but does not require special handling. We do\n# not special-case them. The document says \"The effect of the operator is illustrated on\n# the following example.\"\n\n\n# DECISION: The document is based on ONNX opset 14. We implement the semantics as\n# described. The document says \"Based on ONNX documentation Neg version 14.\"\n\n\n# DECISION: The document names the input X and the output Y. We use X as the parameter\n# name and return the result. The document says \"Inputs: X: ...\" and \"Outputs: Y: ...\".\n\n\n# DECISION: The document specifies special floating-point values: +0 -> -0, -0 -> +0,\n# +inf -> -inf, -inf -> +inf. We rely on numpy's IEEE 754 negation for these. The\n# document says \"the negation of +0 is -0, and the negation of -0 is +0; the negation\n# of +inf is -inf, and the negation of -inf is +inf\".\n\n\n# DECISION: The document specifies the integer minimum value negates to itself. We rely\n# on numpy's two's-complement wrap-around for signed integers, which matches the\n# specified modulo 2^n reduction. The document says \"The negation of the minimum value...\n# The result is then -2^{n-1} itself: for int8, -(-128) gives -128.\"\n\n\n# DECISION: The document says the negation is exact. We rely on numpy's unary minus,\n# which is exact for the types. The document says \"The negation is exact: Y[i] is the\n# opposite of X[i] in R, with no approximation.\" and \"The negation of IEEE 754 is exact:\n# it changes the sign of the operand and leaves its magnitude unchanged, so that no\n# rounding occurs and the result is always representable in the type of X and Y.\"\n\n\n# DECISION: The document says invalid operation, overflow, underflow, and division by\n# zero are nominal. We do not perform any operation that would raise these. The document\n# says \"Every condition of the list is part of the nominal behavior of the operator;\n# none of them is an error. No error condition.\"\n\n",
+  "cases_path": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Neg/cases.py",
+  "report": {
+    "spec": "agents/runs/Neg/Neg.md",
+    "op": "Neg",
+    "opset": 14,
+    "impl": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Neg/iter-001-impl.py",
+    "entry": "neg",
+    "generated": "2026-10-04T09:10:53Z",
+    "cases": {
+      "total": 156,
+      "passed": 151,
+      "mismatched": [],
+      "open": [
+        {
+          "case": "real: the document's Example",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+        },
+        {
+          "case": "real: signed zeros and integers",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+        },
+        {
+          "case": "real: rationals",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+        },
+        {
+          "case": "real: a rank-0 tensor",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+        },
+        {
+          "case": "real: a zero-sized dimension",
+          "reason": "InvalidGraph: [ONNXRuntimeError] : 10 : INVALID_GRAPH : This is an invalid model. Type Error: Type 'tensor(string)' of input parameter (in0) of operator (Neg) in node (node0) is invalid."
+        }
+      ],
+      "nan_payload": [
+        {
+          "case": "float16: NaN, quiet"
+        },
+        {
+          "case": "float16: NaN, quiet with the sign bit set"
+        },
+        {
+          "case": "float16: NaN, signalling"
+        },
+        {
+          "case": "float16: NaN, signalling with the sign bit set"
+        },
+        {
+          "case": "float16: NaN, several payloads"
+        }
+      ]
+    },
+    "sweeps": [
+      {
+        "sweep": "the document's worked examples",
+        "summary": "4 examples, as documented vs ORT vs implementation",
+        "failures": []
+      },
+      {
+        "sweep": "the float special values (sign flip, bit for bit)",
+        "summary": "float16 18 values, float32 18 values, float64 18 values",
+        "failures": []
+      },
+      {
+        "sweep": "the integer domain (document vs ORT vs implementation)",
+        "summary": "int8 exhaustive, 256 values; int16 207 boundary and random values; int32 207 boundary and random values; int64 207 boundary and random values",
+        "failures": []
+      },
+      {
+        "sweep": "the real section (exact rationals and high-precision decimals, no ONNX Runtime)",
+        "summary": "15 values checked against exact arithmetic",
+        "failures": []
+      }
+    ],
+    "ok": true
+  },
+  "test_ok": false,
+  "coverage": {
+    "real": 0,
+    "float": 0,
+    "int": 0
+  },
+  "uncovered": [
+    "float",
+    "int",
+    "real"
+  ],
+  "rebuild_cases": false,
+  "fail_signature": "bf2ba1b78381c17d01ca611b703ce378|[]|[]",
+  "previous_failure": "",
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "iteration": 1,
+  "spec_round": 2,
+  "seen_amendments": [
+    "[{\"fix\": \"Delete the line \\\"Definition of operator **Neg** signature:\\\" and keep the display formula $Y = \\\\textbf{Neg}(X)$ with its where-list.\", \"section\": \"**Neg** (real) / Signature\", \"severity\": \"blocking\", \"what\": \"\\\"Definition of operator **Neg** signature:\\\" \\u2014 an announcement that states nothing about the operator.\", \"why\": \"The checklist (mistake 4, known divergence 2) and the guidelines' rule against announcements that do not specify: the sentence is not specifying information and is stated in the imperative mood where the present indicative is required.\"}, {\"fix\": \"Delete the line and keep the formula and its where-list.\", \"section\": \"**Neg** (float) / Signature\", \"severity\": \"blocking\", \"what\": \"\\\"Definition of operator **Neg** signature:\\\" \\u2014 same announcement.\", \"why\": \"Same rule; the sentence is not part of the specification.\"}, {\"fix\": \"Delete the line and keep the formula and its where-list.\", \"section\": \"**Neg** (int) / Signature\", \"severity\": \"blocking\", \"what\": \"\\\"Definition of operator **Neg** signature:\\\" \\u2014 same announcement.\", \"why\": \"Same rule.\"}, {\"fix\": \"Write the second case as $-X[i] -_{(\\text{i}n)} 2^n$ (or state explicitly that the subtraction is the exact subtraction in $\\\\mathbb{Z}$ followed by the reading of the result modulo $2^n$ as a signed value), and add a where-bullet defining $-_{(\\text{i}n)}$ as the subtraction of the $n$-bit signed type.\", \"section\": \"**Neg** (int) / Function\", \"severity\": \"blocking\", \"what\": \"The case analysis is written on the exact negation $-X[i]$ in $\\\\mathbb{Z}$ and on the type of $X$ and $Y$; the second case is stated as \\\"$-X[i] - 2^n$\\\" without saying that the subtraction is the subtraction of $\\\\mathbb{Z}$ and that the result is then read as a signed $n$-bit value.\", \"why\": \"The guidelines require every operation on a machine type to be indexed ($+_{(\\text{i8})}$, \\u2026) and every symbol to be defined; a bare $-$ inside an integer section is the operation on $\\\\mathbb{R}$ (l.110), wh",
+    "[{\"fix\": \"Delete the line \\\"Definition of operator **Neg** signature:\\\" and keep the display formula $Y = \\\\textbf{Neg}(X)$ with its where-list.\", \"section\": \"**Neg** (real) / Signature\", \"severity\": \"blocking\", \"what\": \"\\\"Definition of operator **Neg** signature:\\\" \\u2014 an announcement that states nothing about the operator.\", \"why\": \"The checklist (mistake 4, known divergence 2) and the guidelines' rule against announcements that do not specify: the sentence is not specifying information and is stated in the imperative mood where the present indicative is required.\"}, {\"fix\": \"Delete the line and keep the formula and its where-list.\", \"section\": \"**Neg** (float) / Signature\", \"severity\": \"blocking\", \"what\": \"\\\"Definition of operator **Neg** signature:\\\" \\u2014 same announcement.\", \"why\": \"Same rule; the sentence is not part of the specification.\"}, {\"fix\": \"Delete the line and keep the formula and its where-list.\", \"section\": \"**Neg** (int) / Signature\", \"severity\": \"blocking\", \"what\": \"\\\"Definition of operator **Neg** signature:\\\" \\u2014 same announcement.\", \"why\": \"Same rule.\"}, {\"fix\": \"Write the second case as $-X[i] -_{(\\text{i}n)} 2^n$ (or state explicitly that the subtraction is the exact subtraction in $\\\\mathbb{Z}$ followed by the reading of the result modulo $2^n$ as a signed value), and add a where-bullet defining $-_{(\\text{i}n)}$ as the subtraction of the $n$-bit signed type.\", \"section\": \"**Neg** (int) / Function\", \"severity\": \"blocking\", \"what\": \"The case analysis is written on the exact negation $-X[i]$ in $\\\\mathbb{Z}$ and on the type of $X$ and $Y$; the second case is stated as \\\"$-X[i] - 2^n$\\\" without saying that the subtraction is the subtraction of $\\\\mathbb{Z}$ and that the result is then read as a signed $n$-bit value.\", \"why\": \"The guidelines require every operation on a machine type to be indexed ($+_{(\\text{i8})}$, \\u2026) and every symbol to be defined; a bare $-$ inside an integer section is the operation on $\\\\mathbb{R}$ (l.110), wh"
+  ],
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/Neg/Neg.md",
+      "characters": 12842
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Neg** (real) / Signature",
+          "what": "\"Definition of operator **Neg** signature:\" \u2014 an announcement that states nothing about the operator.",
+          "why": "The checklist (mistake 4, known divergence 2) and the guidelines' rule against announcements that do not specify: the sentence is not specifying information and is stated in the imperative mood where the present indicative is required.",
+          "fix": "Delete the line \"Definition of operator **Neg** signature:\" and keep the display formula $Y = \\textbf{Neg}(X)$ with its where-list."
+        },
+        {
+          "severity": "blocking",
+          "section": "**Neg** (float) / Signature",
+          "what": "\"Definition of operator **Neg** signature:\" \u2014 same announcement.",
+          "why": "Same rule; the sentence is not part of the specification.",
+          "fix": "Delete the line and keep the formula and its where-list."
+        },
+        {
+          "severity": "blocking",
+          "section": "**Neg** (int) / Signature",
+          "what": "\"Definition of operator **Neg** signature:\" \u2014 same announcement.",
+          "why": "Same rule.",
+          "fix": "Delete the line and keep the formula and its where-list."
+        },
+        {
+          "severity": "blocking",
+          "section": "**Neg** (int) / Function",
+          "what": "The case analysis is written on the exact negation $-X[i]$ in $\\mathbb{Z}$ and on the type of $X$ and $Y$; the second case is stated as \"$-X[i] - 2^n$\" without saying that the subtraction is the subtraction of $\\mathbb{Z}$ and that the result is then read as a signed $n$-bit value.",
+          "why": "The guidelines require every operation on a machine type to be indexed ($+_{(\text{i8})}$, \u2026) and every symbol to be defined; a bare $-$ inside an integer section is the operation on $\\mathbb{R}$ (l.110), which is not what the section means, and the reader cannot tell whether the reduction is a wrap-around or an exact integer subtraction.",
+          "fix": "Write the second case as $-X[i] -_{(\text{i}n)} 2^n$ (or state explicitly that the subtraction is the exact subtraction in $\\mathbb{Z}$ followed by the reading of the result modulo $2^n$ as a signed value), and add a where-bullet defining $-_{(\text{i}n)}$ as the subtraction of the $n$-bit signed type."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "agents/runs/Neg/Neg.md",
+      "characters": 12926
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": true,
+      "blocking": []
+    },
+    {
+      "agent": "implementer",
+      "iteration": 1,
+      "path": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Neg/iter-001-impl.py",
+      "decisions_count": 17
+    },
+    {
+      "agent": "tester",
+      "iteration": 1,
+      "ok": false,
+      "coverage": {
+        "real": 0,
+        "float": 0,
+        "int": 0
+      },
+      "uncovered": [
+        "float",
+        "int",
+        "real"
+      ],
+      "cases": 156,
+      "mismatched": 0,
+      "report": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Neg/iter-001-report.json"
+    }
+  ],
+  "trace": [
+    "writer round 1 -> agents/runs/Neg/Neg.md",
+    "checker: not ok",
+    "writer round 2 -> agents/runs/Neg/Neg.md",
+    "checker: ok",
+    "implementer iteration 1 -> /run/media/eric/Work1/Work/gits/sonnx/agents/runs/Neg/iter-001-impl.py",
+    "tester iteration 1: fail",
+    "finish: uncovered-section"
+  ],
+  "stopped": "a section of the document has no case"
+}

@@ -1,0 +1,83 @@
+{
+  "op": "Atan",
+  "opset": 14,
+  "outcome": "impl-unusable",
+  "spec": "agents/runs/Atan/atan.md",
+  "spec_md5": "ba7cdde646c15ad5ef4774ce3e8392be",
+  "iterations": 1,
+  "spec_rounds": 2,
+  "test_ok": null,
+  "coverage": null,
+  "uncovered": null,
+  "impl": "",
+  "cases": null,
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Atan** (float) \u2014 Function, Part 2",
+          "what": "The formula is stated only for elements that are not NaN, and the NaN case is then given as \"a quiet NaN of the type of $input$ and $output$\"; the sign of a null element is stated in prose (\"$\\arctan(+0) = +0$ and $\\arctan(-0) = -0$\") but the formula's `round` definition does not decide it, and the $\\pm\\infty$ case is delegated to \"the nearest value of the type of $input$ and $output$ to $\\pm\\frac{\\pi}{2}$\" without stating that the result is finite and which value it is.",
+          "why": "Guidelines, Function, Part 2: \"States, for every case that applies to the operator, what the operator does\" \u2014 the special values of the floating-point types, i.e. $+0$, $-0$, $+\\infty$, $-\\infty$ and NaN, as operands and as results, are among the cases that shall be decided. The formula's domain excludes NaN, so the NaN case is decided only by the prose, and the $\\pm\\infty$ case is left to the reader to evaluate $\\arctan(\\pm\\infty)$ and round it.",
+          "fix": "State the $\\pm\\infty$ result explicitly (the arctangent of $\\pm\\infty$ is $\\pm\\frac{\\pi}{2}$, whose nearest value of the type is the largest finite value below $\\frac{\\pi}{2}$), and state the NaN result as a quiet NaN of the type of $input$ and $output$ with sign and payload unspecified, so that the case is decided by the specification rather than by the reader's evaluation of the formula."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/Atan/atan.md",
+      "characters": 13685
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Atan** (real) \u2014 Signature",
+          "what": "\"Definition of operator **Atan** signature:\" \u2014 an announcement that states nothing about the operator.",
+          "why": "The checklist (mistake 4, known divergence 2) and the guidelines' rule against announcements that do not specify: the sentence is not specifying information and was removed from ops/add.md.",
+          "fix": "Delete the line \"Definition of operator **Atan** signature:\" and let the formula $output = \\textbf{Atan}(input)$ and its `where` list stand on their own."
+        },
+        {
+          "severity": "blocking",
+          "section": "**Atan** (float) \u2014 Signature",
+          "what": "\"Definition of operator **Atan** signature:\" \u2014 the same announcement in the float section.",
+          "why": "Same rule as above; the announcement is not part of the specification.",
+          "fix": "Delete the line \"Definition of operator **Atan** signature:\" in the float section as well."
+        },
+        {
+          "severity": "blocking",
+          "section": "**Atan** (float) \u2014 Function, Part 2",
+          "what": "The formula is stated only for finite elements, and the special values are then given in a separate paragraph; but the paragraph's first bullet says \"an element that is $\\pm 0$ gives $\\pm 0$\" while the formula's `round` definition already fixes the sign of a null result, and the $+\\infty$/$-\\infty$ bullet gives a decimal value (1.5703125, 1.5707963705062866, 1.5707963267948966) that is not derived from the stated rounding rule in the document.",
+          "why": "The case analysis must decide the value, not leave the reader to choose; the decimal constants are asserted rather than shown to be the roundTiesToEven rounding of $\\pi/2$ to the type, and the $\\pm 0$ bullet restates what `round` already decides.",
+          "fix": "Either state the $\\pm\\infty$ results as \"the value of the type of $input$ and $output$ nearest to $\\frac{\\pi}{2}$ (respectively $-\\frac{\\pi}{2}$), as given by $\\text{round}$\", dropping the decimal constants, or keep the constants and say explicitly that they are the roundTiesToEven rounding of $\\frac{\\pi}{2}$ to each type. Remove the $\\pm 0$ bullet or mark it as a restatement of the `round` definition."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "agents/runs/Atan/atan.md",
+      "characters": 13628
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": true,
+      "blocking": []
+    }
+  ],
+  "report": null,
+  "cases_unusable": null,
+  "impl_unusable": "the answer is not Python: unterminated string literal (detected at line 11) (<unknown>, line 11)",
+  "finished": "2026-10-04T12:17:05"
+}

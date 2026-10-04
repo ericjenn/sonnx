@@ -1,0 +1,16 @@
+# ONNX operator definition, as the `onnx` package 1.23.1 states it (schema of opset 13, the opset asked for is 14)
+
+**Neg**, since opset 13.
+
+Neg takes one input data (Tensor<T>) and produces one output data
+(Tensor<T>) where each element flipped sign, y = -x, is applied to
+the tensor elementwise.
+
+- type constraint `T`: `tensor(float)`, `tensor(int32)`, `tensor(int8)`, `tensor(int16)`, `tensor(int64)`, `tensor(float16)`, `tensor(double)`, `tensor(bfloat16)`. Constrain input and output types to signed numeric tensors.
+
+- Input `X` (`tensor(bfloat16)`, `tensor(int32)`, `tensor(int16)`, `tensor(int8)`, `tensor(float)`, `tensor(int64)`, `tensor(double)`, `tensor(float16)`): Input tensor
+- Output `Y` (`tensor(bfloat16)`, `tensor(int32)`, `tensor(int16)`, `tensor(int8)`, `tensor(float)`, `tensor(int64)`, `tensor(double)`, `tensor(float16)`): Output tensor
+
+This operator has no attribute.
+
+Documentation page: https://onnx.ai/onnx/operators/onnx__Neg.html

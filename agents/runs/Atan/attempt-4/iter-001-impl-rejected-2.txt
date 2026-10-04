@@ -1,0 +1,43 @@
+# the answer is not Python: unterminated string literal (detected at line 11) (<unknown>, line 11)
+
+r"""Element-wise arctangent: the ONNX **Atan** operator (opset 14).
+
+This module implements the operator ``Atan`` as specified by the document
+"Atan" (revision 2026-10-03, based on ONNX opset 14).  The document defines
+the operator twice:
+
+* for the type *real*, by the function ``E_ATAN_REAL_FUNC_0010``, which gives
+  the mathematical definition of the arctangent of a real number;
+* for the types ``float16``, ``float`` and ``double``, by the function
+  ``E_ATAN_FLOAT_FUNC_0010``, which gives the floating-point definition,
+  including the treatment of the special values ``+0``, ``-0``, ``+inf``,
+  ``-inf`` and NaN.
+
+The single entry point :func:`atan` implements both: the floating-point
+definition is the real definition followed by a rounding to the type of the
+input and output.
+
+The document states that the operator has no attribute, that it is unary and
+element-wise, that the output tensor has the same shape as the input tensor
+(constraints ``E_ATAN_REAL_CONSTR_INPUT_0010`` and
+``E_ATAN_FLOAT_CONSTR_INPUT_0010``, and their output counterparts), and that
+the input and the output have the same type (constraints
+``E_ATAN_FLOAT_CONSTR_INPUT_0020`` and ``E_ATAN_FLOAT_CONSTR_OUTPUT_0020``).
+"""
+
+import numpy as np
+
+
+def atan(input):
+    r"""Return the element-wise arctangent of ``input``.
+
+    The document, function ``E_ATAN_REAL_FUNC_0010``, Part 1, states:
+
+        "Operator **Atan** computes the arctangent of every element of the
+        input tensor, element-wise, and stores the results in the output
+        tensor.  The arctangent is the inverse of the tangent: the result is
+        the angle, in radians, whose tangent is the element."
+
+    Part 2 of the same function states:
+
+        "For every element $input[i]$ of the input

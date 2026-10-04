@@ -1,0 +1,61 @@
+{
+  "op": "Neg",
+  "opset": 14,
+  "outcome": "unresolved-review",
+  "spec": "agents/runs/Neg/Neg.md",
+  "spec_md5": "eef8b0c99fad8464a3f3932e308465f2",
+  "iterations": 0,
+  "spec_rounds": 2,
+  "test_ok": null,
+  "coverage": null,
+  "uncovered": null,
+  "impl": null,
+  "cases": null,
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/Neg/Neg.md",
+      "characters": 12597
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "(the review)",
+          "what": "the verifier did not return JSON: no JSON object in the response: ",
+          "why": "the review is unreadable",
+          "fix": "re-run the review"
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "agents/runs/Neg/Neg.md",
+      "characters": 8716
+    },
+    {
+      "agent": "checker",
+      "lint_ok": false,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "(the review)",
+          "what": "the verifier did not return JSON: no JSON object in the response: ",
+          "why": "the review is unreadable",
+          "fix": "re-run the review"
+        }
+      ]
+    }
+  ],
+  "report": null,
+  "finished": "2026-10-04T09:57:18"
+}

@@ -1,0 +1,89 @@
+{
+  "op": "Neg",
+  "opset": 14,
+  "spec": "# Contents\n\n- **Neg** operator for type [real](#real)\n- **Neg** operator for types [`float16`, `float`, `double`](#float)\n- **Neg** operator for types [`int8`, `int16`, `int32`, `int64`](#int)\n\nBased on ONNX documentation [Neg version 13](https://onnx.ai/onnx/operators/onnx__Neg.html#neg-13).\n\nRevision 2026-10-03: first issue of this specification, based on ONNX opset 14, in which **Neg** is at version 13.\n\n<a id=\"real\"></a>\n\n# **Neg** (real)\n\n## Signature\n\nDefinition of operator **Neg** signature:\n\n $Y = \\text{Neg}(X)$\n\n where\n - $X$: input tensor\n - $Y$: result of the element-wise negation of $X$\n\n## Restrictions\n\n[General restrictions](./../common/general_restrictions.md) are applicable.\n\nNo specific restrictions apply to the **Neg** operator.\n\n## Function\n\n<a id=\"E_NEG_REAL_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_NEG_REAL_FUNC_0010]</br></span>\n\n**Part 1.** Operator **Neg** computes the negation of the input tensor $X$ element-wise and stores the result in tensor $Y$.\n\n**Part 2.** For any [tensor index](./../common/definitions.md#tensor_index) $i$ of the result $Y$:\n\n$$\nY[i] = -X[i]\n$$\n\nwhere\n- $X[i]$ is the element of $X$ at index $i$,\n- $-X[i]$ is the opposite of $X[i]$ in $\\mathbb{R}$.\n\nThe negation is exact: $Y[i]$ is the opposite in $\\mathbb{R}$ of $X[i]$, with no approximation, and $X[i] + Y[i] = 0$ for every element.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. Its single element is negated, and $Y$ is a rank-0 tensor.\n\n**Zero-sized dimensions.** Tensor $X$ may have a zero-sized dimension. The corresponding dimension of $Y$ then has size $0$, and $Y$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>\n\nThe effect of the operator is illustrated on the following example.\n\n### Example\n\n$$\nX = \\begin{bmatrix} 3 & -4.5 & 0 \\end{bmatrix}\n$$\n\n$$\nY = \\begin{bmatrix} -3 & 4.5 & 0 \\end{bmatrix}\n$$\n\nThe negation is exact for every element, and the opposite of $0$ is $0$.\n\n## Error conditions\n\nNone of the conditions of the list applies to real numbers: the negation is exact and total, so that the result is the one specified by [<b><span style=\"font-family: 'Courier New', monospace\">E_NEG_REAL_FUNC_0010</span></b>](#E_NEG_REAL_FUNC_0010) for every operand, and no invalid operation, no overflow and no division by zero can occur. No error condition.\n\n## Attributes\n\nOperator **Neg** has no attribute.\n\n## Inputs\n\n### $\\text{X}$: real tensor\n\nThe tensor whose elements are negated.\n\n#### Constraints\n\nNo constraint applies to input $X$.\n\n## Outputs\n\n### $\\text{Y}$: real tensor\n\nTensor $Y$ is the element-wise negation of $X$.\n\n#### Constraints\n\n<a id=\"E_NEG_REAL_CONSTR_Y_0010\"></a>\n- `[E_NEG_REAL_CONSTR_Y_0010]` Shape definition\n  - Statement: Tensor $Y$ has the shape of $X$.\n\n<a id=\"float\"></a>\n\n# **Neg** (float)\n\nwhere float is in {`float16`, `float`, `double`}.\n\nThe three types share one semantics: the IEEE 754 standard defines the same negation for all of them, and they differ only by their precision and by the range of the values they represent.\n\n## Signature\n\nDefinition of operator **Neg** signature:\n\n $Y = \\text{Neg}(X)$\n\n where\n - $X$: input tensor\n - $Y$: result of the element-wise negation of $X$\n\n## Restrictions\n\n[General restrictions](./../common/general_restrictions.md) are applicable.\n\nNo specific restrictions apply to the **Neg** operator.\n\n## Function\n\n<a id=\"E_NEG_FLOAT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_NEG_FLOAT_FUNC_0010]</br></span>\n\n**Part 1.** Operator **Neg** computes the negation of the input tensor $X$ element-wise according to IEEE 754 floating-point semantics and stores the result in tensor $Y$.\n\n**Part 2.** For any [tensor index](./../common/definitions.md#tensor_index) $i$ of the result $Y$:\n\n$$\nY[i] = -_{(\\text{f})} X[i]\n$$\n\nwhere $-_{(\\text{f})}$ is the negation of the floating-point type of $X$, i.e. $-_{(\\text{f16})}$, $-_{(\\text{f32})}$ or $-_{(\\text{f64})}$ according to that type.\n\nThe negation of a floating-point number is exact: $Y[i]$ is the value of the type of $X$ whose sign is the opposite of the sign of $X[i]$ and whose magnitude is the magnitude of $X[i]$. No rounding takes place, so that no result is inexact, and the magnitude of the result is a magnitude of the type of $X$, so that no result exceeds the largest finite value of that type.\n\n**Values of the operands.** The operand may be any of the values of the type of $X$, including the special numbers $\\pm 0$, $\\pm\\text{inf}$ and NaN. The cases are:\n\n- if $X[i]$ is a finite non-zero value, $Y[i]$ is the value of the type of $X$ with the opposite sign and the same magnitude;\n- if $X[i]$ is $+0$, $Y[i]$ is $-0$, and if $X[i]$ is $-0$, $Y[i]$ is $+0$;\n- if $X[i]$ is $+\\text{inf}$, $Y[i]$ is $-\\text{inf}$, and if $X[i]$ is $-\\text{inf}$, $Y[i]$ is $+\\text{inf}$;\n- if $X[i]$ is NaN, $Y[i]$ is a NaN. The sign and the payload of a NaN are not specified by IEEE 754, so that every quiet NaN of the type of $X$ is a conforming result.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. Its single element is negated, and $Y$ is a rank-0 tensor.\n\n**Zero-sized dimensions.** Tensor $X$ may have a zero-sized dimension. The corresponding dimension of $Y$ then has size $0$, and $Y$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>\n\nThe effect of the operator is illustrated on the following example.\n\n### Example\n\n$$\nX = \\begin{bmatrix} 1.5 & -2.25 & \\text{+0} & \\text{-0} & \\text{+inf} & \\text{-inf} & \\text{NaN} \\end{bmatrix}\n$$\n\n$$\nY = \\begin{bmatrix} -1.5 & 2.25 & \\text{-0} & \\text{+0} & \\text{-inf} & \\text{+inf} & \\text{NaN} \\end{bmatrix}\n$$\n\nThe negation is exact: it reverses the sign of the operand and leaves its magnitude unchanged. The negation of $+0$ is $-0$ and the negation of $-0$ is $+0$; the negation of an infinity is the infinity of the opposite sign; the negation of a NaN is a NaN, whose sign and payload are not specified.\n\n## Error conditions\n\n| Condition | Disposition |\n| -------- | ------- |\n| Invalid operation, i.e. an operation of IEEE 754 section 7.2 | nominal: specified by [<b><span style=\"font-family: 'Courier New', monospace\">E_NEG_FLOAT_FUNC_0010</span></b>](#E_NEG_FLOAT_FUNC_0010); the negation introduces no invalid operation, and a NaN operand gives a NaN result |\n| Overflow, i.e. a result whose magnitude exceeds the largest finite value of the type | nominal: specified by [<b><span style=\"font-family: 'Courier New', monospace\">E_NEG_FLOAT_FUNC_0010</span></b>](#E_NEG_FLOAT_FUNC_0010); the result has the magnitude of the operand, so that no result exceeds the largest finite value of the type |\n| Division by zero | not applicable: the operator performs no division, so that the condition cannot occur |\n\nEvery condition that applies to the floating-point types is part of the nominal behavior of the operator; none of them is an error. No error condition.\n\n## Attributes\n\nOperator **Neg** has no attribute.\n\n## Inputs\n\n### $\\text{X}$: floating-point tensor\n\nThe tensor whose elements are negated.\n\n#### Constraints\n\n<a id=\"E_NEG_FLOAT_CONSTR_X_0010\"></a>\n- `[E_NEG_FLOAT_CONSTR_X_0010]` Type consistency\n  - Statement: Tensors $X$ and $Y$ have the same type.\n\n## Outputs\n\n### $\\text{Y}$: floating-point tensor\n\nTensor $Y$ is the element-wise negation of $X$.\n\n#### Constraints\n\n<a id=\"E_NEG_FLOAT_CONSTR_Y_0010\"></a>\n- `[E_NEG_FLOAT_CONSTR_Y_0010]` Shape definition\n  - Statement: Tensor $Y$ has the shape of $X$.\n- `[E_NEG_FLOAT_CONSTR_Y_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_NEG_FLOAT_CONSTR_X_0010</span></b>](#E_NEG_FLOAT_CONSTR_X_0010) on tensor $X$.\n\n<a id=\"int\"></a>\n\n# **Neg** (int)\n\nwhere int is in {`int8`, `int16`, `int32`, `int64`}.\n\nThe four types share one semantics: each of them is an $n$-bit signed type, whose values range from $-2^{n-1}$ to $2^{n-1}-1$, and the negation of a value of that type is the value of the type that represents its opposite modulo $2^n$.\n\n## Signature\n\nDefinition of operator **Neg** signature:\n\n $Y = \\text{Neg}(X)$\n\n where\n - $X$: input tensor\n - $Y$: result of the element-wise negation of $X$\n\n## Restrictions\n\n[General restrictions](./../common/general_restrictions.md) are applicable.\n\nNo specific restrictions apply to the **Neg** operator.\n\n## Function\n\n<a id=\"E_NEG_INT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_NEG_INT_FUNC_0010]</br></span>\n\n**Part 1.** Operator **Neg** computes the negation of the input tensor $X$ element-wise and stores\n",
+  "spec_path": "agents/runs/Neg/Neg.md",
+  "spec_md5": "eef8b0c99fad8464a3f3932e308465f2",
+  "lint": {
+    "ok": false,
+    "findings": [
+      "- 3 red span(s) opened, 2 closed"
+    ],
+    "stdout": "agents/runs/Neg/Neg.md: 238 lines, CRLF\n  sections       : float, int, real\n  red spans      : 3\n  tags declared  : 7 (3 statements, 4 constraints)\n  tag zones      : {'FUNC': 3, 'CONSTR_Y': 3, 'CONSTR_X': 1}\n\n1 finding(s):\n  - 3 red span(s) opened, 2 closed",
+    "returncode": 1
+  },
+  "review": {
+    "ok": false,
+    "findings": [
+      {
+        "severity": "blocking",
+        "section": "(the review)",
+        "what": "the verifier did not return JSON: no JSON object in the response: ",
+        "why": "the review is unreadable",
+        "fix": "re-run the review"
+      }
+    ],
+    "notes": "no JSON object in the response: "
+  },
+  "spec_ok": false,
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "iteration": 0,
+  "spec_round": 2,
+  "seen_amendments": [
+    "[{\"fix\": \"re-run the review\", \"section\": \"(the review)\", \"severity\": \"blocking\", \"what\": \"the verifier did not return JSON: no JSON object in the response: \", \"why\": \"the review is unreadable\"}]",
+    "[{\"fix\": \"re-run the review\", \"section\": \"(the review)\", \"severity\": \"blocking\", \"what\": \"the verifier did not return JSON: no JSON object in the response: \", \"why\": \"the review is unreadable\"}]",
+    "[{\"fix\": \"re-run the review\", \"section\": \"(the review)\", \"severity\": \"blocking\", \"what\": \"the verifier did not return JSON: no JSON object in the response: \", \"why\": \"the review is unreadable\"}]"
+  ],
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/Neg/Neg.md",
+      "characters": 12597
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "(the review)",
+          "what": "the verifier did not return JSON: no JSON object in the response: ",
+          "why": "the review is unreadable",
+          "fix": "re-run the review"
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "agents/runs/Neg/Neg.md",
+      "characters": 8716
+    },
+    {
+      "agent": "checker",
+      "lint_ok": false,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "(the review)",
+          "what": "the verifier did not return JSON: no JSON object in the response: ",
+          "why": "the review is unreadable",
+          "fix": "re-run the review"
+        }
+      ]
+    }
+  ],
+  "trace": [
+    "writer round 1 -> agents/runs/Neg/Neg.md",
+    "checker: not ok",
+    "writer round 2 -> agents/runs/Neg/Neg.md",
+    "checker: not ok",
+    "finish: unresolved-review"
+  ],
+  "stopped": "the verifier's finding was not resolved"
+}

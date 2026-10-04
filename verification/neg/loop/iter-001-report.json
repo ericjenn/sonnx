@@ -1,0 +1,48 @@
+{
+  "spec": "agents/runs/Neg/Neg.md",
+  "op": "Neg",
+  "opset": 14,
+  "impl": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Neg/iter-001-impl.py",
+  "entry": "neg",
+  "generated": "2026-10-04T09:23:41Z",
+  "cases": {
+    "total": 145,
+    "passed": 145,
+    "mismatched": [],
+    "open": [],
+    "nan_payload": [
+      {
+        "case": "float16: NaN payload 1"
+      },
+      {
+        "case": "float16: NaN payload 3"
+      },
+      {
+        "case": "float16: NaN payload 4"
+      }
+    ]
+  },
+  "sweeps": [
+    {
+      "sweep": "the document's worked examples",
+      "summary": "3 examples, as documented vs ORT vs implementation",
+      "failures": []
+    },
+    {
+      "sweep": "float special values (document vs ORT vs implementation)",
+      "summary": "float16 23 values, float32 23 values, float64 23 values",
+      "failures": []
+    },
+    {
+      "sweep": "int domain (document vs ORT vs implementation)",
+      "summary": "4 types: int8 exhaustive, int16 208 values, int32 208 values, int64 208 values",
+      "failures": []
+    },
+    {
+      "sweep": "real section (exact rationals, no ONNX Runtime)",
+      "summary": "6 checks against fractions.Fraction; the section has no transcendental value, so no high-precision library is needed",
+      "failures": []
+    }
+  ],
+  "ok": true
+}

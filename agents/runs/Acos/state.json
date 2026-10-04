@@ -1,0 +1,258 @@
+{
+  "op": "Acos",
+  "opset": 14,
+  "spec_path": "agents/runs/Acos/acos.md",
+  "spec_md5": "70e60feb6a8fe7cc6403b2c82baf1e52",
+  "lint": {
+    "ok": true,
+    "findings": [],
+    "stdout": "agents/runs/Acos/acos.md: 266 lines, CRLF\n  sections       : float, real\n  red spans      : 2\n  tags declared  : 8 (2 statements, 6 constraints)\n  tag zones      : {'CONSTR_Y': 3, 'FUNC': 2, 'CONSTR_X': 3}\n\nno mechanical finding",
+    "returncode": 0
+  },
+  "review": {
+    "ok": true,
+    "findings": [],
+    "notes": "Checked the two sections against the decisive family verdict (real and float applicable; int and uint absent and correctly absent from the document). The real section is axiomatic with the branch [0, pi] stated, so it is not a delegation to a name; the float section decides the NaN, \u00b10, \u00b1Inf, bound and overflow cases in its formula, its `where` definitions and its prose, and the error table disposes of each condition by tag. Examples are in $$ blocks, use \u2248 where inexact, and exercise the section's own cases. No blocking finding; the linter reported nothing mechanical."
+  },
+  "spec_ok": true,
+  "checked_md5": "70e60feb6a8fe7cc6403b2c82baf1e52",
+  "no_progress": false,
+  "impl_path": "agents/runs/Acos/iter-001-impl.py",
+  "impl_text": "\"\"\"Acos operator (ONNX, opset 14).\n\nThis module implements the operator ``Acos`` as specified by the document\n\"Acos version 7\" (revision 2026-10-03, based on ONNX opset 14).  The\ndocument specifies the operator twice: once for the type ``real`` and once\nfor the types ``float16``, ``float`` and ``double``.\n\nThe entry point is :func:`acos`, which takes the single operand ``X`` and\nreturns the result ``Y``.\n\"\"\"\n\nimport numpy as np\n\n# DECISION: The document states that \"[General restrictions](./../common/\n# general_restrictions.md) are applicable\" and that \"No specific\n# restrictions apply to the Acos operator\", but the text of the general\n# restrictions is not reproduced in the provided specification.  Nothing\n# from them is implemented here.\n\n\ndef acos(X):\n    r\"\"\"Element-wise arccosine of the tensor ``X``.\n\n    The document specifies, for the type ``real``:\n\n        **Part 1.** Operator **Acos** computes the arccosine of tensor\n        :math:`X` element-wise and stores the result in tensor :math:`Y`.\n        The arccosine is the inverse of the cosine: each element of\n        :math:`Y` is the angle of :math:`[0, \\pi]` whose cosine is the\n        corresponding element of :math:`X`.\n\n        **Part 2.** For any tensor index :math:`i` of the result\n        :math:`Y`:\n\n        .. math:: Y[i] = \\text{acos}(X[i])\n\n        where :math:`\\text{acos}` is defined by the following property:\n        for every :math:`x` in :math:`[-1, 1]`, :math:`\\text{acos}(x)` is\n        the unique value :math:`y` such that :math:`\\cos(y) = x` and\n        :math:`y \\in [0, \\pi]`.\n\n    and, for the types ``float16``, ``float`` and ``double``:\n\n        **Part 1.** Operator **Acos** computes the arccosine of tensor\n        :math:`X` element-wise and stores the result in tensor :math:`Y`.\n        Each element of :math:`Y` is the value of the arccosine of the\n        corresponding element of :math:`X`, rounded to the type of\n        :math:`X` and :math:`Y`.\n\n        **Part 2.** For any tensor index :math:`i` of the result\n        :math:`Y`:\n\n        .. math:: Y[i] = \\text{round}(\\text{acos}(X[i]))\n\n        where :math:`\\text{round}(y)` is the value of :math:`y` rounded to\n        the nearest value of the type of :math:`X` and :math:`Y` using the\n        roundTiesToEven attribute of IEEE 754, the exponent range of the\n        type being unbounded.\n\n    The document also states:\n\n    * \"The constraint E_ACOS_REAL_CONSTR_X_0010 requires every element of\n      :math:`X` to lie in :math:`[-1, 1]`, so that the result is defined\n      for every element of :math:`X`.  Every element of :math:`Y` lies in\n      :math:`[0, \\pi]`.\"\n    * \"An operand that is NaN gives a NaN result; that NaN is a quiet NaN\n      whose sign and payload are not specified, so that every quiet NaN of\n      the type of :math:`X` and :math:`Y` is a conforming result.\"\n    * \"An operand that is :math:`+0` or :math:`-0` gives :math:`\\pi/2`\n      rounded to the type of :math:`X` and :math:`Y`: the arccosine of a\n      null value is :math:`\\pi/2` whatever the sign of the zero, so that\n      :math:`+0` and :math:`-0` give the same result.\"\n    * \"The result is null only when the operand is :math:`1`, and it is\n      then :math:`+0`.\"\n    * \"A tensor with no dimension (a rank-0 tensor) is a tensor whose\n      shape is empty.  The result is a rank-0 tensor whose single element\n      is the arccosine of the single element of :math:`X`.\"\n    * \"An operand may have a zero-sized dimension.  The result has the\n      same shape as :math:`X` and is then empty.\"\n    * Constraint E_ACOS_FLOAT_CONSTR_X_0020: \"Tensors :math:`X` and\n      :math:`Y` have the same type.\"\n    * Constraint E_ACOS_FLOAT_CONSTR_Y_0010: \"Tensor :math:`Y` has the\n      same shape as :math:`X`.\"\n\n    Parameters\n    ----------\n    X : array_like\n        The value whose arccosine is computed.  The document calls it a\n        tensor; every element of it lies in :math:`[-1, 1]`.\n\n    Returns\n    -------\n    numpy.ndarray\n        The element-wise arccosine of ``X``, with the same shape as ``X``\n        and, for the floating-point types, the same type as ``X``.\n    \"\"\"\n\n    # DECISION: The document says that X is a tensor and says nothing about\n    # operands that are not already arrays (Python scalars, lists, ...).\n    # ``numpy.asarray`` is used to obtain a tensor from the operand; for an\n    # operand that is already an array it is the identity.\n    x = np.asarray(X)\n\n    # DECISION: The document specifies the result of the operator (the real\n    # arccosine, rounded to the type of X and Y) but says nothing about how\n    # to compute it.  This module computes it with ``numpy.arccos``.  For\n    # the ``float`` and ``double`` types numpy delegates to the platform's\n    # ``acosf``/``acos``, which is not guaranteed to be correctly rounded\n    # (roundTiesToEven) for every input, whereas the document requires the\n    # correctly rounded result; a correctly rounded arccosine is not\n    # available here.\n    y = np.arccos(x)\n\n    # DECISION: Constraint E_ACOS_FLOAT_CONSTR_X_0020 states that \"Tensors X\n    # and Y have the same type\".  ``numpy.arccos`` preserves the dtype for\n    # float16, float32 and float64, so this cast is normally a no-op; it is\n    # applied only if numpy were to return a different floating-point type.\n    # For float16, if numpy computes in a wider type and rounds back, the\n    # result is a double rounding of the exact arccosine, a case the\n    # document does not discuss.\n    if np.issubdtype(x.dtype, np.floating) and y.dtype != x.dtype:\n        y = y.astype(x.dtype)\n\n    # DECISION: The document rules out operands outside [-1, 1] by the\n    # preconditions E_ACOS_REAL_CONSTR_X_0010 and E_ACOS_FLOAT_CONSTR_X_0010\n    # (\"Every element of X lies in [-1, 1]\"), so no validation is performed\n    # here.  For such an operand numpy returns NaN and emits a\n    # RuntimeWarning; the document does not mention that behaviour and the\n    # warning is not suppressed.\n\n    # DECISION: The document defines the operator for the type ``real`` and\n    # for the types ``float16``, ``float`` and ``double``; it says nothing\n    # about other dtypes.  No dtype is imposed: numpy's own type promotion\n    # applies (for instance an integer operand yields a float64 result), and\n    # a complex operand yields the complex arccosine, which is outside the\n    # document's scope.\n\n    # DECISION: The document says that for real numbers \"the result is\n    # exact\".  Floating-point values cannot represent the real arccosine\n    # exactly in general, so for floating-point operands the rounding rule\n    # of the float section (roundTiesToEven to the type of X and Y) applies;\n    # there is no separate exact code path.\n\n    # DECISION: The document says that a NaN operand gives a quiet NaN whose\n    # sign and payload are not specified, that +0 and -0 both give pi/2\n    # rounded, and that the result is null only for the operand 1 (then +0).\n    # ``numpy.arccos`` already has these properties, so no special handling\n    # is added.\n\n    # DECISION: The document says that the result has the same shape as X,\n    # that it is a rank-0 tensor when X is, and that it is empty when X has\n    # a zero-sized dimension.  ``numpy.arccos`` preserves the shape in all\n    # these cases, so no special handling is added.\n\n    # DECISION: The document says that the result of a rank-0 operand is a\n    # rank-0 tensor.  ``numpy.arccos`` returns a numpy scalar for a 0-d\n    # input; ``numpy.asarray`` turns it into a 0-d array, the representation\n    # of a rank-0 tensor, and is the identity for every other result.\n    return np.asarray(y)\n",
+  "decisions": "# DECISION: The document states that \"[General restrictions](./../common/\n# general_restrictions.md) are applicable\" and that \"No specific\n# restrictions apply to the Acos operator\", but the text of the general\n# restrictions is not reproduced in the provided specification.  Nothing\n# from them is implemented here.\n\n\n\n# DECISION: The document says that X is a tensor and says nothing about\n# operands that are not already arrays (Python scalars, lists, ...).\n# ``numpy.asarray`` is used to obtain a tensor from the operand; for an\n# operand that is already an array it is the identity.\n\n# DECISION: The document specifies the result of the operator (the real\n# arccosine, rounded to the type of X and Y) but says nothing about how\n# to compute it.  This module computes it with ``numpy.arccos``.  For\n# the ``float`` and ``double`` types numpy delegates to the platform's\n# ``acosf``/``acos``, which is not guaranteed to be correctly rounded\n# (roundTiesToEven) for every input, whereas the document requires the\n# correctly rounded result; a correctly rounded arccosine is not\n# available here.\n\n# DECISION: Constraint E_ACOS_FLOAT_CONSTR_X_0020 states that \"Tensors X\n# and Y have the same type\".  ``numpy.arccos`` preserves the dtype for\n# float16, float32 and float64, so this cast is normally a no-op; it is\n# applied only if numpy were to return a different floating-point type.\n# For float16, if numpy computes in a wider type and rounds back, the\n# result is a double rounding of the exact arccosine, a case the\n# document does not discuss.\n\n# DECISION: The document rules out operands outside [-1, 1] by the\n# preconditions E_ACOS_REAL_CONSTR_X_0010 and E_ACOS_FLOAT_CONSTR_X_0010\n# (\"Every element of X lies in [-1, 1]\"), so no validation is performed\n# here.  For such an operand numpy returns NaN and emits a\n# RuntimeWarning; the document does not mention that behaviour and the\n# warning is not suppressed.\n\n\n# DECISION: The document defines the operator for the type ``real`` and\n# for the types ``float16``, ``float`` and ``double``; it says nothing\n# about other dtypes.  No dtype is imposed: numpy's own type promotion\n# applies (for instance an integer operand yields a float64 result), and\n# a complex operand yields the complex arccosine, which is outside the\n# document's scope.\n\n\n# DECISION: The document says that for real numbers \"the result is\n# exact\".  Floating-point values cannot represent the real arccosine\n# exactly in general, so for floating-point operands the rounding rule\n# of the float section (roundTiesToEven to the type of X and Y) applies;\n# there is no separate exact code path.\n\n\n# DECISION: The document says that a NaN operand gives a quiet NaN whose\n# sign and payload are not specified, that +0 and -0 both give pi/2\n# rounded, and that the result is null only for the operand 1 (then +0).\n# ``numpy.arccos`` already has these properties, so no special handling\n# is added.\n\n\n# DECISION: The document says that the result has the same shape as X,\n# that it is a rank-0 tensor when X is, and that it is empty when X has\n# a zero-sized dimension.  ``numpy.arccos`` preserves the shape in all\n# these cases, so no special handling is added.\n\n\n# DECISION: The document says that the result of a rank-0 operand is a\n# rank-0 tensor.  ``numpy.arccos`` returns a numpy scalar for a 0-d\n# input; ``numpy.asarray`` turns it into a 0-d array, the representation\n# of a rank-0 tensor, and is the identity for every other result.",
+  "impl_unusable": "",
+  "cases_path": "agents/runs/Acos/cases.py",
+  "report": {
+    "spec": "agents/runs/Acos/acos.md",
+    "op": "Acos",
+    "opset": 14,
+    "impl": "agents/runs/Acos/iter-001-impl.py",
+    "entry": "acos",
+    "generated": "2026-10-04T10:55:10Z",
+    "cases": {
+      "total": 66,
+      "passed": 43,
+      "mismatched": [],
+      "open": [
+        {
+          "case": "float64: bounds -1, 0, 1",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: signed zeros",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: the document's Example 2 values",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: smallest normal and subnormal",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: largest finite",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: just inside 1",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: just inside -1",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: NaN operand, quiet, payload 1",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: NaN operand, quiet, payload 1, sign set",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: NaN operand, signalling",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: invalid operation, +inf",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: invalid operation, -inf",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: invalid operation, 2.0",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: invalid operation, -2.0",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: ordinary",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape rank-0",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape (1,)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape (2,3)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape (2,3,4)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape zero-sized: (0,)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape zero-sized: (0,3)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape zero-sized: (2,0)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape zero-sized: (0,0)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+        }
+      ],
+      "nan_payload": [
+        {
+          "case": "float16: NaN operand, quiet, payload 1"
+        },
+        {
+          "case": "float16: NaN operand, quiet, payload 1, sign set"
+        },
+        {
+          "case": "float16: NaN operand, signalling"
+        }
+      ]
+    },
+    "sweeps": [
+      {
+        "sweep": "the document's worked examples",
+        "summary": "3 examples; float Example 1: the reference agrees with the documented value; float Example 2: the reference agrees with the documented value; float Example 3: the reference agrees with the documented value",
+        "failures": []
+      },
+      {
+        "sweep": "real section (exact arithmetic, no ONNX Runtime)",
+        "summary": "6 examples, checked in Decimal against the values the document states",
+        "failures": []
+      },
+      {
+        "sweep": "float domain (exact arithmetic vs implementation vs ORT)",
+        "summary": "float16: the implementation departs from the correctly rounded value at 0 of 2022 points, worst 0.000 ulp of 1; float16: the reference departs from the correctly rounded value at 1 of 2022 points (e.g. x=-0.114013671875 exact=1.6845703125 ort=1.685546875); float32: the implementation departs from the correctly rounded value at 0 of 2022 points, worst 0.000 ulp of 1; float32: the reference departs from the correctly rounded value at 1292 of 2022 points (e.g. x=-0.9990000128746033 exact=3.096867799758911 ort=3.0968680381774902; x=-0.9950000047683716 exact=3.041550874710083 ort=3.041551113128662); float64: the implementation departs from the correctly rounded value at 0 of 2022 points, worst 0.000 ulp of 1; float64: not reference-checked, the runtime has no float64 kernel (NotImplemented)",
+        "failures": []
+      }
+    ],
+    "ok": true
+  },
+  "test_ok": true,
+  "coverage": {
+    "real": 6,
+    "float": 69
+  },
+  "uncovered": [],
+  "rebuild_cases": false,
+  "cases_unusable": "",
+  "fail_signature": "[\"70e60feb6a8fe7cc6403b2c82baf1e52\", \"c3399cf2021ccdf9fc2eea48d3d3323c\", \"2af151b04e3bce7081c3b4b451095080\"]|[]|[]",
+  "previous_failure": "[\"70e60feb6a8fe7cc6403b2c82baf1e52\", \"c3399cf2021ccdf9fc2eea48d3d3323c\", \"997afeb0d6519ae53ca8ed7613758b3c\"]|[\"float32: ordinary\"]|[]",
+  "case_rounds": 2,
+  "report_runs": 3,
+  "verdict": "test",
+  "diagnosis": "The failing case is `float32: ordinary`, and the mismatch is between the implementation and ONNX Runtime, not between the implementation and the document. The document requires `round(acos(x))` with roundTiesToEven (E_ACOS_FLOAT_FUNC_0010), and the case module's own header records that the CPU runtime's Acos is not always correctly rounded (float32 Acos(-0.5) is one ulp low). The harness's own sweep design already treats the reference's disagreement with exact arithmetic as reference inaccuracy, not as a failure of the implementation; the individual case `float32: ordinary` compares bit-for-bit against that same inexact reference, so it tests the runtime's accuracy, not the document.",
+  "instruction": "Fix the case set, not the implementation. In `cases()`, the per-element bit-for-bit comparison against ONNX Runtime is only valid where the reference is correctly rounded; the case `float32: ordinary` (and any other case whose operands are not exactly representable results) must not be decided by the runtime's bits. Either (a) move the `ordinary` operands out of `cases()` and into `sweep_float_domain`, where the implementation is compared against the Decimal exact arithmetic with the SLACK tolerance and the runtime's departure is reported as reference inaccuracy, or (b) keep the case in `cases()` but compare the implementation against the correctly rounded value computed by `_exact_acos_array` (as the sweep does) rather than against the runtime's output, recording the runtime's disagreement in the sweep summary. Do not change `acos` in the implementation: its values for `float32: ordinary` (1.3181161, 1.8234766, 2.4188583) are the correctly rounded ones, and the runtime's (1.318116, 1.8234768, 2.4188585) are the ones that depart. The float64 cases reported open are the runtime's NOT_IMPLEMENTED refusal; keep them in COVERAGE and record them as not reference-checked, as the case module already does.",
+  "iteration": 1,
+  "spec_round": 0,
+  "seen_amendments": [],
+  "history": [
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": true,
+      "blocking": []
+    },
+    {
+      "agent": "implementer",
+      "iteration": 1,
+      "path": "agents/runs/Acos/iter-001-impl.py",
+      "decisions_count": 10
+    },
+    {
+      "agent": "tester",
+      "iteration": 1,
+      "ok": false,
+      "coverage": {
+        "real": 6,
+        "float": 69
+      },
+      "uncovered": [],
+      "cases": 69,
+      "mismatched": 1,
+      "report": "agents/runs/Acos/iter-001-report.json"
+    },
+    {
+      "agent": "diagnoser",
+      "verdict": "test",
+      "reason": "The failing comparison is the implementation against ONNX Runtime, but the document does not require the implementation to reproduce the runtime's bits: it requires roundTiesToEven of the real arccosine (E_ACOS_FLOAT_FUNC_0010), and the case module itself records that the CPU runtime's Acos is not correctly rounded (float32 Acos(-0.5) one ulp low). The 'float32: ordinary' case and the float-domain sweep compare against the runtime, so they test the runtime's accuracy, not the document. The float64 NOT_IMPLEMENTED entries are the runtime's refusal, which is open, not a mismatch.",
+      "instruction": "In the case module, stop comparing the implementation against ONNX Runtime for the float types. (1) For the individual case 'float32: ordinary' (and every other case whose expectation is taken from the runtime), replace the runtime-derived expectation with the document's value: compute round(acos(x)) with roundTiesToEven to the type of X, using the module's existing Decimal machinery (_exact_acos_array), and compare the implementation against that. (2) In sweep_float_domain, keep the exact-arithmetic comparison as the deciding one and keep the runtime comparison only as a reported row ('reference differs from exact at ...'), never as a failure; the current SWEEP MISMATCH 'the implementation vs exact arithmetic' at x=-0.986 etc. is a one-ulp disagreement of the implementation with the correctly rounded value and must be reported as such, not as a failure of the implementation, unless the document's rounding rule is being violated. (3) For float64, catch the runtime's NOT_IMPLEMENTED per type in the sweep and in the case runner, record it in the sweep summary as 'not reference-checked', and keep float64 in COVERAGE as open rather than mismatched.",
+      "confidence": "high"
+    },
+    {
+      "agent": "tester",
+      "iteration": 1,
+      "ok": false,
+      "coverage": {
+        "real": 6,
+        "float": 69
+      },
+      "uncovered": [],
+      "cases": 69,
+      "mismatched": 1,
+      "report": "agents/runs/Acos/iter-001-report-2.json"
+    },
+    {
+      "agent": "diagnoser",
+      "verdict": "test",
+      "reason": "The failing case is `float32: ordinary`, and the mismatch is between the implementation and ONNX Runtime, not between the implementation and the document. The document requires `round(acos(x))` with roundTiesToEven (E_ACOS_FLOAT_FUNC_0010), and the case module's own header records that the CPU runtime's Acos is not always correctly rounded (float32 Acos(-0.5) is one ulp low). The harness's own sweep design already treats the reference's disagreement with exact arithmetic as reference inaccuracy, not as a failure of the implementation; the individual case `float32: ordinary` compares bit-for-bit against that same inexact reference, so it tests the runtime's accuracy, not the document.",
+      "instruction": "Fix the case set, not the implementation. In `cases()`, the per-element bit-for-bit comparison against ONNX Runtime is only valid where the reference is correctly rounded; the case `float32: ordinary` (and any other case whose operands are not exactly representable results) must not be decided by the runtime's bits. Either (a) move the `ordinary` operands out of `cases()` and into `sweep_float_domain`, where the implementation is compared against the Decimal exact arithmetic with the SLACK tolerance and the runtime's departure is reported as reference inaccuracy, or (b) keep the case in `cases()` but compare the implementation against the correctly rounded value computed by `_exact_acos_array` (as the sweep does) rather than against the runtime's output, recording the runtime's disagreement in the sweep summary. Do not change `acos` in the implementation: its values for `float32: ordinary` (1.3181161, 1.8234766, 2.4188583) are the correctly rounded ones, and the runtime's (1.318116, 1.8234768, 2.4188585) are the ones that depart. The float64 cases reported open are the runtime's NOT_IMPLEMENTED refusal; keep them in COVERAGE and record them as not reference-checked, as the case module already does.",
+      "confidence": "high"
+    },
+    {
+      "agent": "tester",
+      "iteration": 1,
+      "ok": true,
+      "coverage": {
+        "real": 6,
+        "float": 69
+      },
+      "uncovered": [],
+      "cases": 66,
+      "mismatched": 0,
+      "report": "agents/runs/Acos/iter-001-report-3.json"
+    }
+  ],
+  "trace": [
+    "checker: ok",
+    "implementer iteration 1 -> agents/runs/Acos/iter-001-impl.py",
+    "tester iteration 1: fail",
+    "diagnoser: test",
+    "tester iteration 1: fail",
+    "diagnoser: test",
+    "tester iteration 1: pass",
+    "finish: converged"
+  ],
+  "stopped": "a fresh blind implementation passed",
+  "outcome": "converged"
+}

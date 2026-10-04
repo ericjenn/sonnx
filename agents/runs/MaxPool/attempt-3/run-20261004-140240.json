@@ -1,0 +1,192 @@
+{
+  "op": "MaxPool",
+  "opset": 14,
+  "outcome": "unresolved-review",
+  "spec": "agents/runs/MaxPool/maxpool.md",
+  "spec_md5": "29bca6258ea65ccd77f1706428fd22f0",
+  "iterations": 0,
+  "spec_rounds": 6,
+  "test_ok": null,
+  "coverage": null,
+  "uncovered": null,
+  "impl": null,
+  "cases": null,
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 23179
+    },
+    {
+      "agent": "checker",
+      "lint_ok": false,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (int)",
+          "what": "The `int` section merges `int8` and `uint8` into one section, with the justification that 'the sign of the values being irrelevant to the maximum'.",
+          "why": "The guidelines (l.205) define `int` and `uint` as two distinct families, and l.255 requires that types whose semantics differ be given separate sections; the review checklist records that this exact merge was rejected twice, the argument 'they differ only by the value chosen in the residue class' being explicitly rejected. The tags carry the family name, so a merged section cannot tag correctly.",
+          "fix": "Split the section into two: `# **MaxPool** (int)` with `where int is in {`int8`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`, each with its own anchor, Contents entry, Function tag, examples, error rows and constraints; the `uint` section states the order of the unsigned values from $0$ to $255$."
+        },
+        {
+          "severity": "blocking",
+          "section": "Contents",
+          "what": "The Contents list has no entry for the `uint` family, and the `int` entry covers `int8` and `uint8` together.",
+          "why": "The Contents list gives one entry per section (l.249), and the sections must be one per family whose semantics differ (l.255).",
+          "fix": "Add a `- **MaxPool** operator for types [`uint8`](#uint)` entry and change the `int` entry to `[`int8`](#int)`."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real), Function, 'The `Indices` output'",
+          "what": "The index formula `\\text{Indices}[b, c, j_0, ..., j_{s-1}] = \\left( (b \\cdot dX_1 + c) \\cdot dX_2 + i_0 \\right) \\cdot dX_3 + ... + i_{s-1}` is written in terms of the type of the operand but the `Indices` output is declared as an `integer tensor`; the formula also leaves the general term implicit with `...`.",
+          "why": "The document is written in terms of the type of the operand (checklist, per family), and every symbol must be defined (checklist, per formula). The flattening index is a value of the integer type of `Indices`, not of the operand type, and the `...` hides the general term.",
+          "fix": "State the index as a sum over the spatial axes, e.g. $\\text{Indices}[b, c, j_0, ..., j_{s-1}] = \\left( (b \\cdot dX_1 + c) \\cdot dX_2 + i_0 \\right) \\cdot dX_3 \\cdots dX_{rX-1} + \\dots + i_{s-1}$, or give the general term $\\sum_{t=0}^{s-1} i_t \\prod_{u=t+1}^{rX-1} dX_u + (b \\cdot dX_1 + c) \\prod_{u=2}^{rX-1} dX_u$, and say that the result is a value of the integer type of `Indices`."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 28174
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (int)",
+          "what": "The `int` section covers only `int8` (`where int is in {`int8`}`), while ONNX admits `int64` for this operator and the family verdict says `int` applies with types `int8`, `int64`.",
+          "why": "The Contents list and the section heading must cover every SONNX type of the family that ONNX admits for the operator; a type ONNX admits must be covered by the section of its family.",
+          "fix": "Change the `where` line to `where int is in {`int8`, `int64`}.` and the Contents entry to `**MaxPool** operator for types [`int8`, `int64`](#int)`; the one-line justification already given (the operator selects an element and performs no arithmetic) covers both types."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real), Function, `Indices` output",
+          "what": "The `Indices` formula is stated for the real section, but the index is a value of `int64` and the formula is not stated for the `int`/`uint` sections, whose `Indices` output is only cross-referenced to the real section.",
+          "why": "The index of the `Indices` output is a value of a machine type (`int64`), not of the real family; the real section states it in terms of the type of `Indices` while the machine-type sections must state the result in terms of the type of the argument.",
+          "fix": "State the `Indices` index formula in the `int` and `uint` sections (or in a shared statement tagged for each family), giving the index as a value of `int64` and noting that it is the same for every type of the section."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 3,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 29794
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) \u2014 Function, \"The `Indices` output\"",
+          "what": "The tie-break rule is stated twice with two different rules: the real section says \"the index of the first of them in row-major order is the one given\", while the float section says \"the elements $-0$ and $+0$ being equal, the first of them in row-major order is the one whose index is given\" \u2014 but the float section's own order paragraph says $-0$ and $+0$ are equal, so the two statements select the same element only if \"first in row-major order\" is read as the first *position*, which the real section does not say.",
+          "why": "Rule 8: a rule stated in two places with two different formulations; the guidelines require a case to be decided once, and a restatement that drifts is the defect the error-condition table's tag rule exists to prevent.",
+          "fix": "In the float section, replace the sentence with a reference to the real section's tie-break statement (or state the same rule in the same words), so that the two sections do not give two different tie-break rules."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) \u2014 Function, \"The `Indices` output\"",
+          "what": "The index formula is given in the real section and repeated verbatim in the int and uint sections, with the same symbols and the same `where` list; the int and uint sections add nothing that the real section does not already state.",
+          "why": "Rule 8 / the guidelines' reuse rule: a rule stated in two places may drift; the int and uint sections should refer to the real section's tag rather than restate the formula.",
+          "fix": "In the int and uint sections, replace the displayed formula and its `where` list with a reference to the real section's `Indices` statement, keeping only what differs (the type of the index, `int64`)."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 4,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 28581
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) \u2014 Function, \"The `Indices` output\"",
+          "what": "The tie-break rule is stated as \"the index of the first of them in row-major order is the one given\", but the index formula given just above is the row-major flattening of $X$; the two statements disagree, since the first element in row-major order is the one with the smallest flattened index, which is not what the formula computes for a window whose maximum occurs at several positions.",
+          "why": "Rule 8 / the checklist's \"Report a repetition only when the two statements disagree\": the document states the tie-break twice, in the formula and in the prose, and the two formulations do not agree, so a reader cannot tell which index is produced.",
+          "fix": "Make the two statements agree: either state the tie-break as \"the smallest index in the flattening of $X$ in row-major order\" (which is what the formula computes), or, if the intended rule is the first in row-major order of the window, say so explicitly and give the index of that element by the formula. Keep one formulation and make the other refer to it."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (float) \u2014 Function, \"Signed zeros\"",
+          "what": "\"When the maximum of a window is $0$, the result is $+0$ if the window contains $+0$, and $-0$ if the window contains only $-0$ among its null elements. When the window contains both $+0$ and $-0$, the result is $+0$.\" The second sentence contradicts the first: the first already says the result is $+0$ when the window contains $+0$, and the second repeats it for the case where both are present, which the first sentence covers.",
+          "why": "The two statements of the same case disagree in form (the first makes the result depend on the presence of $+0$, the second on the presence of both), and the reader cannot tell whether the case \"window contains both\" is decided by the first sentence or by the second.",
+          "fix": "State the rule once: \"When the maximum of a window is $0$, the result is $+0$ if the window contains $+0$, and $-0$ otherwise (i.e. if the window contains only $-0$ among its null elements).\" Remove the second sentence."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 5,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 28558
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) \u2014 Function, \"The `Indices` output\"",
+          "what": "The flattening index formula is written with the batch/channel term $(b \\cdot dX_1 + c) \\cdot \\prod_{u=2}^{rX-1} dX_u$ and the spatial term $\\sum_{t=0}^{s-1} i_t \\cdot \\prod_{u=t+3}^{rX-1} dX_u$, which does not reduce to the row-major index of $X[b, c, i_0, ..., i_{s-1}]$: for $rX=4$ the spatial term gives $i_0 \\cdot dX_3 + i_1$, whereas the row-major index of the element is $(b \\cdot dX_1 + c) \\cdot dX_2 \\cdot dX_3 + i_0 \\cdot dX_3 + i_1$.",
+          "why": "The Function section must state the value of the result; the stated formula contradicts the sentence that precedes it (\"the index of that element in the flattening of $X$ in row-major order\") and the range it claims, so a reader cannot implement the `Indices` output from the specification.",
+          "fix": "Replace the formula by the row-major index of the element, e.g. $\\text{Indices}[b, c, j_0, ..., j_{s-1}] = ((b \\cdot dX_1 + c) \\cdot dX_2 + i_0) \\cdot dX_3 + ... + i_{s-1}$, or state it as $\\sum_{u=0}^{rX-1} \\iota_u \\cdot \\prod_{v=u+1}^{rX-1} dX_v$ with $\\iota_0 = b$, $\\iota_1 = c$, $\\iota_{t+2} = i_t$."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (float) \u2014 Function, \"Signed zeros\"",
+          "what": "\"When the maximum of a window is $0$, the result is $+0$ if the window contains $+0$, and $-0$ otherwise\" contradicts the tie-break rule the same section invokes: the real-number section states that when several elements are equal to the maximum the index given is the smallest in row-major order, and the float section states that $-0$ and $+0$ are equal in the order, so a window whose first null element is $-0$ and which also contains $+0$ has the smallest index on $-0$.",
+          "why": "The two statements of the document disagree on the same case, and the document's own tie-break rule bears out the $-0$ result, not the $+0$ one; a reader cannot tell which value to produce.",
+          "fix": "Decide the case once: either state that the result is the null element of the window with the smallest index in row-major order (so $-0$ when $-0$ comes first), or state that the result is $+0$ whenever the window contains $+0$ and drop the claim that the tie-break rule applies to a window containing both."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 6,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 28670
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) \u2014 Function, \"The `Indices` output\"",
+          "what": "The tie-break rule is stated only for the `Indices` output (\"the index given is the smallest of their indices\"), while the value of $Y$ itself is left undetermined when several elements of the window are equal to the maximum: the formula gives $Y = \\max X_p$ with no rule selecting among equal maxima, and the real section says nothing about which of them $Y$ is.",
+          "why": "The guidelines require the specification to state, for every case that applies, what the operator does, and to declare the cases it leaves to each implementer together with the set of conforming results (l.319). A reader of the real section must choose a value for $Y$ when the window has several equal maxima, and the document does not decide it nor declare it open.",
+          "fix": "In the real section's Function, state that when several elements of the window are equal to the maximum, $Y[b, c, j_0, ..., j_{s-1}]$ is that common value (so that the value of $Y$ is determined even though the element it comes from is not), and keep the existing sentence that the index reported in `Indices` is the smallest of their indices in row-major order."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (float) \u2014 Function, \"Signed zeros\"",
+          "what": "\"When the maximum of a window is $0$, the result is the null element of the window whose index in the flattening of $X$ in row-major order is the smallest: it is $-0$ when that element is $-0$, and $+0$ when it is $+0$.\" The rule is stated for the case where the maximum is $0$, but the float section's order makes $-0$ and $+0$ equal, so a window whose maximum is a nonzero value is unaffected \u2014 yet the sentence does not say what happens when the window contains both $-0$ and $+0$ *and* a larger value, nor does it state the result when the maximum is $0$ and the window contains only one of the two zeros; more importantly, the rule as written selects the element by its position in the flattening, which is a rule about `Indices`, not about the value of $Y$.",
+          "why": "The guidelines require the special values of the floating-point types, $+0$ and $-0$, to be decided as operands and as results (l.319). The sentence decides the sign of the result only through the position of the element, which is the tie-break rule of the `Indices` output; the value of $Y$ itself is left to be read off that rule, and a reader can implement a different $Y$ (e.g. always $+0$) while keeping the same `Indices`.",
+          "fix": "State directly the value of $Y$: when the maximum of the window is $0$, the result is $-0$ if the window contains $-0$ and no element greater than $0$, and $+0$ otherwise; and state that the `Indices` output then reports the smallest index in row-major order among the elements equal to that maximum."
+        }
+      ]
+    }
+  ],
+  "report": null,
+  "cases_unusable": null,
+  "impl_unusable": null,
+  "finished": "2026-10-04T14:02:40"
+}

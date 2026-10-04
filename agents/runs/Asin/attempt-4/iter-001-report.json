@@ -1,0 +1,283 @@
+{
+  "spec": "agents/runs/Asin/asin.md",
+  "op": "Asin",
+  "opset": 14,
+  "impl": "agents/runs/Asin/iter-001-impl.py",
+  "entry": "asin",
+  "generated": "2026-10-04T10:27:24Z",
+  "cases": {
+    "total": 90,
+    "passed": 58,
+    "mismatched": [
+      {
+        "case": "float32: ordinary",
+        "elements_differing": 2,
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "-0.52359873",
+            "impl": "-0.5235988",
+            "ort_bits": "[3204844177]",
+            "impl_bits": "[3204844178]"
+          },
+          {
+            "index": 1,
+            "ort": "0.52359873",
+            "impl": "0.5235988",
+            "ort_bits": "[1057360529]",
+            "impl_bits": "[1057360530]"
+          }
+        ]
+      },
+      {
+        "case": "float32: the documented example 1",
+        "elements_differing": 2,
+        "first_differences": [
+          {
+            "index": 1,
+            "ort": "-0.52359873",
+            "impl": "-0.5235988",
+            "ort_bits": "[3204844177]",
+            "impl_bits": "[3204844178]"
+          },
+          {
+            "index": 3,
+            "ort": "0.52359873",
+            "impl": "0.5235988",
+            "ort_bits": "[1057360529]",
+            "impl_bits": "[1057360530]"
+          }
+        ]
+      }
+    ],
+    "open": [
+      {
+        "case": "float64: signed zeros",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: bounds of the domain",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: infinities",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: nan",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: outside the domain",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: ordinary",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: largest finite",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: smallest normal",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: smallest subnormal",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: subnormal range",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: just below the smallest subnormal",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rounding boundary near 1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rounding tie near 1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: just above the tie near 1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rounding boundary near -1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rounding tie near -1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: the documented example 1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: the documented example 2",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, quiet, payload 1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, quiet, payload 1, sign set",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, signalling",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, negative quiet",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape rank-0",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape rank-1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape rank-2",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape rank-3",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape zero-sized: (0,)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape zero-sized: (0,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape zero-sized: (2,0,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape zero-sized: (0,0)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      }
+    ],
+    "nan_payload": [
+      {
+        "case": "float16: infinities"
+      },
+      {
+        "case": "float16: outside the domain"
+      },
+      {
+        "case": "float16: the documented example 2"
+      },
+      {
+        "case": "float16: NaN operand, quiet, payload 1"
+      },
+      {
+        "case": "float16: NaN operand, quiet, payload 1, sign set"
+      },
+      {
+        "case": "float16: NaN operand, signalling"
+      },
+      {
+        "case": "float16: NaN operand, negative quiet"
+      },
+      {
+        "case": "float32: infinities"
+      },
+      {
+        "case": "float32: outside the domain"
+      },
+      {
+        "case": "float32: the documented example 2"
+      },
+      {
+        "case": "float16: shape rank-1"
+      },
+      {
+        "case": "float32: shape rank-1"
+      },
+      {
+        "case": "float16: shape rank-2"
+      },
+      {
+        "case": "float32: shape rank-2"
+      },
+      {
+        "case": "float16: shape rank-3"
+      },
+      {
+        "case": "float32: shape rank-3"
+      }
+    ]
+  },
+  "sweeps": [
+    {
+      "sweep": "the document's worked examples",
+      "summary": "3 examples, as documented vs ORT vs implementation",
+      "failures": [
+        {
+          "who": "float Example 1",
+          "detail": "documented [-1.5707963705062866, -0.5235987901687622, 0.0, 0.5235987901687622, 1.5707963705062866], ORT [-1.5707963705062866, -0.5235987305641174, 0.0, 0.5235987305641174, 1.5707963705062866]"
+        }
+      ]
+    },
+    {
+      "sweep": "float domain (document vs ORT vs implementation)",
+      "summary": "3 types: float16 527 values, float32 527 values, double double: not reference-checked, the runtime has no double kernel",
+      "failures": [
+        {
+          "type": "float32",
+          "who": "the document vs ONNX Runtime",
+          "detail": "x=0.5 doc=0.5235987901687622 ort=0.5235987305641174; x=-0.5 doc=-0.5235987901687622 ort=-0.5235987305641174; x=0.25 doc=0.252680242061615 ort=0.2526802718639374; x=-0.25 doc=-0.252680242061615 ort=-0.2526802718639374; x=1.1754943508222875e-38 doc=1.1754943508222875e-38 ort=1.175494490952134e-38"
+        },
+        {
+          "type": "float32",
+          "who": "the implementation vs ONNX Runtime",
+          "detail": "x=0.5 ort=0.5235987305641174 impl=0.5235987901687622; x=-0.5 ort=-0.5235987305641174 impl=-0.5235987901687622; x=0.25 ort=0.2526802718639374 impl=0.252680242061615; x=-0.25 ort=-0.2526802718639374 impl=-0.252680242061615; x=1.1754943508222875e-38 ort=1.175494490952134e-38 impl=1.1754943508222875e-38"
+        },
+        {
+          "type": "float64",
+          "who": "the document vs the implementation",
+          "detail": "x=0.6908109715191042 doc=0.7626100733960633 impl=0.7626100733960635"
+        }
+      ]
+    },
+    {
+      "sweep": "float rounding (exact arithmetic, no ONNX Runtime)",
+      "summary": "3 types: float16, float32, float64",
+      "failures": []
+    },
+    {
+      "sweep": "real section (exact rationals, no ONNX Runtime)",
+      "summary": "53 values checked against exact arithmetic",
+      "failures": [
+        {
+          "who": "real Example 1, x=-1249349540824342767601794457137750676078909797229663651456021936046703411/1766847064778384329583297500742918515827483896875618958121606201292619776",
+          "detail": "documented -0.7853981633974483, exact -0.7853981633974483"
+        },
+        {
+          "who": "real Example 1, x=1/2",
+          "detail": "documented 0.5235987755982989, exact 0.5235987755982989"
+        },
+        {
+          "who": "real Example 2, x=0.5",
+          "detail": "documented 0.5235987755982989, exact 0.5235987755982989"
+        }
+      ]
+    }
+  ],
+  "ok": false
+}

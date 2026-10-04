@@ -1,0 +1,381 @@
+{
+  "op": "Asin",
+  "opset": 14,
+  "spec_path": "agents/runs/Asin/asin.md",
+  "spec_md5": "95da26d96433189df401f3130a2b25c9",
+  "lint": {
+    "ok": true,
+    "findings": [],
+    "stdout": "agents/runs/Asin/asin.md: 265 lines, CRLF\n  sections       : float, real\n  red spans      : 2\n  tags declared  : 7 (2 statements, 5 constraints)\n  tag zones      : {'FUNC': 2, 'CONSTR_X': 2, 'CONSTR_Y': 3}\n\nno mechanical finding",
+    "returncode": 0
+  },
+  "review": {
+    "ok": true,
+    "findings": [],
+    "notes": "Checked the two sections against the decisive family verdict: real and float are the only applicable families, and int/uint are absent and correctly absent from the Contents, headings and tags. The real section decides its domain, bounds, sign, rank-0 and zero-sized cases; the float section decides NaN, \u00b1inf, |x|>1, \u00b10, subnormals, overflow and the quiet-NaN freedom, with the rounding named in the where list. Examples use values of the type under discussion and the error tables dispose of each condition by tag. No blocking finding; the linter reported nothing mechanical."
+  },
+  "spec_ok": true,
+  "checked_md5": "95da26d96433189df401f3130a2b25c9",
+  "no_progress": false,
+  "impl_path": "agents/runs/Asin/iter-001-impl.py",
+  "impl_text": "\"\"\"\nModule implementing the Asin operator as specified.\n\nThis module provides the `asin` function, which computes the arcsine of a tensor\nelement-wise, following the specification for the Asin operator (opset 14).\n\nThe specification defines two variants:\n- Asin for real numbers (exact arcsine, domain [-1, 1]).\n- Asin for floating-point types float16, float, double (IEEE 754 semantics,\n  with special handling of NaN, infinities, signed zeros, and rounding).\n\nThe implementation uses numpy's `arcsin` ufunc, which provides the floating-point\nvariant. The real variant's exactness requirement cannot be realized in finite\nprecision; see the DECISION comments below.\n\"\"\"\n\nimport numpy as np\n\ndef asin(X):\n    \"\"\"\n    Compute the element-wise arcsine of `X`.\n\n    This function implements the Asin operator as specified. It follows the\n    floating-point variant of the specification, which states:\n\n        Operator Asin computes the arcsine of tensor X element-wise according to\n        IEEE 754 floating-point semantics and stores the result in tensor Y.\n        Tensors X and Y have the same floating-point type, and the result is a\n        value of that type.\n\n        For any tensor index i of the result Y:\n\n            Y[i] = NaN if X[i] is NaN or |X[i]| > 1\n                   X[i] if X[i] is \u00b10\n                   round(arcsin(X[i])) otherwise\n\n        where arcsin(x) is the unique value y such that sin(y) = x and\n        y \u2208 [-\u03c0/2, \u03c0/2], i.e. the exact arcsine of the real number x,\n        and round(x) is the value of x rounded to the nearest value of the type\n        of X and Y using the roundTiesToEven attribute of IEEE 754, the exponent\n        range of the type being unbounded.\n\n    The specification also defines a real variant:\n\n        Operator Asin computes the arcsine of tensor X element-wise and stores\n        the result in tensor Y. The arcsine is the inverse of the sine: the\n        result is the angle whose sine is the element of X.\n\n        For any tensor index i of the result Y:\n\n            Y[i] = arcsin(X[i])\n\n        where arcsin(x) is the unique value y such that sin(y) = x and\n        y \u2208 [-\u03c0/2, \u03c0/2].\n\n        The result is exact: Y[i] is the real number arcsin(X[i]), with no\n        approximation.\n\n    The implementation uses numpy's `arcsin`, which computes the floating-point\n    variant. The real variant's exactness cannot be achieved with numpy's\n    floating-point types; see the DECISION comments in the module.\n\n    Parameters\n    ----------\n    X : array_like\n        The tensor whose arcsine is computed. May be a numpy array, a scalar,\n        or any object convertible to a numpy array. The specification allows\n        floating-point types float16, float, and double. The function does not\n        validate the type or the domain; it passes `X` directly to\n        `numpy.arcsin`.\n\n    Returns\n    -------\n    Y : ndarray or numpy scalar\n        The element-wise arcsine of `X`. The shape and dtype are preserved\n        for floating-point inputs, as required by the specification:\n        \"Tensor Y has the same shape as tensor X\" and \"Tensors X and Y have\n        the same type.\"\n\n    Notes\n    -----\n    The specification states that the result never overflows, that underflow\n    produces subnormal values without flushing to zero, and that the sign of\n    a null result is the sign of the operand. These behaviors are provided by\n    numpy's `arcsin` for the supported floating-point types.\n\n    The specification also states that the arcsine of an infinity or of a\n    finite value whose magnitude is greater than 1 is an invalid operation\n    that yields NaN. numpy's `arcsin` returns NaN for such inputs, and may\n    emit a RuntimeWarning. The specification does not mention warnings, and\n    this implementation does not suppress them.\n    \"\"\"\n    # DECISION: The specification defines two variants: one for real numbers\n    # and one for floating-point types. The real variant requires the result\n    # to be the exact real number arcsin(X[i]) with no approximation. This\n    # cannot be realized using numpy's floating-point types. The implementation\n    # therefore implements the floating-point variant, which is the only one\n    # that can be represented in numpy. The document says: \"The result is\n    # exact: Y[i] is the real number arcsin(X[i]), with no approximation.\"\n    # and \"round(x) is the value of x rounded to the nearest value of the type\n    # of X and Y using the roundTiesToEven attribute of IEEE 754\". The\n    # document does not specify an algorithm to achieve exact or correctly\n    # rounded results; numpy's arcsin is used as an approximation.\n    #\n    # DECISION: The specification says for the floating-point variant:\n    # \"round(x) is the value of x rounded to the nearest value of the type of\n    # X and Y using the roundTiesToEven attribute of IEEE 754, the exponent\n    # range of the type being unbounded.\" numpy's arcsin is not guaranteed to\n    # be correctly rounded. The document does not provide an algorithm to\n    # achieve correct rounding, and the accuracy guidelines referenced in the\n    # document are not part of the provided specification. We rely on numpy's\n    # implementation.\n    #\n    # DECISION: The specification says: \"The NaN of the first case is a quiet\n    # NaN; its sign and its payload are not specified, whether the NaN comes\n    # from an operand or from the invalid operation, so that every quiet NaN\n    # of the type of X and Y is a conforming result.\" We return whatever\n    # numpy's arcsin produces; we do not attempt to control the sign or payload\n    # of the NaN.\n    #\n    # DECISION: The specification says: \"Tensors with no dimension. A tensor\n    # with no dimension (a rank-0 tensor) is a tensor whose shape is empty.\n    # The result is a rank-0 tensor whose single element is the arcsine of the\n    # single element of X.\" We pass the input directly to numpy.arcsin. If the\n    # input is a Python scalar, numpy returns a numpy scalar with shape (),\n    # which is a rank-0 array-like. The document does not specify the exact\n    # Python type of the tensor, so we do not convert the input to an ndarray.\n    #\n    # DECISION: The specification says: \"Zero-sized dimensions. Tensor X may\n    # have a zero-sized dimension. Tensor Y then has the same zero-sized\n    # dimension and is empty: the operator is applied to no element.\" numpy's\n    # arcsin preserves the shape of empty arrays, so this is satisfied.\n    #\n    # DECISION: The specification says for the floating-point variant:\n    # \"Integer overflow | not applicable: the operator applies to the\n    # floating-point types only.\" The document does not specify the behavior\n    # for integer inputs. We do not add validation; we pass the input to\n    # numpy.arcsin, which will upcast integer arrays to float64. This is a\n    # choice because the document is silent on integer inputs.\n    #\n    # DECISION: The specification specifies only real and floating-point types.\n    # It does not mention complex, boolean, or other input types. We do not\n    # add validation; we pass the input to numpy.arcsin, which will compute\n    # the complex arcsine for complex inputs or upcast other types as\n    # appropriate. This is a choice because the document is silent on these\n    # types.\n    #\n    # DECISION: The specification says: \"General restrictions are applicable.\"\n    # The general restrictions document is not included in the provided\n    # specification. We cannot apply restrictions that are not specified.\n    #\n    # DECISION: The specification says: \"The arcsine of an infinity is the\n    # invalid operation defined in IEEE 754 section 7.2, and so is the arcsine\n    # of a finite value whose magnitude is greater than 1; the result is NaN\n    # in both cases.\" numpy's arcsin returns NaN for these inputs and may emit\n    # a RuntimeWarning. The document does not mention warnings, and the\n    # instructions say not to suppress warnings the document does not mention.\n    # We do not suppress the warning.\n    #\n    # DECISION: The specification says: \"The result never overflows.\" and\n    # \"A result whose magnitude is below the smallest normal value of the type\n    # is a subnormal value: the rounding is the one defined above, with an\n    # unbounded exponent range, so that the result is the subnormal value\n    # nearest to the exact arcsine and is not flushed to zero.\" numpy's arcsin\n    # for float16, float32, and float64 does not flush subnormals to zero by\n    # default. We do not change the floating-point environment.\n    #\n    # DECISION: The specification says: \"The second case fixes the sign of a\n    # null result: the arcsine of -0 is -0 and the arcsine of +0 is +0\".\n    # numpy's arcsin preserves the sign of zero. We rely on this.\n    #\n    # DECISION: The specification says: \"The result lies in [-\u03c0/2, \u03c0/2] for\n    # every element of X that is not NaN, and the arcsine is increasing on\n    # [-1, 1].\" numpy's arcsin satisfies these properties.\n    #\n    # DECISION: The specification says: \"The value \u03c0/2 is not representable in\n    # any of the three types, so that the result of Asin(1) is the value of the\n    # type nearest to \u03c0/2, and the result of Asin(-1) is its opposite.\"\n    # numpy's arcsin returns the nearest representable value for the given\n    # dtype.\n    #\n    # DECISION: The specification says: \"The accuracy of an implementation\n    # whose result departs from the value stated above is analyzed in the\n    # accuracy guidelines.\" The accuracy guidelines are not included in the\n    # provided specification. We cannot apply them.\n    #\n    # DECISION: The specification says: \"Operator Asin has no attribute.\" We\n    # do not use any attributes.\n    #\n    # DECISION: The specification says: \"Inputs: X: real tensor\" and\n    # \"X: floating-point tensor\". The function takes one positional argument\n    # named X, as required.\n    #\n    # DECISION: The specification says: \"Outputs: Y: real tensor\" and\n    # \"Y: floating-point tensor\". The function returns the result of\n    # numpy.arcsin(X), which is the element-wise arcsine.\n    #\n    # DECISION: The specification says: \"No error condition.\" We do not raise\n    # any errors.\n    #\n    # DECISION: The specification requires that X and Y have the same type.\n    # numpy's arcsin preserves the dtype for float16, float32, and float64\n    # inputs. We rely on this. If the input is not a numpy array, the result\n    # may be a numpy scalar of a different type (e.g., a Python float becomes\n    # float64). The document does not specify the behavior for non-tensor\n    # inputs. This is a choice.\n    return np.arcsin(X)\n",
+  "decisions": "# DECISION: The specification defines two variants: one for real numbers\n# and one for floating-point types. The real variant requires the result\n# to be the exact real number arcsin(X[i]) with no approximation. This\n# cannot be realized using numpy's floating-point types. The implementation\n# therefore implements the floating-point variant, which is the only one\n# that can be represented in numpy. The document says: \"The result is\n# exact: Y[i] is the real number arcsin(X[i]), with no approximation.\"\n# and \"round(x) is the value of x rounded to the nearest value of the type\n# of X and Y using the roundTiesToEven attribute of IEEE 754\". The\n# document does not specify an algorithm to achieve exact or correctly\n# rounded results; numpy's arcsin is used as an approximation.\n#\n\n# DECISION: The specification says for the floating-point variant:\n# \"round(x) is the value of x rounded to the nearest value of the type of\n# X and Y using the roundTiesToEven attribute of IEEE 754, the exponent\n# range of the type being unbounded.\" numpy's arcsin is not guaranteed to\n# be correctly rounded. The document does not provide an algorithm to\n# achieve correct rounding, and the accuracy guidelines referenced in the\n# document are not part of the provided specification. We rely on numpy's\n# implementation.\n#\n\n# DECISION: The specification says: \"The NaN of the first case is a quiet\n# NaN; its sign and its payload are not specified, whether the NaN comes\n# from an operand or from the invalid operation, so that every quiet NaN\n# of the type of X and Y is a conforming result.\" We return whatever\n# numpy's arcsin produces; we do not attempt to control the sign or payload\n# of the NaN.\n#\n\n# DECISION: The specification says: \"Tensors with no dimension. A tensor\n# with no dimension (a rank-0 tensor) is a tensor whose shape is empty.\n# The result is a rank-0 tensor whose single element is the arcsine of the\n# single element of X.\" We pass the input directly to numpy.arcsin. If the\n# input is a Python scalar, numpy returns a numpy scalar with shape (),\n# which is a rank-0 array-like. The document does not specify the exact\n# Python type of the tensor, so we do not convert the input to an ndarray.\n#\n\n# DECISION: The specification says: \"Zero-sized dimensions. Tensor X may\n# have a zero-sized dimension. Tensor Y then has the same zero-sized\n# dimension and is empty: the operator is applied to no element.\" numpy's\n# arcsin preserves the shape of empty arrays, so this is satisfied.\n#\n\n# DECISION: The specification says for the floating-point variant:\n# \"Integer overflow | not applicable: the operator applies to the\n# floating-point types only.\" The document does not specify the behavior\n# for integer inputs. We do not add validation; we pass the input to\n# numpy.arcsin, which will upcast integer arrays to float64. This is a\n# choice because the document is silent on integer inputs.\n#\n\n# DECISION: The specification specifies only real and floating-point types.\n# It does not mention complex, boolean, or other input types. We do not\n# add validation; we pass the input to numpy.arcsin, which will compute\n# the complex arcsine for complex inputs or upcast other types as\n# appropriate. This is a choice because the document is silent on these\n# types.\n#\n\n# DECISION: The specification says: \"General restrictions are applicable.\"\n# The general restrictions document is not included in the provided\n# specification. We cannot apply restrictions that are not specified.\n#\n\n# DECISION: The specification says: \"The arcsine of an infinity is the\n# invalid operation defined in IEEE 754 section 7.2, and so is the arcsine\n# of a finite value whose magnitude is greater than 1; the result is NaN\n# in both cases.\" numpy's arcsin returns NaN for these inputs and may emit\n# a RuntimeWarning. The document does not mention warnings, and the\n# instructions say not to suppress warnings the document does not mention.\n# We do not suppress the warning.\n#\n\n# DECISION: The specification says: \"The result never overflows.\" and\n# \"A result whose magnitude is below the smallest normal value of the type\n# is a subnormal value: the rounding is the one defined above, with an\n# unbounded exponent range, so that the result is the subnormal value\n# nearest to the exact arcsine and is not flushed to zero.\" numpy's arcsin\n# for float16, float32, and float64 does not flush subnormals to zero by\n# default. We do not change the floating-point environment.\n#\n\n# DECISION: The specification says: \"The second case fixes the sign of a\n# null result: the arcsine of -0 is -0 and the arcsine of +0 is +0\".\n# numpy's arcsin preserves the sign of zero. We rely on this.\n#\n\n# DECISION: The specification says: \"The result lies in [-\u03c0/2, \u03c0/2] for\n# every element of X that is not NaN, and the arcsine is increasing on\n# [-1, 1].\" numpy's arcsin satisfies these properties.\n#\n\n# DECISION: The specification says: \"The value \u03c0/2 is not representable in\n# any of the three types, so that the result of Asin(1) is the value of the\n# type nearest to \u03c0/2, and the result of Asin(-1) is its opposite.\"\n# numpy's arcsin returns the nearest representable value for the given\n# dtype.\n#\n\n# DECISION: The specification says: \"The accuracy of an implementation\n# whose result departs from the value stated above is analyzed in the\n# accuracy guidelines.\" The accuracy guidelines are not included in the\n# provided specification. We cannot apply them.\n#\n\n# DECISION: The specification says: \"Operator Asin has no attribute.\" We\n# do not use any attributes.\n#\n\n# DECISION: The specification says: \"Inputs: X: real tensor\" and\n# \"X: floating-point tensor\". The function takes one positional argument\n# named X, as required.\n#\n\n# DECISION: The specification says: \"Outputs: Y: real tensor\" and\n# \"Y: floating-point tensor\". The function returns the result of\n# numpy.arcsin(X), which is the element-wise arcsine.\n#\n\n# DECISION: The specification says: \"No error condition.\" We do not raise\n# any errors.\n#\n\n# DECISION: The specification requires that X and Y have the same type.\n# numpy's arcsin preserves the dtype for float16, float32, and float64\n# inputs. We rely on this. If the input is not a numpy array, the result\n# may be a numpy scalar of a different type (e.g., a Python float becomes\n# float64). The document does not specify the behavior for non-tensor\n# inputs. This is a choice.",
+  "impl_unusable": "",
+  "cases_path": "agents/runs/Asin/cases.py",
+  "report": {
+    "spec": "agents/runs/Asin/asin.md",
+    "op": "Asin",
+    "opset": 14,
+    "impl": "agents/runs/Asin/iter-001-impl.py",
+    "entry": "asin",
+    "generated": "2026-10-04T10:23:40Z",
+    "cases": {
+      "total": 90,
+      "passed": 58,
+      "mismatched": [
+        {
+          "case": "float32: ordinary",
+          "elements_differing": 2,
+          "first_differences": [
+            {
+              "index": 0,
+              "ort": "-0.52359873",
+              "impl": "-0.5235988",
+              "ort_bits": "[3204844177]",
+              "impl_bits": "[3204844178]"
+            },
+            {
+              "index": 1,
+              "ort": "0.52359873",
+              "impl": "0.5235988",
+              "ort_bits": "[1057360529]",
+              "impl_bits": "[1057360530]"
+            }
+          ]
+        },
+        {
+          "case": "float32: the documented example 1",
+          "elements_differing": 2,
+          "first_differences": [
+            {
+              "index": 1,
+              "ort": "-0.52359873",
+              "impl": "-0.5235988",
+              "ort_bits": "[3204844177]",
+              "impl_bits": "[3204844178]"
+            },
+            {
+              "index": 3,
+              "ort": "0.52359873",
+              "impl": "0.5235988",
+              "ort_bits": "[1057360529]",
+              "impl_bits": "[1057360530]"
+            }
+          ]
+        }
+      ],
+      "open": [
+        {
+          "case": "float64: signed zeros",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: bounds of the domain",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: infinities",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: nan",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: outside the domain",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: ordinary",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: largest finite",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: smallest normal",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: smallest subnormal",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: subnormal range",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: just below the smallest subnormal",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: rounding boundary near 1",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: rounding tie near 1",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: just above the tie near 1",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: rounding boundary near -1",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: rounding tie near -1",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: the documented example 1",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: the documented example 2",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: NaN operand, quiet, payload 1",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: NaN operand, quiet, payload 1, sign set",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: NaN operand, signalling",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: NaN operand, negative quiet",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape rank-0",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape rank-1",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape rank-2",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape rank-3",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape zero-sized: (0,)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape zero-sized: (0,3)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape zero-sized: (2,0,3)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        },
+        {
+          "case": "float64: shape zero-sized: (0,0)",
+          "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+        }
+      ],
+      "nan_payload": [
+        {
+          "case": "float16: infinities"
+        },
+        {
+          "case": "float16: outside the domain"
+        },
+        {
+          "case": "float16: the documented example 2"
+        },
+        {
+          "case": "float16: NaN operand, quiet, payload 1"
+        },
+        {
+          "case": "float16: NaN operand, quiet, payload 1, sign set"
+        },
+        {
+          "case": "float16: NaN operand, signalling"
+        },
+        {
+          "case": "float16: NaN operand, negative quiet"
+        },
+        {
+          "case": "float32: infinities"
+        },
+        {
+          "case": "float32: outside the domain"
+        },
+        {
+          "case": "float32: the documented example 2"
+        },
+        {
+          "case": "float16: shape rank-1"
+        },
+        {
+          "case": "float32: shape rank-1"
+        },
+        {
+          "case": "float16: shape rank-2"
+        },
+        {
+          "case": "float32: shape rank-2"
+        },
+        {
+          "case": "float16: shape rank-3"
+        },
+        {
+          "case": "float32: shape rank-3"
+        }
+      ]
+    },
+    "sweeps": [
+      {
+        "sweep": "the document's worked examples",
+        "summary": "3 examples, as documented vs ORT vs implementation",
+        "failures": [
+          {
+            "who": "float Example 1",
+            "detail": "documented [-1.5707963705062866, -0.5235987901687622, 0.0, 0.5235987901687622, 1.5707963705062866], ORT [-1.5707963705062866, -0.5235987305641174, 0.0, 0.5235987305641174, 1.5707963705062866]"
+          }
+        ]
+      },
+      {
+        "sweep": "float domain (document vs ORT vs implementation)",
+        "summary": "3 types: float16 527 values, float32 527 values, double double: not reference-checked, the runtime has no double kernel",
+        "failures": [
+          {
+            "type": "float32",
+            "who": "the document vs ONNX Runtime",
+            "detail": "x=0.5 doc=0.5235987901687622 ort=0.5235987305641174; x=-0.5 doc=-0.5235987901687622 ort=-0.5235987305641174; x=0.25 doc=0.252680242061615 ort=0.2526802718639374; x=-0.25 doc=-0.252680242061615 ort=-0.2526802718639374; x=1.1754943508222875e-38 doc=1.1754943508222875e-38 ort=1.175494490952134e-38"
+          },
+          {
+            "type": "float32",
+            "who": "the implementation vs ONNX Runtime",
+            "detail": "x=0.5 ort=0.5235987305641174 impl=0.5235987901687622; x=-0.5 ort=-0.5235987305641174 impl=-0.5235987901687622; x=0.25 ort=0.2526802718639374 impl=0.252680242061615; x=-0.25 ort=-0.2526802718639374 impl=-0.252680242061615; x=1.1754943508222875e-38 ort=1.175494490952134e-38 impl=1.1754943508222875e-38"
+          },
+          {
+            "type": "float64",
+            "who": "the document vs the implementation",
+            "detail": "x=0.6908109715191042 doc=0.7626100733960633 impl=0.7626100733960635"
+          }
+        ]
+      },
+      {
+        "sweep": "float rounding (exact arithmetic, no ONNX Runtime)",
+        "summary": "3 types: float16, float32, float64",
+        "failures": []
+      },
+      {
+        "sweep": "real section (exact rationals, no ONNX Runtime)",
+        "summary": "53 values checked against exact arithmetic",
+        "failures": [
+          {
+            "who": "real Example 1, x=-1249349540824342767601794457137750676078909797229663651456021936046703411/1766847064778384329583297500742918515827483896875618958121606201292619776",
+            "detail": "documented -0.7853981633974483, exact -0.7853981633974483"
+          },
+          {
+            "who": "real Example 1, x=1/2",
+            "detail": "documented 0.5235987755982989, exact 0.5235987755982989"
+          },
+          {
+            "who": "real Example 2, x=0.5",
+            "detail": "documented 0.5235987755982989, exact 0.5235987755982989"
+          }
+        ]
+      }
+    ],
+    "ok": false
+  },
+  "test_ok": false,
+  "coverage": {
+    "real": 1,
+    "float": 90
+  },
+  "uncovered": [],
+  "rebuild_cases": false,
+  "cases_unusable": "",
+  "fail_signature": "95da26d96433189df401f3130a2b25c9|[\"float32: ordinary\", \"float32: the documented example 1\"]|[\"float domain (document vs ORT vs implementation)\", \"real section (exact rationals, no ONNX Runtime)\", \"the document's worked examples\"]",
+  "previous_failure": "95da26d96433189df401f3130a2b25c9|[\"float32: ordinary\", \"float32: the documented example 1\"]|[\"float domain (document vs ORT vs implementation)\", \"real section (exact rationals, no ONNX Runtime)\", \"the document's worked examples\"]",
+  "verdict": "test",
+  "diagnosis": "The failing cases compare the implementation's float32 result for x=0.5 (0.5235988, the correctly rounded value of pi/6) against ONNX Runtime's 0.52359873, which is one ulp low. The document's float section states the result is round(arcsin(X[i])) with roundTiesToEven, and it explicitly defers departures to the accuracy guidelines; the case module's own doc_float_value computes the correctly rounded value, so the case set is testing ORT's accuracy, not the document. The real-section 'mismatches' are the same defect: the printed 'documented' and 'exact' values are identical, so the comparison is wrong (it compares the exact rational against a float that already equals it).",
+  "instruction": "In the case module, stop treating ONNX Runtime as the bit-exact reference for the float section: (1) in sweep_float_domain, drop the 'the document vs ONNX Runtime' and 'the implementation vs ONNX Runtime' comparisons, or compare them only up to the accuracy guidelines' tolerance rather than bit for bit; (2) in sweep_spec_examples, compare Example 1/2 against the document's own doc_float_value (exact arithmetic) and the implementation, not against ORT's bits; (3) fix the real-section comparison so it compares the exact rational against the implementation's float (the reported 'documented' and 'exact' values are already equal, so the equality test is inverted or compares the wrong operands). Keep the float64 cases in COVERAGE and record the runtime's NOT_IMPLEMENTED refusal in the sweep summary as not reference-checked, as the module already does.",
+  "iteration": 1,
+  "spec_round": 0,
+  "seen_amendments": [],
+  "history": [
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": true,
+      "blocking": []
+    },
+    {
+      "agent": "implementer",
+      "iteration": 1,
+      "path": "agents/runs/Asin/iter-001-impl.py",
+      "decisions_count": 19
+    },
+    {
+      "agent": "tester",
+      "iteration": 1,
+      "ok": false,
+      "coverage": {
+        "real": 1,
+        "float": 90
+      },
+      "uncovered": [],
+      "cases": 90,
+      "mismatched": 2,
+      "report": "agents/runs/Asin/iter-001-report.json"
+    },
+    {
+      "agent": "diagnoser",
+      "verdict": "test",
+      "reason": "The failing cases compare the implementation's float32 result for x=0.5 (0.5235988, the correctly rounded value of pi/6) against ONNX Runtime's 0.52359873, which is one ulp low. The document's float section states the result is round(arcsin(X[i])) with roundTiesToEven, and it explicitly defers departures to the accuracy guidelines; the case module's own doc_float_value computes the correctly rounded value, so the case set is testing ORT's accuracy, not the document. The real-section 'mismatches' are the same defect: the printed 'documented' and 'exact' values are identical, so the comparison is wrong (it compares the exact rational against a float that already equals it).",
+      "instruction": "In the case module, stop treating ONNX Runtime as the bit-exact reference for the float section: (1) in sweep_float_domain, drop the 'the document vs ONNX Runtime' and 'the implementation vs ONNX Runtime' comparisons, or compare them only up to the accuracy guidelines' tolerance rather than bit for bit; (2) in sweep_spec_examples, compare Example 1/2 against the document's own doc_float_value (exact arithmetic) and the implementation, not against ORT's bits; (3) fix the real-section comparison so it compares the exact rational against the implementation's float (the reported 'documented' and 'exact' values are already equal, so the equality test is inverted or compares the wrong operands). Keep the float64 cases in COVERAGE and record the runtime's NOT_IMPLEMENTED refusal in the sweep summary as not reference-checked, as the module already does.",
+      "confidence": "high"
+    },
+    {
+      "agent": "tester",
+      "iteration": 1,
+      "ok": false,
+      "coverage": {
+        "real": 1,
+        "float": 90
+      },
+      "uncovered": [],
+      "cases": 90,
+      "mismatched": 2,
+      "report": "agents/runs/Asin/iter-001-report.json"
+    }
+  ],
+  "trace": [
+    "checker: ok",
+    "implementer iteration 1 -> agents/runs/Asin/iter-001-impl.py",
+    "tester iteration 1: fail",
+    "diagnoser: test",
+    "tester iteration 1: fail",
+    "finish: unchanged"
+  ],
+  "stopped": "the document did not change and the case still fails",
+  "outcome": "unchanged"
+}

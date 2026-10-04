@@ -1,0 +1,182 @@
+{
+  "spec": "agents/runs/Acos/acos.md",
+  "op": "Acos",
+  "opset": 14,
+  "impl": "agents/runs/Acos/iter-001-impl.py",
+  "entry": "acos",
+  "generated": "2026-10-04T10:47:14Z",
+  "cases": {
+    "total": 69,
+    "passed": 45,
+    "mismatched": [
+      {
+        "case": "float32: ordinary",
+        "elements_differing": 3,
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "1.318116",
+            "impl": "1.3181161",
+            "ort_bits": "[1068021766]",
+            "impl_bits": "[1068021767]"
+          },
+          {
+            "index": 1,
+            "ort": "1.8234768",
+            "impl": "1.8234766",
+            "ort_bits": "[1072261040]",
+            "impl_bits": "[1072261038]"
+          },
+          {
+            "index": 3,
+            "ort": "2.4188585",
+            "impl": "2.4188583",
+            "ort_bits": "[1075498644]",
+            "impl_bits": "[1075498643]"
+          }
+        ]
+      }
+    ],
+    "open": [
+      {
+        "case": "float64: bounds -1, 0, 1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: signed zeros",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: the document's Example 2 values",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: smallest normal and subnormal",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: largest finite",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: just inside 1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: just inside -1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, quiet, payload 1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, quiet, payload 1, sign set",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, signalling",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: invalid operation, +inf",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: invalid operation, -inf",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: invalid operation, 2.0",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: invalid operation, -2.0",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: ordinary",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape rank-0",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape (1,)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape (2,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape (2,3,4)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape zero-sized: (0,)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape zero-sized: (0,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape zero-sized: (2,0)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape zero-sized: (0,0)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Acos(7) node with name 'node0'"
+      }
+    ],
+    "nan_payload": [
+      {
+        "case": "float16: NaN operand, quiet, payload 1"
+      },
+      {
+        "case": "float16: NaN operand, quiet, payload 1, sign set"
+      },
+      {
+        "case": "float16: NaN operand, signalling"
+      },
+      {
+        "case": "float16: shape (2,3)"
+      },
+      {
+        "case": "float32: shape (2,3)"
+      },
+      {
+        "case": "float16: shape (2,3,4)"
+      },
+      {
+        "case": "float32: shape (2,3,4)"
+      }
+    ]
+  },
+  "sweeps": [
+    {
+      "sweep": "the document's worked examples",
+      "summary": "3 examples, as documented vs implementation",
+      "failures": []
+    },
+    {
+      "sweep": "real section (exact arithmetic, no ONNX Runtime)",
+      "summary": "6 examples",
+      "failures": []
+    },
+    {
+      "sweep": "float domain (exact arithmetic vs implementation vs ORT)",
+      "summary": "float16: reference differs from exact at 1 of 2001 points (e.g. x=-0.114013671875 exact=1.6845703125 ort=1.685546875); float32: reference differs from exact at 5 of 2001 points (e.g. x=-0.9990000128746033 exact=3.096867799758911 ort=3.0968680381774902; x=-0.9950000047683716 exact=3.041550874710083 ort=3.041551113128662); float64: not reference-checked (NotImplemented)",
+      "failures": [
+        {
+          "type": "float64",
+          "who": "the implementation vs exact arithmetic",
+          "detail": "x=-0.986 exact=2.97406481009046 impl=2.9740648100904594; x=-0.968 exact=2.887930917514338 impl=2.8879309175143377; x=-0.964 exact=2.872452920715241 impl=2.8724529207152405; x=-0.962 exact=2.8650311392092664 impl=2.865031139209266; x=-0.96 exact=2.8577985443814655 impl=2.857798544381465"
+        }
+      ]
+    }
+  ],
+  "ok": false
+}

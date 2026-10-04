@@ -1,0 +1,37 @@
+{
+  "op": "Asin",
+  "opset": 14,
+  "outcome": "cases-unusable",
+  "spec": "agents/runs/Asin/asin.md",
+  "spec_md5": null,
+  "iterations": 1,
+  "spec_rounds": 0,
+  "test_ok": false,
+  "coverage": null,
+  "uncovered": null,
+  "impl": "agents/runs/Asin/iter-001-impl.py",
+  "cases": "agents/runs/Asin/cases.py",
+  "verdict": null,
+  "diagnosis": null,
+  "instruction": null,
+  "history": [
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": true,
+      "blocking": []
+    },
+    {
+      "agent": "implementer",
+      "iteration": 1,
+      "path": "agents/runs/Asin/iter-001-impl.py",
+      "decisions_count": 11
+    }
+  ],
+  "report": {
+    "error": "the tester returned no usable case module: the module declares no `COVERAGE` dictionary (2 attempt(s))"
+  },
+  "cases_unusable": "the tester returned no usable case module: the module declares no `COVERAGE` dictionary (2 attempt(s))",
+  "impl_unusable": null,
+  "finished": "2026-10-04T12:06:07"
+}

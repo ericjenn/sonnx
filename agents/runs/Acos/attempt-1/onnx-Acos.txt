@@ -1,0 +1,14 @@
+# ONNX operator definition, as the `onnx` package 1.23.1 states it (schema of opset 7, the opset asked for is 14)
+
+**Acos**, since opset 7.
+
+Calculates the arccosine (inverse of cosine) of the given input tensor, element-wise.
+
+- type constraint `T`: `tensor(float16)`, `tensor(float)`, `tensor(double)`. Constrain input and output types to float tensors.
+
+- Input `input` (`tensor(double)`, `tensor(float)`, `tensor(float16)`): Input tensor
+- Output `output` (`tensor(double)`, `tensor(float)`, `tensor(float16)`): The arccosine of the input tensor computed element-wise
+
+This operator has no attribute.
+
+Documentation page: https://onnx.ai/onnx/operators/onnx__Acos.html

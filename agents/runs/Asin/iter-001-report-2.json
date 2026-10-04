@@ -1,0 +1,75 @@
+{
+  "spec": "agents/runs/Asin/asin.md",
+  "op": "Asin",
+  "opset": 14,
+  "impl": "agents/runs/Asin/iter-001-impl.py",
+  "entry": "asin",
+  "generated": "2026-10-04T10:49:04Z",
+  "cases": {
+    "total": 21,
+    "passed": 14,
+    "mismatched": [],
+    "open": [
+      {
+        "case": "float64: special values",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: ordinary values (reference-checked)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape rank-0",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape zero-sized (0,)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape zero-sized (0,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape zero-sized (2,0)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape ordinary (2,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      }
+    ],
+    "nan_payload": [
+      {
+        "case": "float16: special values"
+      },
+      {
+        "case": "float16: ordinary values (reference-checked)"
+      },
+      {
+        "case": "float32: special values"
+      },
+      {
+        "case": "float32: ordinary values (reference-checked)"
+      }
+    ]
+  },
+  "sweeps": [
+    {
+      "sweep": "document worked examples",
+      "summary": "float Example 1: the runtime departs from the exact value on 0 of 5 values",
+      "failures": []
+    },
+    {
+      "sweep": "float section against exact arithmetic",
+      "summary": "float16: the runtime agrees with the exact value on all 65536 values; float32: the runtime departs from the exact value on 124 of 2017 values; float64: not reference-checked, the runtime has no double kernel",
+      "failures": []
+    },
+    {
+      "sweep": "real section (exact arithmetic, no ONNX Runtime)",
+      "summary": "6 real values of the document's examples checked against exact Decimal arithmetic",
+      "failures": []
+    }
+  ],
+  "ok": true
+}

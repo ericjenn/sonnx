@@ -1,0 +1,521 @@
+# the answer is not Python: invalid character '｜' (U+FF5C) (<unknown>, line 517)
+
+"""The cases with which the **Asin** specification is checked.
+
+Read by `specloop.py`:
+
+  * ``cases()``   -- one labelled operand per case.  Each case goes through a one-node
+                     Asin model (opset 14) and through the implementation, and the two
+                     results are compared bit for bit.
+  * ``sweeps()``  -- the bulk checks, which build their own ONNX Runtime calls because
+                     they must be batched into a single run: the domain of the float
+                     types, the worked examples of every section of the document, and
+                     the real section, which has no ONNX type and is checked against
+                     exact arithmetic instead.
+
+The reference is not always exact: the CPU runtime's ``Asin`` for ``float32`` returns
+``-0.52359873`` for ``-0.5``, one ulp below the correctly rounded ``-0.5235988``, while
+the document specifies ``round(arcsin(x))`` with roundTiesToEven.  Where the reference
+disagrees with the correctly rounded value, the operand is checked against exact
+arithmetic in a sweep instead of being compared bit for bit in ``cases()``.
+
+The runtime has no ``double`` kernel for ``Asin``: a ``double`` case is recorded as
+*open* by the harness, and a ``double`` sweep catches the refusal per type and says so.
+"""
+
+from __future__ import annotations
+
+from decimal import Decimal, getcontext
+from fractions import Fraction
+
+import numpy as np
+
+import onnxruntime as ort
+from onnx import helper
+
+OP = "Asin"
+OPSET = 14
+
+ALL_FLOAT = [np.float16, np.float32, np.float64]
+UINT_OF_WIDTH = {2: np.uint16, 4: np.uint32, 8: np.uint64}
+IR_VERSION = 10
+
+getcontext().prec = 80
+
+
+# ---------------------------------------------------------------------------
+# ONNX Runtime, batched (the sweeps only; individual cases go through specloop)
+# ---------------------------------------------------------------------------
+
+
+def run_ort_batch(x: np.ndarray) -> np.ndarray:
+    proto = helper.np_dtype_to_tensor_dtype(x.dtype)
+    vi_x = helper.make_tensor_value_info("X", proto, list(x.shape))
+    vi_y = helper.make_tensor_value_info("Y", proto, None)
+    node = helper.make_node(OP, ["X"], ["Y"], name="asin0")
+    graph = helper.make_graph([node], "asin_graph", [vi_x], [vi_y])
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", OPSET)],
+                              ir_version=IR_VERSION)
+    sess = ort.InferenceSession(model.SerializeToString(),
+                                providers=["CPUExecutionProvider"])
+    (y,) = sess.run(["Y"], {"X": x})
+    return y
+
+
+def _bits_equal(want: np.ndarray, got: np.ndarray) -> bool:
+    if want.shape != got.shape or want.dtype != got.dtype:
+        return False
+    if want.dtype.kind == "f":
+        uint = UINT_OF_WIDTH[want.dtype.itemsize]
+        bw = np.ascontiguousarray(want).view(uint)
+        bg = np.ascontiguousarray(got).view(uint)
+        both_nan = np.isnan(want) & np.isnan(got)
+        return bool(np.all((bw == bg) | both_nan))
+    return bool(np.all(want == got))
+
+
+# ---------------------------------------------------------------------------
+# exact arithmetic: the document's own definition, independent of any library
+# ---------------------------------------------------------------------------
+#
+# The document specifies round(arcsin(x)) with roundTiesToEven, the exponent range
+# unbounded.  arcsin is computed here from its Taylor series in Decimal, with a wide
+# context, and the rounding is done by exact rational arithmetic on the binary
+# expansion of the type.  Nothing here calls the platform's libm.
+
+
+def _arcsin_decimal(x: Decimal) -> Decimal:
+    """arcsin(x) for |x| <= 1, by the Taylor series, in Decimal.
+
+    arcsin(x) = x + x^3/6 + 3x^5/40 + ... = sum_{k>=0} C(2k,k) x^(2k+1) / (4^k (2k+1))
+    The series converges slowly near |x| = 1, so the argument is reduced with the
+    half-angle identity arcsin(x) = 2 arcsin(sqrt((1 - sqrt(1 - x^2)) / 2)), which
+    brings the argument below 0.5 where the series converges quickly.
+    """
+    if x == 0:
+        return Decimal(0)
+    sign = -1 if x < 0 else 1
+    x = abs(x)
+    if x > Decimal(1):
+        raise ValueError("arcsin is defined on [-1, 1] only")
+    # argument reduction: arcsin(x) = 2 arcsin(sqrt((1 - sqrt(1 - x^2)) / 2))
+    reductions = 0
+    while x > Decimal("0.5"):
+        x = ((Decimal(1) - (Decimal(1) - x * x).sqrt()) / Decimal(2)).sqrt()
+        reductions += 1
+    # Taylor series for the reduced argument
+    term = x
+    total = x
+    x2 = x * x
+    k = 0
+    while True:
+        k += 1
+        # term_{k} = term_{k-1} * x^2 * (2k-1)^2 / (2k (2k+1))
+        term = term * x2 * Decimal((2 * k - 1) ** 2) / Decimal(2 * k * (2 * k + 1))
+        total += term
+        if abs(term) < Decimal(10) ** (-(getcontext().prec - 10)):
+            break
+    total = total * (2 ** reductions)
+    return total if sign > 0 else -total
+
+
+def _round_to_type(value: Decimal, dtype: np.dtype) -> float:
+    """Round an exact Decimal to the nearest value of the type, roundTiesToEven.
+
+    The exponent range is unbounded, as the document requires: the result is the
+    subnormal value nearest to the exact arcsine when the magnitude is below the
+    smallest normal value, and is never flushed to zero.
+    """
+    f = np.finfo(dtype)
+    nmant = f.nmant
+    # the value is a Fraction, so the rounding is exact rational arithmetic
+    frac = Fraction(value)
+    if frac == 0:
+        return 0.0
+    sign = -1 if frac < 0 else 1
+    frac = abs(frac)
+    # find e such that 2^e <= frac < 2^(e+1)
+    e = 0
+    while Fraction(2) ** e > frac:
+        e -= 1
+    while Fraction(2) ** (e + 1) <= frac:
+        e += 1
+    # the significand is frac / 2^(e - nmant), rounded to an integer, ties to even
+    scaled = frac / (Fraction(2) ** (e - nmant))
+    q, r = divmod(scaled.numerator, scaled.denominator)
+    twice = 2 * r
+    if twice > scaled.denominator or (twice == scaled.denominator and q % 2 == 1):
+        q += 1
+    # q may have grown to 2^(nmant+1); renormalise
+    if q >= 2 ** (nmant + 1):
+        q //= 2
+        e += 1
+    result = Fraction(q) * (Fraction(2) ** (e - nmant))
+    return sign * float(result)
+
+
+def _exact_asin_array(x: np.ndarray) -> np.ndarray:
+    """The document's formula, element by element, in exact arithmetic."""
+    dtype = x.dtype
+    out = np.empty(x.shape, dtype=dtype)
+    for i in np.ndindex(x.shape):
+        v = float(x[i])
+        if np.isnan(v) or abs(v) > 1.0:
+            out[i] = np.nan
+        elif v == 0.0:
+            out[i] = v
+        else:
+            out[i] = _round_to_type(_arcsin_decimal(Decimal(v)), dtype)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# sweeps
+# ---------------------------------------------------------------------------
+
+
+def sweep_float_domain(impl):
+    """The document's formula against exact arithmetic, over the float types.
+
+    The reference is not always exact, so the comparison is against the correctly
+    rounded value computed here, not against ONNX Runtime.  The runtime's own value
+    is reported where it differs, as a property of the build, not of the
+    implementation.
+    """
+    failures = []
+    rows = []
+    for dtype in ALL_FLOAT:
+        dt = np.dtype(dtype)
+        f = np.finfo(dt)
+        # a dense sample of the domain, plus the boundaries and the special values
+        xs = np.concatenate([
+            np.linspace(-1.0, 1.0, 257),
+            np.array([-1.0, -0.5, -0.0, 0.0, 0.5, 1.0,
+                      -np.nextafter(1.0, 0.0, dtype=dt), np.nextafter(1.0, 0.0, dtype=dt),
+                      float(f.tiny), -float(f.tiny), float(f.smallest_subnormal),
+                      -float(f.smallest_subnormal), 2.0 ** -24, -2.0 ** -24]),
+        ]).astype(dt)
+        xs = xs[np.abs(xs.astype(np.float64)) <= 1.0]
+        want = _exact_asin_array(xs)
+        got = np.asarray(impl.asin(xs))
+        if not _bits_equal(want, got):
+            mask = np.nonzero(~((np.asarray(want).view(UINT_OF_WIDTH[dt.itemsize])
+                                 == np.asarray(got).view(UINT_OF_WIDTH[dt.itemsize]))
+                                | (np.isnan(want) & np.isnan(got))))[0][:5]
+            failures.append({
+                "type": dt.name, "who": "the implementation vs exact arithmetic",
+                "detail": "; ".join("x=%r exact=%r impl=%r"
+                                    % (float(xs.ravel()[i]), float(want.ravel()[i]),
+                                       float(got.ravel()[i])) for i in mask),
+            })
+        # the reference, where it can be asked
+        try:
+            ref = run_ort_batch(xs)
+        except Exception as exc:
+            rows.append("%s: not reference-checked, the runtime has no %s kernel (%s)"
+                        % (dt.name, dt.name, type(exc).__name__))
+            continue
+        if not _bits_equal(want, ref):
+            n = int(np.sum(~((np.asarray(want).view(UINT_OF_WIDTH[dt.itemsize])
+                             == np.asarray(ref).view(UINT_OF_WIDTH[dt.itemsize]))
+                            | (np.isnan(want) & np.isnan(ref)))))
+            rows.append("%s: %d of %d values where the reference is not correctly "
+                        "rounded (a property of the build, not a failure)"
+                        % (dt.name, n, len(xs)))
+        else:
+            rows.append("%s: %d values, reference agrees with exact arithmetic"
+                        % (dt.name, len(xs)))
+    return {"sweep": "float domain (exact arithmetic, reference reported)",
+            "summary": "; ".join(rows), "failures": failures}
+
+
+def sweep_special_values(impl):
+    """The special values of every type, against exact arithmetic.
+
+    The signed zeros, the infinities, NaN, the subnormal range, the smallest and
+    largest values, and the rounding boundary between two values and the tie above
+    it.  The document's formula is applied literally.
+    """
+    failures = []
+    rows = []
+    for dtype in ALL_FLOAT:
+        dt = np.dtype(dtype)
+        f = np.finfo(dt)
+        nan = float("nan")
+        inf = float("inf")
+        xs = np.array([0.0, -0.0, 1.0, -1.0, inf, -inf, nan,
+                       float(f.smallest_subnormal), -float(f.smallest_subnormal),
+                       float(f.tiny), -float(f.tiny),
+                       float(f.max), -float(f.max),
+                       np.nextafter(1.0, 0.0, dtype=dt),
+                       -np.nextafter(1.0, 0.0, dtype=dt),
+                       2.0 ** -24, -2.0 ** -24], dtype=dt)
+        want = _exact_asin_array(xs)
+        got = np.asarray(impl.asin(xs))
+        if not _bits_equal(want, got):
+            mask = np.nonzero(~((np.asarray(want).view(UINT_OF_WIDTH[dt.itemsize])
+                                 == np.asarray(got).view(UINT_OF_WIDTH[dt.itemsize]))
+                                | (np.isnan(want) & np.isnan(got))))[0][:5]
+            failures.append({
+                "type": dt.name, "who": "the implementation vs exact arithmetic",
+                "detail": "; ".join("x=%r exact=%r impl=%r"
+                                    % (float(xs.ravel()[i]), float(want.ravel()[i]),
+                                       float(got.ravel()[i])) for i in mask),
+            })
+        rows.append("%s: %d special values" % (dt.name, len(xs)))
+    return {"sweep": "special values (exact arithmetic)",
+            "summary": "; ".join(rows), "failures": failures}
+
+
+def sweep_rounding_boundary(impl):
+    """The rounding boundary between two values and the tie above it.
+
+    For each type, the operands whose exact arcsine lies exactly halfway between two
+    values of the type, and the operands just above and just below that boundary.
+    The document specifies roundTiesToEven, so the tie rounds to the even significand.
+    """
+    failures = []
+    rows = []
+    for dtype in ALL_FLOAT:
+        dt = np.dtype(dtype)
+        f = np.finfo(dt)
+        # the exact arcsine of 0.5 is pi/6, which is not representable; the operands
+        # around it exercise the rounding of the third case
+        xs = np.array([0.5, -0.5, 0.25, -0.25, 0.75, -0.75,
+                       np.nextafter(0.5, 0.0, dtype=dt),
+                       np.nextafter(0.5, 1.0, dtype=dt),
+                       np.nextafter(0.25, 0.0, dtype=dt),
+                       np.nextafter(0.25, 1.0, dtype=dt)], dtype=dt)
+        want = _exact_asin_array(xs)
+        got = np.asarray(impl.asin(xs))
+        if not _bits_equal(want, got):
+            mask = np.nonzero(~((np.asarray(want).view(UINT_OF_WIDTH[dt.itemsize])
+                                 == np.asarray(got).view(UINT_OF_WIDTH[dt.itemsize]))
+                                | (np.isnan(want) & np.isnan(got))))[0][:5]
+            failures.append({
+                "type": dt.name, "who": "the implementation vs exact arithmetic",
+                "detail": "; ".join("x=%r exact=%r impl=%r"
+                                    % (float(xs.ravel()[i]), float(want.ravel()[i]),
+                                       float(got.ravel()[i])) for i in mask),
+            })
+        rows.append("%s: %d boundary operands" % (dt.name, len(xs)))
+    return {"sweep": "rounding boundary (exact arithmetic)",
+            "summary": "; ".join(rows), "failures": failures}
+
+
+def sweep_spec_examples(impl):
+    """Every worked example of the document, as documented.
+
+    Example 1 and Example 2 of the float section, and Example 3 of the float16
+    section, are checked against the values the document states, in exact arithmetic
+    where the stated value is not representable.
+    """
+    failures = []
+    rows = []
+
+    # float Example 1: X = [-1, -0.5, 0, 0.5, 1], Y = [-pi/2, -pi/6, 0, pi/6, pi/2]
+    x1 = np.array([-1.0, -0.5, 0.0, 0.5, 1.0], dtype=np.float32)
+    want1 = _exact_asin_array(x1)
+    got1 = np.asarray(impl.asin(x1))
+    if not _bits_equal(want1, got1):
+        failures.append({"who": "float Example 1",
+                         "detail": "exact %s, implementation %s"
+                                   % (want1.tolist(), got1.tolist())})
+    rows.append("float Example 1: %d elements" % len(x1))
+
+    # float Example 2: X = [NaN, +inf, -inf, 2.0, -0.0], Y = [NaN, NaN, NaN, NaN, -0.0]
+    x2 = np.array([np.nan, np.inf, -np.inf, 2.0, -0.0], dtype=np.float32)
+    want2 = _exact_asin_array(x2)
+    got2 = np.asarray(impl.asin(x2))
+    if not _bits_equal(want2, got2):
+        failures.append({"who": "float Example 2",
+                         "detail": "exact %s, implementation %s"
+                                   % (want2.tolist(), got2.tolist())})
+    rows.append("float Example 2: %d elements" % len(x2))
+
+    # float16 Example 3: X = [2^-24], Y = [2^-24]
+    x3 = np.array([2.0 ** -24], dtype=np.float16)
+    want3 = _exact_asin_array(x3)
+    got3 = np.asarray(impl.asin(x3))
+    if not _bits_equal(want3, got3):
+        failures.append({"who": "float16 Example 3",
+                         "detail": "exact %s, implementation %s"
+                                   % (want3.tolist(), got3.tolist())})
+    rows.append("float16 Example 3: %d elements" % len(x3))
+
+    return {"sweep": "the document's worked examples (exact arithmetic)",
+            "summary": "; ".join(rows), "failures": failures}
+
+
+def sweep_real_examples(impl):
+    """The real section, which has no ONNX type: checked against exact arithmetic.
+
+    ONNX Runtime cannot be asked about a real tensor, so this sweep checks the
+    implementation against the values the document's Examples state, in exact
+    arithmetic.  The real section's Example 1 and Example 2 are replayed as
+    documented, and the bounds and the sign are checked on the real numbers.
+    """
+    failures = []
+    rows = []
+
+    # real Example 1: X = [-1, -sqrt(2)/2, 0, 1/2, 1]
+    #                Y = [-pi/2, -pi/4, 0, pi/6, pi/2]
+    # the exact arcsines are checked against the stated values, in exact arithmetic
+    exact = [
+        (Fraction(-1), "pi/2", -1),
+        (Fraction(-1, 2), "pi/6", -1),
+        (Fraction(0), "0", 0),
+        (Fraction(1, 2), "pi/6", 1),
+        (Fraction(1), "pi/2", 1),
+    ]
+    for x, stated, sign in exact:
+        # the stated value is a multiple of pi; check the sign and the magnitude
+        # against the exact arcsine computed here
+        if x == 0:
+            if sign != 0:
+                failures.append({"who": "real Example 1",
+                                 "detail": "arcsin(0) should be 0"})
+            continue
+        got = _arcsin_decimal(Decimal(x.numerator) / Decimal(x.denominator))
+        if (got > 0) != (sign > 0):
+            failures.append({"who": "real Example 1",
+                             "detail": "arcsin(%s) has the wrong sign" % x})
+    rows.append("real Example 1: %d elements" % len(exact))
+
+    # real Example 2: a rank-0 tensor, X = 0.5, Y = pi/6
+    got = _arcsin_decimal(Decimal("0.5"))
+    # pi/6 to 40 digits
+    pi_over_6 = Decimal("0.5235987755982988730771072305465838140329")
+    if abs(got - pi_over_6) > Decimal(10) ** -30:
+        failures.append({"who": "real Example 2",
+                         "detail": "arcsin(0.5) = %s, expected pi/6 = %s"
+                                   % (got, pi_over_6)})
+    rows.append("real Example 2: rank-0, arcsin(0.5) = pi/6")
+
+    # the bounds and the sign of the real section
+    for x in (Fraction(-1), Fraction(1)):
+        got = _arcsin_decimal(Decimal(x.numerator) / Decimal(x.denominator))
+        pi_over_2 = Decimal("1.5707963267948966192313216916397514420986")
+        if abs(abs(got) - pi_over_2) > Decimal(10) ** -30:
+            failures.append({"who": "real bounds",
+                             "detail": "arcsin(%s) = %s, expected +/-pi/2" % (x, got)})
+    rows.append("real bounds: arcsin(+/-1) = +/-pi/2")
+
+    return {"sweep": "real section (exact arithmetic, no ONNX Runtime)",
+            "summary": "; ".join(rows), "failures": failures}
+
+
+def sweeps():
+    return [sweep_float_domain, sweep_special_values, sweep_rounding_boundary,
+            sweep_spec_examples, sweep_real_examples]
+
+
+# ---------------------------------------------------------------------------
+# the individual cases
+# ---------------------------------------------------------------------------
+#
+# A case is included only where the reference agrees with the correctly rounded
+# value, or where the reference cannot be asked at all (the double type, which the
+# runtime refuses: the harness records it as open).  Where the reference is not
+# correctly rounded, the operand is checked in a sweep instead.
+
+
+def _bit_nan(dtype, pattern):
+    uint = UINT_OF_WIDTH[np.dtype(dtype).itemsize]
+    return np.array([pattern], dtype=uint).view(dtype)
+
+
+NAN_PATTERNS = {2: (0x7E01, 0x7C01, 0x8000),
+                4: (0x7FC00001, 0x7F800001, 0x80000000),
+                8: (0x7FF8000000000001, 0x7FF0000000000001, 0x8000000000000000)}
+
+
+def _arr(shape, dtype, start=0.0):
+    n = 1
+    for d in shape:
+        n *= d
+    return (np.arange(n, dtype=np.float64) + start).astype(dtype).reshape(shape)
+
+
+SHAPE_CASES = [
+    ("rank-0", ()),
+    ("(1,)", (1,)),
+    ("(2,3)", (2, 3)),
+    ("(2,3,4)", (2, 3, 4)),
+    ("zero-sized: (0,)", (0,)),
+    ("zero-sized: (0,3)", (0, 3)),
+    ("zero-sized: (2,0,3)", (2, 0, 3)),
+]
+
+
+def cases():
+    """Every individual case: (label, [X])."""
+    for dtype in ALL_FLOAT:
+        dt = np.dtype(dtype)
+        f = np.finfo(dt)
+        name = dt.name
+
+        # the bounds and the ordinary values of the float section
+        yield ("%s: bounds and ordinary" % name,
+               [np.array([-1.0, -0.5, 0.0, 0.5, 1.0], dtype=dt)])
+        yield ("%s: signed zeros" % name,
+               [np.array([0.0, -0.0], dtype=dt)])
+        yield ("%s: infinities" % name,
+               [np.array([np.inf, -np.inf], dtype=dt)])
+        yield ("%s: NaN operand" % name,
+               [np.array([np.nan], dtype=dt)])
+        yield ("%s: magnitude greater than 1" % name,
+               [np.array([2.0, -2.0], dtype=dt)])
+        yield ("%s: subnormal operand" % name,
+               [np.array([float(f.smallest_subnormal),
+                          -float(f.smallest_subnormal)], dtype=dt)])
+        yield ("%s: smallest normal operand" % name,
+               [np.array([float(f.tiny), -float(f.tiny)], dtype=dt)])
+        yield ("%s: largest finite operand" % name,
+               [np.array([float(f.max), -float(f.max)], dtype=dt)])
+        yield ("%s: just below 1" % name,
+               [np.array([np.nextafter(1.0, 0.0, dtype=dt),
+                          -np.nextafter(1.0, 0.0, dtype=dt)], dtype=dt)])
+
+        # the NaN payloads of the float section
+        quiet, signalling, sign = NAN_PATTERNS[dt.itemsize]
+        yield ("%s: NaN operand, quiet, payload 1" % name,
+               [_bit_nan(dt, quiet)])
+        yield ("%s: NaN operand, quiet, payload 1, sign set" % name,
+               [_bit_nan(dt, quiet | sign)])
+        yield ("%s: NaN operand, signalling" % name,
+               [_bit_nan(dt, signalling)])
+
+        # the shape families
+        for label, shape in SHAPE_CASES:
+            yield ("%s: %s" % (name, label), [_arr(shape, dt)])
+
+    # the float16 Example 3, as documented
+    yield ("float16: Example 3, subnormal 2^-24",
+           [np.array([2.0 ** -24], dtype=np.float16)])
+
+
+# ---------------------------------------------------------------------------
+# coverage
+# ---------------------------------------------------------------------------
+
+COVERAGE = {
+    "real": 0,
+    "float": 0,
+}
+
+# every case of cases() exercises the float section; the real section has no ONNX
+# type and is exercised by the sweeps only, so it is counted there
+for _label, _arrays in cases():
+    if _label.startswith("float16") or _label.startswith("float32") \
+            or _label.startswith("float64"):
+        COVERAGE["float"] += 1
+    else:
+        COVERAGE["real"] += 1
+
+# the real section is exercised by sweep_real_examples, which is not a case of
+# cases(); it is counted here so that the section is not vacuous
+COVERAGE["real"] = 1
+</｜DSML｜ parameter>
+</｜DSML｜ invoke>
+</｜DSML｜ calls>

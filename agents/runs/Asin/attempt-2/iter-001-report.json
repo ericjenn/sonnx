@@ -1,0 +1,348 @@
+{
+  "spec": "agents/runs/Asin/asin.md",
+  "op": "Asin",
+  "opset": 14,
+  "impl": "agents/runs/Asin/iter-001-impl.py",
+  "entry": "asin",
+  "generated": "2026-10-04T09:54:19Z",
+  "cases": {
+    "total": 64,
+    "passed": 0,
+    "mismatched": [
+      {
+        "case": "float16: signed zeros",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: infinities",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: nan",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: subnormals",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: largest finite",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: around +1",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: around -1",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: outside domain",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: exact values",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: example 1",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: example 2",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: NaN quiet payload 1",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: NaN quiet payload 1 sign set",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: NaN signalling",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: example 3 subnormal",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: rank-0",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: zero-sized (0,)",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: zero-sized (0,3)",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: zero-sized (2,0,3)",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: shape (2,3)",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: shape (1,2,3)",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float16: shape (4,)",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: signed zeros",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: infinities",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: nan",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: subnormals",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: largest finite",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: around +1",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: around -1",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: outside domain",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: exact values",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: example 1",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: example 2",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: NaN quiet payload 1",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: NaN quiet payload 1 sign set",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: NaN signalling",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: rank-0",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: zero-sized (0,)",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: zero-sized (0,3)",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: zero-sized (2,0,3)",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: shape (2,3)",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: shape (1,2,3)",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "float32: shape (4,)",
+        "reason": "the implementation raised AttributeError: module 'spec_impl' has no attribute 'asin'",
+        "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 161, in check_cases\n    impl_out = np.asarray(getattr(impl, entry)(*arrays))\n                          ~~~~~~~^^^^^^^^^^^^^\nAttributeError: module 'spec_impl' has no attribute 'asin'\n"
+      },
+      {
+        "case": "<module>",
+        "reason": "the implementation has no entry point 'asin'"
+      }
+    ],
+    "open": [
+      {
+        "case": "float64: signed zeros",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: infinities",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: nan",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: subnormals",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: largest finite",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: around +1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: around -1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: outside domain",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: exact values",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: example 1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: example 2",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN quiet payload 1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN quiet payload 1 sign set",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN signalling",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rank-0",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: zero-sized (0,)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: zero-sized (0,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: zero-sized (2,0,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape (2,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape (1,2,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: shape (4,)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Asin(7) node with name 'node0'"
+      }
+    ],
+    "nan_payload": []
+  },
+  "sweeps": [
+    {
+      "sweep": "float domain",
+      "summary": "ERROR",
+      "failures": [
+        {
+          "who": "sweep",
+          "detail": "AttributeError: module 'spec_impl' has no attribute 'asin'"
+        }
+      ]
+    },
+    {
+      "sweep": "float examples",
+      "summary": "ERROR",
+      "failures": [
+        {
+          "who": "sweep",
+          "detail": "AttributeError: module 'spec_impl' has no attribute 'asin'"
+        }
+      ]
+    },
+    {
+      "sweep": "real section (exact arithmetic, no ONNX Runtime)",
+      "summary": "2 examples checked against high-precision arcsine (60 digits)",
+      "failures": []
+    }
+  ],
+  "ok": false
+}

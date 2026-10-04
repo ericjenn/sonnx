@@ -1,0 +1,81 @@
+{
+  "op": "Atan",
+  "opset": 14,
+  "outcome": "unresolved-review",
+  "spec": "agents/runs/Atan/atan.md",
+  "spec_md5": "3d1bd71498cebca62a85cdc17af72a1c",
+  "iterations": 0,
+  "spec_rounds": 3,
+  "test_ok": null,
+  "coverage": null,
+  "uncovered": null,
+  "impl": null,
+  "cases": null,
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/Atan/atan.md",
+      "characters": 12844
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Atan** (float) \u2014 Function, Part 2",
+          "what": "The formula is stated as $output[i] = \\text{round}(\\arctan(input[i]))$ and the prose says the result is 'the value of the type of $input$ and $output$', but the case analysis never states what the result is for an element that is NaN: the formula applies $\\arctan$ to a NaN, which is not a real number, and the 'Special values' bullet only says 'an element that is NaN gives NaN' without saying which NaN \u2014 the sign and payload are declared unspecified, but the quietness is not fixed by the formula either, since $\\arctan(\\text{NaN})$ is undefined.",
+          "why": "Guidelines, 'Function' Part 2: 'States, for every case that applies to the operator, what the operator does', and the special values of the floating-point types, i.e. $+0$, $-0$, $+\\infty$, $-\\infty$ and NaN, as operands and as results, are among the cases that shall be decided or declared. The formula's domain is the reals, so the NaN operand is outside it and the case is left to the prose, which does not fix the result.",
+          "fix": "In the 'Special values' bullet for NaN, state the result as a quiet NaN of the type of $input$ and $output$, and say that the sign and payload are not specified, so that every quiet NaN of that type is a conforming result \u2014 i.e. make the bullet itself the disposition of the NaN case, not a remark that the formula already covers it."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "agents/runs/Atan/atan.md",
+      "characters": 13465
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Atan** (float) \u2014 Function, Part 2",
+          "what": "The formula is stated only for elements that are not NaN, and the NaN case is then decided by the 'Special values' paragraph; but the paragraph's bullet for NaN says only that the result is 'a quiet NaN of the type of $input$ and $output$' and that 'neither its sign nor its payload is specified, so that every quiet NaN ... is a conforming result'. That is a declaration of an open case, which the guidelines require (l.319: 'Declares the cases it leaves to each implementer'), and it is not a defect. The defect is the opposite: the paragraph also states 'an element that is $\\pm\\infty$ gives $\\pm\\frac{\\pi}{2}$ rounded to the type of $input$ and $output$', which is a value the formula already gives exactly, and the formula's `where` list defines `round` as the roundTiesToEven rounding to the type of $input$ and $output$ with unbounded exponent range \u2014 so the $\\pm\\infty$ case is decided by the formula and the paragraph restates it. This is not a missing case; it is a restatement, and the guidelines' own reason for making the error-condition table refer to a tag instead of repeating it applies here too. The finding is therefore that the $\\pm\\infty$ bullet is a second formulation of a rule the formula already states, and the two may drift apart.",
+          "why": "Guidelines, 'Specifying and non-specifying information' and the error-conditions rule: 'a restatement is a second formulation of the same rule and the two may drift apart'. The formula, its `where` definitions and the prose are one statement; a case already decided by the formula must not be restated in the prose.",
+          "fix": "Remove the $\\pm\\infty$ bullet from the 'Special values' paragraph, or replace it with a cross-reference to the formula: 'the case of an element that is $\\pm\\infty$ is decided by the formula above, whose `round` definition gives the nearest value of the type to $\\pm\\frac{\\pi}{2}$'. Keep the $\\pm 0$ and NaN bullets, which decide cases the formula does not."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 3,
+      "path": "agents/runs/Atan/atan.md",
+      "characters": 13366
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**Atan** (float) \u2014 Function, Part 2",
+          "what": "The formula is stated only for elements that are not NaN, and the NaN case is decided by the prose; but the formula's `round` is defined with \"the exponent range of the type being unbounded\", so the formula does not decide the case of a result whose magnitude is below the smallest normal value of the type \u2014 the prose says only that such a result \"is a subnormal value or a zero\", leaving the reader to choose.",
+          "why": "Guidelines, \"Function\" Part 2: for every case that applies, the specification states what the operator does; a case that is left open shall be stated as such together with the set of conforming results. Here the subnormal/zero case is neither decided nor declared open.",
+          "fix": "In the `round` bullet, drop \"the exponent range of the type being unbounded\" and state that the result is the value of the type of $input$ and $output$ nearest to the exact arctangent, rounded with the roundTiesToEven attribute of IEEE 754 in the exponent range of that type; or, if the unbounded exponent range is intended, add to the \"Rounding\" paragraph that a result whose magnitude is below the smallest normal value of the type is the subnormal value or zero obtained by rounding the exact arctangent to the type, so that the value is fixed rather than a choice between a subnormal and a zero."
+        }
+      ]
+    }
+  ],
+  "report": null,
+  "finished": "2026-10-04T11:52:57"
+}

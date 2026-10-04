@@ -1,0 +1,111 @@
+{
+  "spec": "agents/runs/Atan/atan.md",
+  "op": "Atan",
+  "opset": 14,
+  "impl": "agents/runs/Atan/iter-001-impl.py",
+  "entry": "atan",
+  "generated": "2026-10-04T11:19:15Z",
+  "cases": {
+    "total": 39,
+    "passed": 26,
+    "mismatched": [],
+    "open": [
+      {
+        "case": "float64: signed zeros",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: infinities",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: nan",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, quiet, payload 1",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, quiet, payload 1, sign set",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: NaN operand, signalling",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: rank-0",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: zero-sized (0,)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: zero-sized (0,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: zero-sized (2,0,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: (1,)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: (2,3)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      },
+      {
+        "case": "float64: (2,3,4)",
+        "reason": "NotImplemented: [ONNXRuntimeError] : 9 : NOT_IMPLEMENTED : Could not find an implementation for Atan(7) node with name 'node0'"
+      }
+    ],
+    "nan_payload": [
+      {
+        "case": "float16: NaN operand, quiet, payload 1"
+      },
+      {
+        "case": "float16: NaN operand, quiet, payload 1, sign set"
+      },
+      {
+        "case": "float16: NaN operand, signalling"
+      }
+    ]
+  },
+  "sweeps": [
+    {
+      "sweep": "the special values of every type (document, exact)",
+      "summary": "float16: special values checked, ORT agrees; float32: special values checked, ORT agrees; float64: special values checked, not reference-checked (NotImplemented)",
+      "failures": []
+    },
+    {
+      "sweep": "sign (oddness) and shape (document)",
+      "summary": "3 types, 64 random values each, 5 shapes each",
+      "failures": []
+    },
+    {
+      "sweep": "the correctness of a result (reported, not required: see V1)",
+      "summary": "float16: 0/34 depart, worst 0.00 ulp; float32: 0/34 depart, worst 0.00 ulp; float64: 0/34 depart, worst 0.00 ulp",
+      "failures": []
+    },
+    {
+      "sweep": "the domain of every type (document, exact)",
+      "summary": "float16: 34 values, worst 0.00 ulp, ORT departs at 0/34; float32: 34 values, worst 0.00 ulp, ORT departs at 11/34; float64: 34 values, worst 0.00 ulp, not reference-checked (NotImplemented)",
+      "failures": []
+    },
+    {
+      "sweep": "the document's worked examples",
+      "summary": "float Example 1: worst 0.00 ulp, not reference-checked (NotImplemented); float Example 2: worst 0.00 ulp, not reference-checked (NotImplemented)",
+      "failures": []
+    },
+    {
+      "sweep": "real section (exact arithmetic, no ONNX Runtime)",
+      "summary": "5 examples and the open branch, checked in Decimal",
+      "failures": []
+    }
+  ],
+  "ok": true
+}

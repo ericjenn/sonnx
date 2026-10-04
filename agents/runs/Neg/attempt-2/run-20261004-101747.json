@@ -1,0 +1,34 @@
+{
+  "op": "Neg",
+  "opset": 14,
+  "outcome": "verifier-failed",
+  "spec": "agents/runs/Neg/Neg.md",
+  "spec_md5": "896cf7f53e65764ade7d79495045b446",
+  "iterations": 0,
+  "spec_rounds": 1,
+  "test_ok": null,
+  "coverage": null,
+  "uncovered": null,
+  "impl": null,
+  "cases": null,
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/Neg/Neg.md",
+      "characters": 12067
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [],
+      "note": "the verifier returned no verdict: no JSON object in the response: "
+    }
+  ],
+  "report": null,
+  "finished": "2026-10-04T10:17:47"
+}

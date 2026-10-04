@@ -1,0 +1,111 @@
+{
+  "op": "MaxPool",
+  "opset": 14,
+  "outcome": "unresolved-review",
+  "spec": "agents/runs/MaxPool/maxpool.md",
+  "spec_md5": "ad177b4bccbc01c561ccdfb1c675c345",
+  "iterations": 0,
+  "spec_rounds": 3,
+  "test_ok": null,
+  "coverage": null,
+  "uncovered": null,
+  "impl": null,
+  "cases": null,
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 33266
+    },
+    {
+      "agent": "checker",
+      "lint_ok": false,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (int, int) \u2014 heading, `where` line, Contents entry, anchor",
+          "what": "The document merges the `int` and `uint` families into one section headed `# **MaxPool** (int, int)` with `where int is in {`int8`, `uint8`}`, one Contents entry `[`int8`, `uint8`](#int)`, one anchor `int`, and one set of tags `E_MAXPOOL_INT_*`.",
+          "why": "The guidelines define `int` and `uint` as two distinct families (l.205) and require that types whose semantics differ be given separate sections, with separate anchors, Contents entries, tags, examples, error rows and constraints (l.255); the tags carry the family name, so a merged section cannot tag correctly. The verdict confirms both families apply here (`int`: `int8`, `int64`; `uint`: `uint8`).",
+          "fix": "Split the section into `# **MaxPool** (int)` with `where int is in {`int8`, `int64`}` and `# **MaxPool** (uint)` with `where uint is in {`uint8`}`, each with its own anchor (`int`, `uint`), its own Contents entry, its own `E_MAXPOOL_INT_*` / `E_MAXPOOL_UINT_*` tags, its own example and its own error-condition table; keep the one-line justification in each."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (int, int) \u2014 `where` line and Contents entry",
+          "what": "The `where` line lists `int8` and `uint8` only, and the Contents entry is `[`int8`, `uint8`](#int)`; `int64` is admitted by ONNX for this operator and is not covered anywhere in the document.",
+          "why": "A SONNX type that ONNX admits must be covered by the section of its family (l.205, l.255); the verdict states that `int` applies with the types `int8` and `int64`.",
+          "fix": "In the `int` section, write `where int is in {`int8`, `int64`}` and make the Contents entry `[`int8`, `int64`](#int)`."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) \u2014 Function, `Y[i] = \\max_{j_0, \\dots, j_{n-1}} X[\\dots]`",
+          "what": "The real section writes the maximum over the tuple $(j_0, \\dots, j_{n-1})$ with the index bounds as a side condition in the `where` list, while the float and int sections write it as a maximum over the set of covered elements; the two forms do not agree on what is maximized when the window covers no element, and the real section's `where` bullet does not state that the set is non-empty.",
+          "why": "The formula, its `where` definitions and the prose are one statement and must decide the same value; a reader of the real section must choose between the tuple-maximum reading and the set-maximum reading of the other two sections (l.319, l.340).",
+          "fix": "Write the real section's formula in the same set form as the float and int sections, `Y[i] = \\max \\{ X[\\dots] \\mid 0 \\le j_k \\le k_k - 1,\\ 0 \\le i_{k+2} \\cdot s_k + j_k - p_k \\le dX_{k+2}-1 \\}`, and keep the `where` bullet defining the set it is applied to."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 42667
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "Contents / Revision",
+          "what": "The Contents line says 'Based on ONNX documentation [MaxPool version 12]' while the Revision line says 'based on ONNX opset 14'.",
+          "why": "The Contents section requires the reference to the ONNX definition to be given with the opset(s) on which the specification is based, and the Revision line gives the opset it is based on; the two must be consistent.",
+          "fix": "Make the two lines name the same opset: either change the Contents line to 'Based on ONNX [MaxPool version 14](https://onnx.ai/onnx/operators/onnx__MaxPool.html#maxpool-14).' or change the Revision line to opset 12."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real), Function, 'The shape of the output'",
+          "what": "The formula for $dY_{k+2}$ is written with $\\lfloor \\cdot \\rfloor$ and then the prose says 'the quotient is rounded towards $-\\infty$ when the `ceil_mode` attribute is $0$ and towards $+\\infty$ when it is $1$' \u2014 the floor symbol and the ceil_mode case contradict each other for `ceil_mode` $= 1$.",
+          "why": "A case analysis must have no gap and no contradiction: the formula and the prose that follows it are one statement, and here they give two different values for the same case.",
+          "fix": "Write the dimension as $dY_{k+2} = \\text{round}\\left(\\frac{dX_{k+2} + p_k + q_k - k_k}{s_k}\\right) + 1$ and define $\\text{round}$ in the `where` list as the quotient rounded towards $-\\infty$ when `ceil_mode` is $0$ and towards $+\\infty$ when it is $1$ (or drop the floor symbol and keep the prose)."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (float), Function, 'The maximum of the floating-point type'",
+          "what": "The result of a window that covers a NaN is declared to be 'that NaN', and then the same paragraph says 'the NaN of the result is a quiet NaN, and its sign and its payload are not specified, so that every quiet NaN of the type of $X$ and $Y$ is a conforming result' \u2014 the first sentence fixes the result to the operand NaN, the second leaves it open.",
+          "why": "A case that is left open must be stated as such and give the set of conforming results; here the document states both a decided value and an open set for the same case, so a reader cannot tell which applies.",
+          "fix": "Keep only the open declaration: state that when the window covers a NaN the result is a quiet NaN of the type of $X$ and $Y$, and that every quiet NaN of that type is a conforming result, with sign and payload unspecified."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 3,
+      "path": "agents/runs/MaxPool/maxpool.md",
+      "characters": 42696
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (float) \u2014 Function, \"The maximum of the floating-point type\"",
+          "what": "The case analysis of the maximum of the floating-point type is stated in terms of the order of the type, but the order of the type is not defined for the case that decides the result: the document says \"NaN is not ordered with respect to any value\" and then gives the NaN case, but it does not state which of the elements the window covers is the result when the window covers a NaN and the maximum is taken \u2014 the reader must choose between \"the result is a quiet NaN\" and \"the result is the greatest of the elements it covers\", and the two rules are given as separate bullets without saying which applies when both a NaN and a greater finite value are covered.",
+          "why": "The guidelines require that for every case that applies to the operator the specification states what the operator does, and that a case left open says so and gives the set of conforming results (l.319, l.340). Here the two bullets overlap: a window covering both a NaN and a finite value satisfies the condition of the first bullet (\"when the window covers a NaN\") and of the second (\"when the window covers no NaN\" is false, but the second bullet's condition is not stated as an exclusive one), so a reader cannot tell whether the NaN propagates or the finite maximum is returned.",
+          "fix": "Make the two conditions exclusive and state the result for each: e.g. \"when the window covers at least one NaN, the result is a quiet NaN of the type of $X$ and $Y$, and every quiet NaN of that type is a conforming result; its sign and its payload are not specified. When the window covers no NaN, the result is the greatest of the elements it covers, and it is one of them, with its sign and its payload.\""
+        }
+      ]
+    }
+  ],
+  "report": null,
+  "cases_unusable": null,
+  "impl_unusable": null,
+  "finished": "2026-10-04T13:55:31"
+}

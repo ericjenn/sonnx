@@ -1,0 +1,8 @@
+# the answer is not Python: unterminated triple-quoted string literal (detected at line 5) (<unknown>, line 1)
+
+```python
+"""
+Implementation of the ONNX Atan operator, as specified in the provided document.
+
+The document defines Atan for real numbers and for the floating-point types
+float16, float, and double.  The

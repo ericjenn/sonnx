@@ -1,0 +1,43 @@
+{
+  "spec": "ops/add.md",
+  "op": "Add",
+  "opset": 14,
+  "impl": "verification/add/loop/iter-001-impl.py",
+  "entry": "add",
+  "generated": "2026-10-03T15:09:43Z",
+  "cases": {
+    "total": 205,
+    "passed": 205,
+    "mismatched": [],
+    "open": [],
+    "nan_payload": [
+      {
+        "case": "float16: NaN operand, quiet, payload 1"
+      },
+      {
+        "case": "float16: NaN operand, quiet, payload 1, sign set"
+      },
+      {
+        "case": "float16: NaN operand, signalling"
+      }
+    ]
+  },
+  "sweeps": [
+    {
+      "sweep": "the document's worked examples",
+      "summary": "5 examples, as documented vs ORT vs implementation",
+      "failures": []
+    },
+    {
+      "sweep": "int domain (document vs ORT vs implementation)",
+      "summary": "8 types: int8 exhaustive, int16 249 pairs, int32 249 pairs, int64 249 pairs, uint8 exhaustive, uint16 216 pairs, uint32 216 pairs, uint64 216 pairs",
+      "failures": []
+    },
+    {
+      "sweep": "real section (exact rationals, no ONNX Runtime)",
+      "summary": "2 examples",
+      "failures": []
+    }
+  ],
+  "ok": true
+}

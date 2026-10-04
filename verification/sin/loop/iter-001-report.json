@@ -1,0 +1,82 @@
+{
+  "spec": "ops/sin.md",
+  "op": "Sin",
+  "opset": 14,
+  "impl": "verification/sin/loop/iter-001-impl.py",
+  "entry": "sin",
+  "generated": "2026-10-03T16:57:28Z",
+  "cases": {
+    "total": 49,
+    "passed": 49,
+    "mismatched": [],
+    "open": [],
+    "nan_payload": [
+      {
+        "case": "float16: infinities, the invalid operation"
+      },
+      {
+        "case": "float16: NaN operand, quiet, payload 1"
+      },
+      {
+        "case": "float16: NaN operand, quiet, payload 1, sign set"
+      },
+      {
+        "case": "float16: NaN operand, signalling"
+      },
+      {
+        "case": "float32: infinities, the invalid operation"
+      },
+      {
+        "case": "float32: NaN operand, quiet, payload 1"
+      },
+      {
+        "case": "float32: NaN operand, quiet, payload 1, sign set"
+      },
+      {
+        "case": "float32: NaN operand, signalling"
+      },
+      {
+        "case": "float64: infinities, the invalid operation"
+      },
+      {
+        "case": "float64: infinity, invalid operation, both signs"
+      },
+      {
+        "case": "float64: Example 1 of the document"
+      }
+    ]
+  },
+  "sweeps": [
+    {
+      "sweep": "the document's rules for special values, and the identity of a small value",
+      "summary": "ONNX Runtime float16 49 values, small ones within 0 units of their own sine; the implementation float16 49 values, small ones within 0 units of their own sine; ONNX Runtime float32 49 values, small ones within 0 units of their own sine; the implementation float32 49 values, small ones within 0 units of their own sine; ONNX Runtime float64 49 values, small ones within 1 units of their own sine; the implementation float64 49 values, small ones within 0 units of their own sine",
+      "failures": []
+    },
+    {
+      "sweep": "the document's worked examples",
+      "summary": "4 examples, float Example 2: 3 documented values, faithful to the exact sine; float Example 3: 4 documented values, faithful to the exact sine",
+      "failures": []
+    },
+    {
+      "sweep": "the real section (60-digit arithmetic, no ONNX Runtime)",
+      "summary": "real Example 1: 6 values; real Example 2: 3 values; the implementation does not take a real operand (TypeError)",
+      "failures": []
+    },
+    {
+      "sweep": "the whole float16 domain (65536 values)",
+      "summary": "ONNX Runtime: 4 of 63488 ordinary values depart, worst 0.5 units; the implementation: 4 of 63488 ordinary values depart, worst 0.5 units",
+      "failures": []
+    },
+    {
+      "sweep": "the correctness of a result (reported, not required: see V1)",
+      "summary": "ONNX Runtime: 106 of 540 values differ (20%), worst 0.5 units of 2^-23, and 1 units in the last place of the result; the implementation: 94 of 540 values differ (17%), worst 0.5 units of 2^-23, and 1 units in the last place of the result; ONNX Runtime: 387 of 540 values differ (72%), worst 2.0 units of 2^-52, and 54 units in the last place of the result; the implementation: 0 of 540 values differ (0%), worst 0.0 units of 2^-52, and 0 units in the last place of the result",
+      "failures": []
+    },
+    {
+      "sweep": "the oddness of the result (bit for bit, no reference)",
+      "summary": "3 types: float16 3206 pairs, float32 3206 pairs, float64 3206 pairs",
+      "failures": []
+    }
+  ],
+  "ok": true
+}
