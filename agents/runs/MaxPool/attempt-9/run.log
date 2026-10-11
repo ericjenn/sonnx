@@ -1,0 +1,28 @@
+SONNX multi-agent specification system
+model: deepseek-v4.1-flash:cloud at http://127.0.0.1:11434
+run  : /run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool
+[21:36:31] checker lint: clean (0 finding(s))
+[21:38:51] checker review: no verdict (no JSON object in the response: {
+  "ok": false,
+  "findings": [
+    {
+      "severity": "blocking",
+      "section": "**MaxPool** (real) / Function, and the same paragraph in the float, int and uint sections",
+      "what": "The Function section states the maximum is taken over the elements of $X$ covered by the window, but never states what the maximum of a window is when the window covers no element of $X$ — the case the prec); asking again
+[21:38:53] checker review: NOT ok (1 blocking, 0 minor)
+[21:38:53] writer  round 1: amending
+[21:39:22] writer  round 1: 40414 characters in 29s -> /run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md
+[21:39:22] checker lint: clean (0 finding(s))
+[21:39:25] checker review: NOT ok (1 blocking, 0 minor)
+[21:39:25] record  stalled -> /run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/run-20261005-213925.json
+[21:39:25] stop    stalled: the document did not change and the compliance check still failed
+
+==============================================================================
+operator     : MaxPool (ONNX opset 14)
+outcome      : stalled
+specification: /run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md (md5 b635a8a0ddfb1075a7643fed724f03dd)
+rounds       : 1 spec round(s), 0 implement/test iteration(s)
+cases        : - run, - passed, 0 mismatched, 0 open
+coverage     : {}
+stopped      : the document did not change and the compliance check still failed
+==============================================================================

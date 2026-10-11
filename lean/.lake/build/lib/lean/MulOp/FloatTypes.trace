@@ -1,0 +1,32 @@
+{"synthetic": false,
+ "schemaVersion": "2025-09-10",
+ "outputs":
+ {"o": ["2197368e9e7d61c3.olean"],
+  "m": false,
+  "i": "b7b7c74816f04ef1.ilean",
+  "c": "e5f09d0057282798.c"},
+ "log":
+ [{"message":
+   ".> LEAN_PATH=/run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean /home/eric/.elan/toolchains/leanprover--lean4---v4.33.1/bin/lean /run/media/eric/Work1/Work/gits/sonnx/lean/MulOp/FloatTypes.lean -o /run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean/MulOp/FloatTypes.olean -i /run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean/MulOp/FloatTypes.ilean -c /run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/ir/MulOp/FloatTypes.c --setup /run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/ir/MulOp/FloatTypes.setup.json --json",
+   "level": "trace"}],
+ "inputs":
+ [["deps",
+   [["mul_op/MulOp:extraDep", [["@mul_op:extraDep", "00000000000006bb"]]],
+    ["imports",
+     [["MulOp.MulCore transitive imports (legacy)", "0771742b7c6c403d"],
+      ["MulOp.MulCore:importAllArts", "d6d5b45c794e20d0"]]]]],
+  ["libs",
+   [["import dynlibs", "00000000000006bb"],
+    ["package external libraries", "00000000000006bb"],
+    ["module dynlibs", "00000000000006bb"],
+    ["module plugins", "00000000000006bb"]]],
+  ["Lean 4.33.1, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6",
+   "0051240b7c23c453"],
+  ["/run/media/eric/Work1/Work/gits/sonnx/lean/MulOp/FloatTypes.lean",
+   "b6eeaf69fd9e0a1c"],
+  ["options", "00000000000006bb"],
+  ["isModule: false", "feefd2a0d3a1847e"],
+  ["Module.name: MulOp.FloatTypes", "c63bf43c9619671a"],
+  ["Package.id?: (some mul_op)", "295be2707c3c052a"],
+  ["Module.leanArgs: #[]", "00000000000006bb"]],
+ "depHash": "b1616ad61d9a3688"}

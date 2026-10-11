@@ -1,0 +1,3 @@
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  deepseek-v4.1-flash:cloud[1m] · API Usage Billing
+ ▝▝   ▝▝   /run/media/eric/Work1/Work/gits/sonnx

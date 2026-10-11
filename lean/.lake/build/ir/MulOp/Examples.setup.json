@@ -1,0 +1,19 @@
+{"plugins": [],
+ "package": "mul_op",
+ "options": {},
+ "name": "MulOp.Examples",
+ "isModule": false,
+ "importArts":
+ {"MulOp.Tensor":
+  [["/run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean/MulOp/Tensor.olean"]],
+  "MulOp.RealTypes":
+  [["/run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean/MulOp/RealTypes.olean"]],
+  "MulOp.MulCore":
+  [["/run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean/MulOp/MulCore.olean"]],
+  "MulOp.IntTypes":
+  [["/run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean/MulOp/IntTypes.olean"]],
+  "MulOp.FloatTypes":
+  [["/run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean/MulOp/FloatTypes.olean"]],
+  "MulOp.Broadcast":
+  [["/run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean/MulOp/Broadcast.olean"]]},
+ "dynlibs": []}

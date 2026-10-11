@@ -65,15 +65,22 @@ Definition of operator **Op** signature:
 
 ## Restrictions
 
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 <!-- List below, in a table, the restrictions the operator introduces: what
      each of them limits, and its origin, i.e. "Transient" or a link to the
-     requirement it comes from. When the operator introduces none, replace
-     the table by the following sentence, which the guidelines make
-     mandatory in that case:
+     requirement it comes from. The rows are the rows of the operator's
+     restriction file (`<op>_restrictions.md`, beside the specification):
+     carry them into this section, in every family section, verbatim and in
+     the file's order. When the operator introduces none, replace the table
+     by the following sentence, which the guidelines make mandatory in that
+     case:
 
        No specific restrictions apply to the **Op** operator.
+
+     The restrictions that apply to every operator are in
+     `global_restrictions.md`, which the link above points at; they are not
+     copied into this section.
 -->
 
 | Restriction    | Statement | Origin |

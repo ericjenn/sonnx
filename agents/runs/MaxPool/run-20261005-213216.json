@@ -1,0 +1,139 @@
+{
+  "op": "MaxPool",
+  "opset": 14,
+  "outcome": "unresolved-review",
+  "spec": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md",
+  "spec_md5": "b635a8a0ddfb1075a7643fed724f03dd",
+  "iterations": 0,
+  "spec_rounds": 3,
+  "test_ok": null,
+  "coverage": null,
+  "uncovered": null,
+  "impl": null,
+  "cases": null,
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md",
+      "characters": 38440
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "Attributes (real), `dilations`",
+          "what": "The prose says `dilations` \"is restricted to $1$ along each spatial axis by [R4]\", but R4 restricts the padding, not `dilations`; the constraint tag E_MAXPOOL_REAL_CONSTR_dilations_0010 states the value $1$ with no restriction behind it.",
+          "why": "A restriction is cited for a rule it does not state: the restriction file's rows are the operator's restrictions, and a section may not attribute to a row a limit the row does not give (the row is copied, not composed).",
+          "fix": "Drop the reference to R4 from the `dilations` prose and state the value $1$ as the constraint E_MAXPOOL_REAL_CONSTR_dilations_0010 does, or, if the profile intends `dilations` to be restricted, add the row to `maxpool_restrictions.md` first."
+        },
+        {
+          "severity": "blocking",
+          "section": "Function (float), \"The maximum of the floating-point values\"",
+          "what": "The case analysis of the special values is incomplete: it decides NaN, $\\pm\\text{inf}$ and the all-null window, but says nothing about a window that mixes $+0$ and $-0$ with a non-zero value, nor about the sign of a null result when the window also contains a negative finite value (e.g. $\\{-0, -1\\}$).",
+          "why": "The guidelines require the special values of the floating-point types to be decided as operands and as results; a reader choosing between $+0$ and $-0$ for a window that is not all-null has to choose a value the document does not state.",
+          "fix": "State that the maximum of a window containing a null and a negative value is that null (the maximum of the values of the type, $+0$ and $-0$ being equal), and that its sign is not specified, so that $+0$ and $-0$ are both conforming results."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md",
+      "characters": 38554
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) / Function, and the same paragraph in the float, int and uint sections",
+          "what": "The Function section states the result as the maximum over the window of $X_p$, and the padding paragraph says the padded elements are excluded from the maximum, but no sentence states what the maximum of an *empty* set of covered elements is; the shape formula and the precondition E_..._CONSTR_X_0020 are what guarantee a window covers at least one element, so the case is decided by the precondition \u2014 but the document never says so in the Function section, and the reader who applies the formula to a window that covers only padded elements has no value.",
+          "why": "Guidelines, 'Function', Part 2: 'States, for every case that applies to the operator, what the operator does.' The case of a window covering no element of $X$ is a case of the operator; it is decided by the precondition, and the Function section must say that the precondition rules it out rather than leave the maximum of an empty set undefined.",
+          "fix": "In the 'Padding' paragraph of each Function section, after 'A window that covers no element of $X$ is not a window of the result', add: 'the precondition [E_MAXPOOL_<FAMILY>_CONSTR_X_0020] rules this case out, so that the maximum is always taken over at least one element of $X$.'"
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) / Function, 'Zero-sized dimensions'",
+          "what": "The paragraph says a spatial dimension of $X$ of size $0$ gives a dimension of $Y$ of size $0$ 'when $p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$', and otherwise 'the operator is not applicable'. But the shape formula $dY_{t+2} = \\lfloor (0 + p_{t,\\text{begin}} + p_{t,\\text{end}} - dK_t)/s_t \\rfloor + 1$ gives a *negative* value when $p_{t,\\text{begin}} + p_{t,\\text{end}} < dK_t$, and the document does not say that the precondition E_..._CONSTR_X_0020 is what excludes that case; a reader applying the formula alone gets a negative dimension.",
+          "why": "Guidelines, 'Function', Part 2: the cases of a zero-sized dimension must be decided. The formula and the prose disagree on the value of $dY_{t+2}$ in the excluded case, and the document does not state which one governs.",
+          "fix": "In the 'Zero-sized dimensions' paragraph of each Function section, replace 'otherwise the operator is not applicable, since a window would cover no element of $X$' with 'otherwise the precondition [E_MAXPOOL_<FAMILY>_CONSTR_X_0020] rules the call out, so that the formula is never applied to that case.'"
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (float) / Function, 'The maximum of the floating-point values'",
+          "what": "The bullet on $+0$ and $-0$ says 'A window whose elements are all null gives a null result; its sign is not specified, so that $+0$ and $-0$ are both conforming results. A window that contains a null and a negative value has that null as its maximum, since a null is greater than every negative value; the sign of that null is not specified either, so that $+0$ and $-0$ are both conforming results.' The case of a window that contains a null and a *positive* value, or a null and $+\\text{inf}$, is not covered: the document does not say whether the result is the positive value (which is greater than the null) or the null.",
+          "why": "Guidelines, 'Function', Part 2: 'States, for every case that applies to the operator, what the operator does.' The case analysis of the maximum over the special values has a gap: the relative order of $+0$/$-0$ with respect to positive finite values and $+\\text{inf}$ is not stated.",
+          "fix": "In the $+0$/$-0$ bullet, add: 'A null is smaller than every positive value and than $+\\text{inf}$, so that a window that contains a null and a positive value or $+\\text{inf}$ has that positive value or $+\\text{inf}$ as its maximum.'"
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (float) / Function, 'The maximum of the floating-point values'",
+          "what": "The bullet on NaN says 'When a window covers an element that is NaN, the result of that window is NaN.' It does not say what happens when the window covers a NaN and the other elements are $+\\text{inf}$ or $+\\text{inf}$ and $-\\text{inf}$ together, i.e. whether NaN propagates over the infinities; and it does not say whether a *signaling* NaN operand is quieted.",
+          "why": "Guidelines, 'Function', Part 2: the special values of the floating-point types must be stated as operands and as results. The interaction of NaN with the other special values is a case of the operator.",
+          "fix": "In the NaN bullet, add: 'NaN propagates over every other value of the window, including $+\\text{inf}$ and $-\\text{inf}$; a signaling NaN operand is quieted, and the result is a quiet NaN.'"
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 3,
+      "path": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md",
+      "characters": 40414
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) / Function, and the same paragraph in the float, int and uint sections",
+          "what": "The Function section states the maximum is taken over the elements of $X$ covered by the window, but the formula's `where` list defines $X_p$ as \"the tensor obtained by padding $X$ with the values of `pads`\" without saying which value the padded elements carry; the prose then excludes them from the maximum, so the value of the padded elements is never decided.",
+          "why": "Guidelines, Function part 2: the specification shall state, for every case that applies, what the operator does, and a reader who has to choose a value the document does not state is the defect. The padded elements are operands of the formula as written and their value is left open.",
+          "fix": "In the `where` bullet that defines $X_p$, state the value the padding inserts (e.g. \"$X_p$ is the tensor obtained by padding $X$ with the values of `pads`, the padded elements being the minimum of the type of $X$\" \u2014 or whatever value the profile fixes), so that the exclusion rule and the formula agree on a decided value."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) / Function, \"**Tensors with no dimension.**\"",
+          "what": "\"The input tensor $X$ has at least three axes, since the batch axis, the channel axis and at least one spatial axis are required; a rank-0 tensor is not a valid input.\" \u2014 the rank-0 case is dismissed by an assertion, and the constraint E_MAXPOOL_REAL_CONSTR_X_0010 that would rule it out is stated only in the Inputs section, not named here.",
+          "why": "Guidelines, Function part 2 and the error-condition procedure: a case that is ruled out by a precondition shall name the constraint tag that rules it out; a case that is not ruled out shall be decided. The sentence neither names the tag nor decides what the operator does with a rank-0 tensor.",
+          "fix": "Replace the sentence with a reference to the constraint that rules the case out, e.g. \"A rank-0 tensor is not a valid input: the rank of $X$ is at least $3$, as stated by [E_MAXPOOL_REAL_CONSTR_X_0010](#E_MAXPOOL_REAL_CONSTR_X_0010).\""
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (float) / Function, \"**The maximum of the floating-point values.**\"",
+          "what": "The bullet on $\\pm 0$ says \"A window whose elements are all null gives a null result; its sign is not specified, so that $+0$ and $-0$ are both conforming results\", but the preceding bullet says NaN propagates over every other value and the $+\\text{inf}$ bullet says $+\\text{inf}$ is greater than every finite value; the case of a window that contains both a null and $+\\text{inf}$ is covered by the $+\\text{inf}$ bullet, yet the null bullet's last sentence (\"A null is smaller than every positive value and than $+\\text{inf}$\") restates it, and the two statements of the same case are not the same statement.",
+          "why": "Guidelines, Function part 2: a case that is left open shall be stated as such with the set of conforming results; a case that is decided shall be decided once. The two sentences give the same case two formulations, which the guidelines' own reason for the error-condition table (a restatement is a second formulation of the same rule and the two may drift apart) warns against.",
+          "fix": "Keep one statement of the null-versus-$+\\text{inf}$ case: either the sentence \"A null is smaller than every positive value and than $+\\text{inf}$...\" or the $+\\text{inf}$ bullet, not both."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (int) / Function, \"**The maximum of the integer values.**\"",
+          "what": "\"for `int8`, the values range from $-128$ to $127$ and the maximum of $-128$ and $127$ is $127$\" \u2014 the section covers the `int` family, whose SONNX types are `int8`, `int16`, `int32` and `int64`, but the document's `where` line restricts the family to `int8` only, and the Function section's example and range statement are given for `int8` alone.",
+          "why": "Guidelines, Types: the family name designates the set of types; a section that covers a family shall state its semantics for the family, and the `where` line shall list the types of that family. The document's `where` line says `int` is in {`int8`}, which is not the family as the guidelines define it, and the Function section then states the range for `int8` only.",
+          "fix": "Either state the `where` line as the family the section covers (the types ONNX admits for this operator, i.e. `int8`) and keep the range statement for that type, or, if the section is meant to cover the whole `int` family, give the range in terms of the number of bits $n$ (from $-2^{n-1}$ to $2^{n-1}-1$) and list the family's types in the `where` line."
+        },
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (uint) / Function, \"**The maximum of the integer values.**\"",
+          "what": "\"for `uint8`, the values range from $0$ to $255$ and the maximum of $0$ and $255$ is $255$\" \u2014 same as the `int` section: the `where` line restricts the family to `uint8` only, and the range statement is given for `uint8` alone.",
+          "why": "Guidelines, Types: the family name designates the set of types; a section that covers a family shall state its semantics for the family, and the `where` line shall list the types of that family. The document's `where` line says `uint` is in {`uint8`}, which is not the family as the guidelines define it.",
+          "fix": "Either state the `where` line as the family the section covers (the types ONNX admits for this operator, i.e. `uint8`) and keep the range statement for that type, or, if the section is meant to cover the whole `uint` family, give the range in terms of the number of bits $n$ (from $0$ to $2^n-1$) and list the family's types in the `where` line."
+        }
+      ]
+    }
+  ],
+  "report": null,
+  "cases_unusable": null,
+  "impl_unusable": null,
+  "finished": "2026-10-05T21:32:16"
+}

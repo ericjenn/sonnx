@@ -15,14 +15,20 @@ system cannot drift from the skill it implements.
 
 | agent | reads | writes | answers |
 |---|---|---|---|
-| **writer** — the specification | the guidelines, the skeleton, an accepted spec for shape, the ONNX definition, the findings against the previous draft | `ops/<op>.md` (CRLF, the guidelines' form) | what is the operator |
-| **compliance verifier** | the document, the guidelines, the review checklist, the linter's output, the types the operator admits and the per-family verdict computed from them | a JSON verdict | does the document say what the guidelines require |
+| **writer** — the specification | the guidelines, the skeleton, an accepted spec for shape, the ONNX definition, the restriction files, the findings against the previous draft | `ops/<op>.md` (CRLF, the guidelines' form) | what is the operator |
+| **compliance verifier** | the document, the guidelines, the review checklist, the linter's output, the types the operator admits and the per-family verdict computed from them, the restriction files | a JSON verdict | does the document say what the guidelines require |
 | **blind implementer** | **the document alone** | `iter-NNN-impl.py` + its `DECISION:` points | what does the document actually say |
-| **test agent** | the document, the implementation, the harness contract, an accepted case module | `cases.py` + the harness report | does the implementation comply with the document, and with ONNX Runtime |
+| **test agent** | the document, the implementation, the harness contract, an accepted case module, the restriction files | `cases.py` + the harness report | does the implementation comply with the document, and with ONNX Runtime |
 | **adjudicator** | the failing report, the document, the implementation and its decisions, the case module | a JSON verdict: `spec`, `code`, `test` or `stop` | where is the fault |
 
 The first two are the skill's stages 0–2 (draft, review, amend); the last three are stage 3
 (verify) with its classification step; the run record is stage 4.
+
+The restriction files are discovered from the operator's name — `ops/global_restrictions.md`
+and `ops/<entry>_restrictions.md`, with `ops/<Op>_restrictions.md` accepted as the ONNX-case
+spelling — and there is no flag for them (see *The restriction files* below). The
+implementer is the one agent that never sees them: the operator's rows reach it only inside
+the document it is given.
 
 ## The graph
 
@@ -47,8 +53,43 @@ verifier; a document that reaches the implementer has passed both.
 
 - **Blindness is enforced by construction.** The implementer's node builds the message from
   the document text and the operator's name and nothing else; the ONNX definition, the
-  harness, the case module and the other agents' findings are not in its context, and a test
-  in `tests/test_graph_offline.py` asserts that they are not.
+  harness, the case module, **the restriction files** and the other agents' findings are not
+  in its context, and a test in `tests/test_graph_offline.py` asserts that they are not.
+- **The restrictions a document carries are the files', not the model's.** Every family
+  section's `## Restrictions` block must carry the rows of `ops/<op>_restrictions.md` —
+  verbatim, in the file's order, in every section — after the mandatory link sentence, and
+  the writer's node refuses a document that drops a row, invents one, reorders them or
+  rewords them, exactly as it refuses an answer that announces a type family ONNX does not
+  admit: the writer is asked again, with the row named. The rows are the profile's own
+  decisions about the operator — what it is defined to do — so a document that composes its
+  own rows is a document that specifies a different operator. With no file, the block
+  carries the sentence `No specific restrictions apply to the **Op** operator.` and no
+  table, and a table with no file behind it is refused as an invented row. The global file
+  is the other half: it is *linked* and never copied, so the document states the
+  consequence of a global restriction where it states the semantics, and the verifier is
+  told both halves — carry the file's rows, contradict nothing the global file says. The
+  request is rebuilt for every attempt, because the guard reads the restriction files for
+  every answer: a file that appears while the writer is answering must reach the writer's
+  *next* request, or the node tells the writer the operator introduces none while its guard
+  requires the rows (measured on 2026-10-05: `ops/maxpool_restrictions.md` appeared between
+  the **MaxPool** writer node's entry and its first answer, and the run stopped `stalled` on
+  rows the request itself had said did not exist; the offline suite's scenario 36 is the
+  file appearing after the first answer). The
+  implementer never sees either file (measured by the offline suite's scenario 34, which
+  asserts the writer, the verifier and the tester are given the global file and the
+  implementer is not).
+- **A restriction is a domain boundary, not a mismatch — but `open` is the runtime's word.**
+  The restrictions bound what the operator is defined to do, so a case they rule out tests
+  nothing and is never a failure of an implementation. The trap is that the harness records
+  a case as *open* **only when ONNX Runtime refuses to build or run the model**: the runtime
+  enforces no restriction of its own, and a case that sets `storage_order=1`, `ceil_mode=1`
+  or `auto_pad="VALID"` is accepted and *compared*, so an implementation that follows the
+  document outside its domain comes back as a mismatch. The tester is therefore told to put
+  a case the restrictions exclude in a sweep — or leave it out — and never in `cases()`,
+  while the **boundary** case (`pads == kernel_shape`, `storage_order=0`,
+  `auto_pad="NOTSET"`, `ceil_mode=0`, `dilations=1`) is inside the domain, must be compared
+  and stays in `COVERAGE`. The adjudicator is told the same in one sentence: an open case is
+  outside the domain, not evidence of a defect.
 - **A pass after an amendment is not convergence.** The route out of `test` records the
   contents of the three artifacts with the failing cases; a failure that repeats with the
   same document, the same implementation and the same case set stops the loop (`unchanged`)
@@ -158,6 +199,21 @@ verifier; a document that reaches the implementer has passed both.
   complete document on disk. If the answer is still incomplete, the compliance check sees
   the same document twice, and the loop stops with `stalled` instead of spending a round on
   an amendment that cannot be made.
+- **An amendment must be one the writer can make.** A blocking finding is one that leaves a
+  reader able to implement the wrong operator, and its `fix` is the change the writer is
+  asked for. A finding whose own `why` closes the doubt it raises, or whose `fix` asks for
+  no change, is therefore not blocking — but a verifier that reports it as blocking anyway
+  leaves the loop an amendment that cannot be made: the writer returns the document it was
+  given, the compliance check sees the same document twice, and the run stops `stalled`, the
+  one outcome that blames the document for the reviewer's bookkeeping. The reviewer is told
+  what the contradiction is and asked again, and a finding still asking for no change after
+  the retries is not counted — it stays in the run's history as evidence of the review that
+  refused the document for it — so the round is spent on the document and not on a severity
+  tag. Measured on 2026-10-05 in the **MaxPool** run: two reviews in a row refused the
+  round-3 document for findings whose own `fix` read "No change required." and "No change:
+  ...", the writer's round-1 answer was the document byte for byte (`md5 b635a8a0…`,
+  unchanged), and the run stopped `stalled` at round 1; the offline suite's scenario 37 is
+  that review, and its run converges with no amendment at all.
 - **Nor is an answer that keeps a Contents it does not fill.** The red span count is not
   enough on its own: an answer cut off *between* the spans — inside a `$...$`, or in the
   middle of a sentence — has every span it reached closed and is accepted, while the
@@ -293,15 +349,24 @@ verifier; a document that reaches the implementer has passed both.
   new implementation) and the run then stops with `cases-stuck`. Seen on 2026-10-04: the
   **Asin** stop was `unchanged` — "the document did not change and the case still fails" —
   at iteration 1 of 5, with the reason naming the one artifact that was correct.
-- **A section with no case is a guard, not a pass.** The test agent must declare a
-  `COVERAGE` dictionary over the document's own Contents anchors, and the scheduler stops
-  with `uncovered-section` when one of them has no case — a section without cases passes
-  vacuously, which is worse than a failure. The dictionary is read by **importing the case
-  module** in the interpreter the harness uses, not by parsing its source: a case set that
-  counts its own cases per section — `COVERAGE = {"real": 0, ...}` filled in from the case
-  list as the module loads — looks empty in the source, and reading the literal of the
-  assignment reported every section of a 156-case set as uncovered. (Seen on 2026-10-04;
-  the static read survives only as the fallback for a module that will not import.)
+- **A section with no case is a guard, not a pass — and the repair comes first.** The test
+  agent must declare a `COVERAGE` dictionary over the document's own Contents anchors, and a
+  section with no case is a defect of the **case set**: the document announced it and the
+  cases did not exercise it. It is therefore repaired inside the test node, within the
+  tester's repair budget (`--max-case-repairs`), with a brief that names the uncovered
+  anchors and the two ways to cover them — cases in `cases()` for a section with an ONNX
+  type, a sweep's checks counted into `COVERAGE` for `real`, which has no type the runtime
+  can be asked about — and the scheduler stops with `uncovered-section` only when the
+  repairs are exhausted. It used to stop immediately, before any repair and before the
+  adjudicator: measured on 2026-10-05, **MaxPool** attempt 6 left `COVERAGE["real"] = 0`
+  while its `real` sweep compared the section, exactly the shape the accepted case modules
+  count by hand, and the loop stopped on a case module it had a budget for. The dictionary
+  is read by **importing the case module** in the interpreter the harness uses, not by
+  parsing its source: a case set that counts its own cases per section — `COVERAGE =
+  {"real": 0, ...}` filled in from the case list as the module loads — looks empty in the
+  source, and reading the literal of the assignment reported every section of a 156-case set
+  as uncovered. (Seen on 2026-10-04; the static read survives only as the fallback for a
+  module that will not import.)
 - **The case module is written against the interpreter that runs it.** That interpreter is
   fixed — the standard library, `numpy`, `onnx`, `onnxruntime`, nothing else — and the
   tester is told so, because an import of anything else is a failed test of the tester's and
@@ -386,6 +451,16 @@ verifier; a document that reaches the implementer has passed both.
   float costs, so an exhaustive sweep belongs to `float16` (65536 values) and the wider types
   get boundaries and a sample of a few hundred, and a model belongs to a batch rather than to
   an element.
+- **A run publishes the reports it wrote, not the ones in the directory.** The run directory
+  is shared by every attempt at an operator — a second attempt runs in the same
+  `agents/runs/<Op>/`, and so does a run resumed after a stop — and the report names repeat
+  from one attempt to the next, so `iter-001-report-2.json` of the attempt before is
+  indistinguishable from this run's by its name alone. Measured on 2026-10-05: `MaxPool`
+  attempt 6 began in a directory holding ten reports of attempt 4, and its `--publish` would
+  have copied them into `verification/maxpool/loop/` as this run's own evidence, because
+  publishing swept the directory. The run now records the report and implementation paths it
+  wrote, `publish` copies exactly those, and a record written before the field existed is
+  still read the old way, so an old run stays publishable.
 - **Infinity and NaN are not real numbers.** A sweep over the *special values* of a type must
   decide them by the rule the document states for them and never reach the exact arithmetic
   with them: `Decimal(float("inf")) - Decimal(float("inf"))` raises `InvalidOperation`, and a
@@ -447,10 +522,18 @@ response with no text at all is retried once with twice the budget.
 | `--publish-only` | publish the converged run recorded in `--json-state`, with no model call: the document the caller read the verdict for is the document that gets published |
 | `--json-state <file>` | the final state, for inspection — it carries the outcome, so `--publish-only` can check it |
 
-Nothing in `ops/` or `verification/` is touched until `--publish` (or `--publish-only`),
-and the repository is not under version control, so a run cannot destroy a specification by
-accident: an existing `ops/<op>.md` is never overwritten without `--force`, and
-`--publish-only` refuses to publish a run whose outcome is not `converged`.
+`verification/` is not touched until `--publish` (or `--publish-only`), and a specification
+that is already there cannot be destroyed by accident: when `ops/<op>.md` exists the run
+keeps its working document in `agents/runs/<Op>/<op>.md` and leaves the published file alone
+(the caller asks for it back with `--spec` or `--force`), and `--publish-only` refuses to
+publish a run whose outcome is not `converged`.
+
+An operator with **no** document yet is the other case, and it drafts straight to
+`ops/<op>.md`: that file is the run's working document from the first round, rewritten by
+every round, and it is only on `--publish` that the converged document replaces it. So a run
+that stops leaves its last draft there — the **MaxPool** run of 2026-10-04 did, and it is
+archived with its log in `agents/runs/MaxPool/attempt-5/`. Read a document in `ops/` as
+published only if the run whose record you can open converged.
 
 Publishing **Neg** copies the document to `ops/neg.md`, the case module to
 `verification/neg/cases.py`, and the implementation and its harness report to
@@ -472,6 +555,35 @@ whole page returns the menu. `--onnx-doc <file>` overrides both. Whichever was u
 written to `onnx-<Op>.txt` in the run directory, so the reader of a run can see what the
 writer had.
 
+### The restriction files
+
+Two files in `ops/` state what an operator is *not* defined to do, and they are repository
+inputs rather than run artifacts: the run reads them where they are and never writes them.
+
+- `ops/global_restrictions.md` — the restrictions that apply to every operator. A
+  document's `## Restrictions` block **links** it (`[General restrictions](./global_restrictions.md)
+  are applicable.`) and never copies it; its rows use a `[G<n>]` tag so they are visibly not
+  a document's `[R<n>]` rows.
+- `ops/<entry>_restrictions.md` — the restrictions of one operator, as a table and nothing
+  else, so its rows can be pasted. `ops/<Op>_restrictions.md` (the ONNX spelling) is
+  accepted too, and the entry spelling wins when both exist. `None` — the ordinary case for
+  an operator that introduces no restriction of its own — is not an error: the block then
+  carries `No specific restrictions apply to the **Op** operator.`
+
+The writer's node reads the operator's file and refuses a document whose blocks do not carry
+its rows verbatim and in order, in every family section (see the guarantee above); the
+verifier and the tester are given both files. The rows are copied into the document, so they
+obey the document's modality — an indicative limit ("The padding of a spatial axis is at
+most the size of the kernel"), never `must`, `should`, `---` or a code fence, which
+`lint_spec.py` forbids. `[R<n>]` numbering is per operator file and the tags repeat across
+the family sections, as they do in the published documents; they are not `E_` tags, so the
+linter ignores them. The three-column shape (`Restriction | Statement | Origin`) is the
+guidelines'; a restriction that applies to one family only names that family in its
+Statement rather than adding a column. Known limitation: `--publish` does not check the
+published document against the operator's file, so reconcile the two before publishing —
+`ops/maxpool.md` and the run directory's MaxPool document already disagree on `R4` — and a
+publish-time check is a later change.
+
 ## The run directory
 
 ```
@@ -487,6 +599,11 @@ agents/runs/<Op>/
     run-<timestamp>.json the record: every agent's verdict, the coverage, the last report
 ```
 
+Every attempt at the operator runs here, so the directory holds what the attempt before it
+left behind as well, and the names repeat. The record — not the directory — is what says
+which files are this run's: it carries the report and implementation paths the run wrote, and
+`--publish` copies those.
+
 ## The scheduler, tested offline
 
 ```
@@ -495,9 +612,14 @@ agents/runs/<Op>/
 
 Every agent is replaced by a canned answer and the two harness programs by canned verdicts,
 so the test exercises exactly the part a model must not decide: which node runs after
-which, and which guard stops the loop. Twenty-nine scenarios: convergence, an unresolved review
+which, and which guard stops the loop. Thirty-seven scenarios: convergence, an unresolved review
 finding, an amendment that changes nothing, the two correction routes, the unchanged-document
-guard, the uncovered-section guard, a repair of a broken case module, an adjudicated stop,
+guard, a review whose blocking finding withdraws itself (the reviewer is told what the
+contradiction is and asked again, the finding never reaches the writer, and a reviewer that keeps
+asking for no change is not counted — the run proceeds instead of stopping `stalled` on an
+amendment that cannot be made), the uncovered-section guard (the case set is asked again with the anchors named, and
+the run stops with `uncovered-section` only once the repairs are exhausted — a second
+scenario is the repair that succeeds, and the run converges), a repair of a broken case module, an adjudicated stop,
 the iteration cap, a writer answer that stops in the middle of the document (twice: the
 retry completes it, and nothing ever does), a verifier that returns no verdict (twice: it
 never does, and it does on the second attempt), a tester answer that is not a case module
@@ -535,7 +657,21 @@ that call with a case module, which the node read as a `stop` and which turned s
 `adjudicated-stop`), and a document that gives a family a type ONNX does not admit for the
 operator — in the Contents and in the sentence that opens the section (the admitted set is read
 from the schema's *first input*, so `uint8` is refused for **Neg**, `int64` is not an admitted
-MaxPool type, and the writer is asked again for the families to correct). A last section asserts
+MaxPool type, and the writer is asked again for the families to correct), and the publish of a
+run that shares its directory with an earlier attempt (the run names the reports and the
+implementations it wrote, the published loop holds those and not the attempt before's, and a
+record written before the run named them is read the old way, so an old run stays
+publishable), and the restriction files (the old link refused at the writer with the
+sentence named and the new one on disk after the retry; the operator file's rows carried
+verbatim into every section, a dropped row and an invented row each named by their `[Rn]`
+tag, the Contents read in document order rather than sorted, and a second section missing
+the row refused; an operator with no file carrying the mandatory sentence, with a table and
+no file refused as invented and the ONNX-case spelling found; and the implementer never
+given either file, the sentinel in the writer's, verifier's and tester's messages and
+absent from the implementer's; and the operator's restriction file appearing while the
+writer is answering — the request was built before the file existed, the retry is refused
+until it carries the file's rows, and a request rebuilt for the attempt is what makes the
+retry carry them). A last section asserts
 the family
 verdicts the verifier is handed, computed from the operator's schema: **Neg** has no `uint`
 family, **Add** has one, **Sin** has neither `int` nor `uint`, and **MaxPool**'s `int` family is

@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sonnx_agents import extract, graph, harness  # noqa: E402
+from sonnx_agents import cli, extract, graph, harness  # noqa: E402
 from sonnx_agents.config import Settings  # noqa: E402
 
 SPEC = """# Contents
@@ -32,6 +32,12 @@ Revision 2026-10-04: first issue of this specification.
 <a id="real"></a>
 
 # **Neg** (real)
+
+## Restrictions
+
+[General restrictions](./global_restrictions.md) are applicable.
+
+No specific restrictions apply to the **Neg** operator.
 
 ## Function
 
@@ -95,6 +101,65 @@ WRONG_TYPE_SPEC = SPEC.replace(
     "- **Neg** operator for types [`uint8`, `uint16`](#uint)\n").replace(
     "C[i] = -A[i]", "where uint is in {`uint8`, `uint16`}\n\n$$\nC[i] = -A[i]")
 
+# The document a model returns when it keeps the pre-feature link: the sentence every
+# `## Restrictions` section opens with pointed at a `common/` directory that does not exist
+# in this repository before the restriction files moved into `ops/`.  Scenario 31.
+STALE_LINK_SPEC = SPEC.replace(
+    "[General restrictions](./global_restrictions.md) are applicable.",
+    "[General restrictions](./../common/general_restrictions.md) are applicable.")
+
+# An operator restriction file: one row, the header and the separator that must not be read
+# as rows.  Scenario 32.
+RESTRICTIONS_FILE = (
+    "# The restrictions of the Neg operator\n\n"
+    "| Restriction | Statement | Origin |\n"
+    "| -------- | ------- | ------- |\n"
+    "| `[R1]` | Input tensor $A$ has at most 4 axes | Transient |\n")
+
+# The document that carries that row, and the document that invents a second one: a row the
+# file does not have is the more dangerous of the two ways to get this wrong.  Scenario 32.
+RESTRICTED_SPEC = SPEC.replace(
+    "No specific restrictions apply to the **Neg** operator.",
+    "| Restriction | Statement | Origin |\n"
+    "| -------- | ------- | ------- |\n"
+    "| `[R1]` | Input tensor $A$ has at most 4 axes | Transient |")
+INVENTED_ROW_SPEC = RESTRICTED_SPEC.replace(
+    "| `[R1]` | Input tensor $A$ has at most 4 axes | Transient |",
+    "| `[R1]` | Input tensor $A$ has at most 4 axes | Transient |\n"
+    "| `[R9]` | Attribute `auto_pad` is restricted to `NOTSET` | Transient |")
+
+# A document of two family sections, both carrying the mandatory sentence: the guard must
+# pair each `## Restrictions` block with its own family, which only holds if the anchors are
+# read in the document's order and not sorted (`sorted(["real", "float"])` is the other one).
+TWO_FAMILY_SPEC = SPEC.replace(
+    "- **Neg** operator for type [real](#real)\n",
+    "- **Neg** operator for type [real](#real)\n"
+    "- **Neg** operator for types [`float16`, `float`, `double`](#float)\n").replace(
+    '<span style="background: red; color: white; font-size:0.7em;">[END]</br></span>\n',
+    '<span style="background: red; color: white; font-size:0.7em;">[END]</br></span>\n\n'
+    '<a id="float"></a>\n\n# **Neg** (float)\n\n## Restrictions\n\n'
+    '[General restrictions](./global_restrictions.md) are applicable.\n\n'
+    'No specific restrictions apply to the **Neg** operator.\n')
+# and the same document with the row in the first family only: the carry is per section, so
+# a section that says "no specific restrictions" while the file gives one is refused
+TWO_FAMILY_ONE_RESTRICTED = TWO_FAMILY_SPEC.replace(
+    "No specific restrictions apply to the **Neg** operator.",
+    "| Restriction | Statement | Origin |\n"
+    "| -------- | ------- | ------- |\n"
+    "| `[R1]` | Input tensor $A$ has at most 4 axes | Transient |", 1)
+
+# A global file with a sentinel, so that the blindness assertion has something to catch:
+# the blind implementer must never be given either restriction file, and the sentinel is the
+# one string that appears in the global file and nowhere else.  Scenario 34.
+GLOBAL_RESTRICTIONS_FILE = (
+    "# Global restrictions\n\n"
+    "GLOBAL-RESTRICTION-SENTINEL: an absent optional attribute has no default value.\n\n"
+    "| Restriction | Statement | Origin |\n"
+    "| -------- | ------- | ------- |\n"
+    "| `[G1]` | An optional attribute for which the node gives no value has no default "
+    "value | Transient |\n")
+
+
 # An operator that is not element-wise: its node carries attributes and has a second output.
 # Scenario 26 runs these through the real harness.
 MAXPOOL_CASES = '''
@@ -152,6 +217,16 @@ VERIFIER_OK = '{"ok": true, "findings": [], "notes": "checked"}'
 VERIFIER_BAD = json.dumps({"ok": False, "notes": "one blocking finding", "findings": [
     {"severity": "blocking", "section": "real", "what": "no example",
      "why": "the skeleton requires one", "fix": "add Example 1"}]})
+# A blocking finding that withdraws itself: its `why` closes the doubt it raises and its
+# `fix` asks for no change.  The writer is asked for exactly the change a `fix` gives, so
+# this finding is an amendment that cannot be made (scenario 37); the shapes are the ones
+# the **MaxPool** verifier answered with on 2026-10-05.
+VERIFIER_WITHDRAWN = json.dumps({"ok": False, "notes": "a doubt that closed itself",
+                                 "findings": [
+    {"severity": "blocking", "section": "real — Function, the tie case",
+     "what": "the document does not say which of two equal maxima is the result",
+     "why": "the two are the same value, so this is not a defect. Withdrawing this finding.",
+     "fix": "No change required."}]})
 
 
 class Scenario:
@@ -163,7 +238,9 @@ class Scenario:
                     "blank_cases_until_nothink", "blank_impl_until_nothink", "fragment_cases",
                     "truncated_impl", "change_cases", "timeout_cases", "not_python_cases",
                     "truncated_cases", "junk_cases", "raising_sweeps", "vacuous_cases",
-                    "lose_section", "lose_section_after", "wrong_type_spec"):
+                    "lose_section", "lose_section_after", "wrong_type_spec",
+                    "stale_link", "missing_rows", "invented_rows", "spec_answer",
+                    "withdrawing"):
             setattr(self, key, kwargs.get(key))
         self.writer_calls = 0
         self.verifier_calls = 0
@@ -180,6 +257,11 @@ class Scenario:
         self.budget_seen = []
         # every request the tester was given, so that a test can see what it was told
         self.tester_users = []
+        # and every request the writer and the verifier were given: the restriction files are
+        # context for those two agents, and the implementer's one request must not carry them
+        # (scenario 34)
+        self.writer_users = []
+        self.verifier_users = []
 
     # -- the model -------------------------------------------------------
     def ask(self, system, user, settings, max_tokens=None, thinking="auto"):
@@ -192,6 +274,7 @@ class Scenario:
         if "specification writer" in role:
             self.writer_calls += 1
             self.seen.append("writer")
+            self.writer_users.append(user)
             if self.writer_calls <= (self.truncate_answers or 0):
                 return "Here is the document:\n\n%s" % TRUNCATED_SPEC
             if self.lose_section and self.writer_calls <= self.lose_section:
@@ -202,12 +285,26 @@ class Scenario:
             if self.wrong_type_spec and self.writer_calls <= self.wrong_type_spec:
                 # a family whose types include one the operator's schema does not admit
                 return "Here is the document:\n\n%s" % WRONG_TYPE_SPEC
+            if self.stale_link and self.writer_calls <= self.stale_link:
+                # a document that keeps the pre-feature link to a `common/` that is not there
+                return "Here is the document:\n\n%s" % STALE_LINK_SPEC
+            if self.missing_rows and self.writer_calls <= self.missing_rows:
+                # the operator has a restriction file and the document says it has none
+                return "Here is the document:\n\n%s" % SPEC
+            if self.invented_rows and self.writer_calls <= self.invented_rows:
+                # the document carries a row the operator's restriction file does not have
+                return "Here is the document:\n\n%s" % INVENTED_ROW_SPEC
             if self.writer_calls > 1 and self.change_spec:
                 return SPEC.replace("Revision 2026-10-04", "Revision 2026-10-05")
-            return SPEC
+            return "Here is the document:\n\n%s" % (self.spec_answer or SPEC)
         if "guidelines-compliance verifier" in role:
             self.seen.append("verifier")
             self.verifier_calls += 1
+            self.verifier_users.append(user)
+            if self.withdrawing and (self.withdrawing is True
+                                     or self.verifier_calls <= self.withdrawing):
+                # a blocking finding whose own `fix` asks for no change (scenario 37)
+                return VERIFIER_WITHDRAWN
             if self.verifier == "garbage" or (self.verifier == "garbage_once"
                                               and self.verifier_calls == 1):
                 return "I have read the document and I have no verdict to give."
@@ -221,6 +318,9 @@ class Scenario:
             assert "# Contents" in user, "the implementer must be given the document"
             assert "ONNX Runtime" not in user and "specloop" not in user, \
                 "the implementer must not be told about the reference or the harness"
+            assert "GLOBAL-RESTRICTION-SENTINEL" not in user, \
+                "the implementer must not be given the restriction files: it reads the " \
+                "document, whose sections carry the operator's own rows"
             if self.truncated_impl and self.implementer_calls <= self.truncated_impl:
                 # an answer that ran out of room in the middle of the module
                 return "Here is the module:\n\n```python\n%s```\n" % TRUNCATED_IMPL
@@ -243,8 +343,14 @@ class Scenario:
             if self.blank_cases_until_nothink and thinking != "off":
                 # the deliberation eats the whole budget, on every call that has one
                 return ""
-            cases = CASES.replace('COVERAGE = {"real": 3}', "COVERAGE = {}") \
-                if self.uncovered else CASES
+            # `uncovered` is `True` (a case set that never covers the section: scenario 6) or
+            # an `int` (it covers the section once the tester is asked again: scenario 35).
+            # `False` is an `int` too, so the `is True` test comes first.
+            uncovered = (self.uncovered is True
+                         or (isinstance(self.uncovered, int)
+                             and self.tester_calls <= self.uncovered))
+            cases = (CASES.replace('COVERAGE = {"real": 3}', "COVERAGE = {}")
+                     if uncovered else CASES)
             if self.not_python_cases and self.tester_calls <= self.not_python_cases:
                 # the module, and then a line that is not Python: the text is not a module, so
                 # it is refused and asked for again
@@ -356,10 +462,35 @@ class Scenario:
                 "stdout": "cases     : ...", "report": report, "report_path": str(report_path)}
 
 
-def run(scenario: Scenario, **settings_kwargs) -> dict:
-    """Run the graph once with the scenario installed."""
+def run(scenario: Scenario, stale_reports=(), operator_restrictions=None,
+        global_restrictions=None, late_restrictions=None, **settings_kwargs) -> dict:
+    """Run the graph once with the scenario installed.
+
+    `stale_reports` seeds the run directory with files an earlier attempt left there — the
+    run directory is shared by every attempt at the operator, and its report names repeat
+    from one attempt to the next (scenario 30).
+
+    `operator_restrictions` and `global_restrictions` are written into an `ops/` of the run's
+    own and `settings.restrictions_dir` points at it, so the restriction guard is exercised
+    without reading the repository's own `ops/` (scenarios 31-34).
+
+    `late_restrictions` is `(after_n_writer_calls, text)`: the operator's restriction file is
+    written only after the writer's nth answer, which is the file appearing while the writer
+    is answering.  The guard reads it for every answer and the writer's request carries it,
+    so the request must be rebuilt for each attempt (scenario 36).
+    """
     workdir = Path(tempfile.mkdtemp(prefix="sonnx-agents-"))
+    for name in stale_reports:
+        (workdir / name).write_text('{"stale": "the attempt before this one"}\n',
+                                    encoding="utf-8")
+    ops_dir = workdir / "ops"
+    ops_dir.mkdir()
+    if operator_restrictions is not None:
+        (ops_dir / "neg_restrictions.md").write_text(operator_restrictions, encoding="utf-8")
+    if global_restrictions is not None:
+        (ops_dir / "global_restrictions.md").write_text(global_restrictions, encoding="utf-8")
     settings = Settings(op="Neg", run_dir=workdir, spec_path=workdir / "Neg.md", verbose=False,
+                        restrictions_dir=ops_dir,
                         max_iterations=settings_kwargs.pop("max_iterations", 5),
                         max_spec_rounds=settings_kwargs.pop("max_spec_rounds", 3),
                         max_case_repairs=settings_kwargs.pop("max_case_repairs", 2),
@@ -367,7 +498,12 @@ def run(scenario: Scenario, **settings_kwargs) -> dict:
     original_ask, original_lint, original_loop = graph.ask, harness.run_lint, harness.run_specloop
 
     def fake_ask(_settings, system, user, max_tokens=None, thinking="auto"):
-        return scenario.ask(system, user, settings, max_tokens=max_tokens, thinking=thinking)
+        result = scenario.ask(system, user, settings, max_tokens=max_tokens, thinking=thinking)
+        if late_restrictions and "specification writer" in system.strip().splitlines()[0]:
+            after, text = late_restrictions
+            if scenario.writer_calls == after:
+                (ops_dir / "neg_restrictions.md").write_text(text, encoding="utf-8")
+        return result
 
     graph.ask = fake_ask
     harness.run_lint = scenario.lint
@@ -449,6 +585,10 @@ def main() -> int:
     state = run(s)
     check("outcome", outcome(state), "uncovered-section")
     check("uncovered", state.get("uncovered"), ["real"])
+    # the defect is the case set's and the tester has a repair budget for it, so the run
+    # stops on `uncovered-section` only after the repairs are exhausted (scenario 35 is the
+    # repair that succeeds)
+    check("the case set was asked again until the repairs ran out", s.tester_calls, 3)
 
     print("\n7. the case module raises, the test agent repairs it")
     s = Scenario(verifier="ok", fail_times=0, broken_cases=1)
@@ -1038,6 +1178,249 @@ def main() -> int:
     check("writer calls", s.writer_calls, 2)
     check("and the document on disk announces the admitted types only",
           graph.announced_types(Path(state["spec_path"]).read_text(encoding="utf-8")), set())
+
+    print("\n30. a run publishes the reports it wrote, not the attempt before's")
+    # The run directory is shared by every attempt at the operator, and the report names
+    # repeat from one attempt to the next (`iter-001-report-2.json`).  A publish that copies
+    # every file of that shape publishes the attempt before's evidence as this run's.
+    # Measured on 2026-10-05: `agents/runs/MaxPool/` held ten reports of attempt 4 when
+    # attempt 6 began, and attempt 6 would have published them into
+    # `verification/maxpool/loop/`.  A run now names the reports it wrote, and the record —
+    # not a directory listing — is what is published.
+    s = Scenario(verifier="ok", fail_times=0, broken_cases=1)
+    state = run(s, stale_reports=["iter-001-report-7.json"])
+    workdir = Path(state["_dir"])
+    check("the run wrote two reports", [Path(p).name for p in state["reports"]],
+          ["iter-001-report.json", "iter-001-report-2.json"])
+    check("and does not name the attempt before's",
+          "iter-001-report-7.json" in state["reports"], False)
+    check("which is still on disk, where it was",
+          (workdir / "iter-001-report-7.json").exists(), True)
+
+    settings = Settings(op="Neg", run_dir=workdir, spec_path=Path(state["spec_path"]),
+                        verbose=False)
+    repo = Path(tempfile.mkdtemp(prefix="sonnx-repo-"))
+    original_repo = cli.REPO
+    cli.REPO = repo
+    try:
+        cli.publish(settings, state)
+    finally:
+        cli.REPO = original_repo
+    loop = repo / "verification" / settings.entry / "loop"
+    check("the published loop holds this run's reports",
+          sorted(p.name for p in loop.glob("*.json")),
+          ["iter-001-report-2.json", "iter-001-report.json"])
+    check("and not the attempt before's", (loop / "iter-001-report-7.json").exists(), False)
+    check("the implementation of this run is published too",
+          sorted(p.name for p in loop.glob("iter-*impl.py")), ["iter-001-impl.py"])
+    check("and the document is the one this run wrote",
+          harness.md5(repo / "ops" / "neg.md"), state["spec_md5"])
+
+    # a record written before a run named its reports is read the old way: the guard changes
+    # what a new run publishes, it does not make an old run unpublishable
+    earlier = {k: v for k, v in state.items() if k != "reports"}
+    repo2 = Path(tempfile.mkdtemp(prefix="sonnx-repo-"))
+    cli.REPO = repo2
+    try:
+        cli.publish(settings, earlier)
+    finally:
+        cli.REPO = original_repo
+    loop2 = repo2 / "verification" / settings.entry / "loop"
+    check("a record with no list of reports falls back to the directory",
+          sorted(p.name for p in loop2.glob("*.json")),
+          ["iter-001-report-2.json", "iter-001-report-7.json", "iter-001-report.json"])
+
+    print("\n31. a restriction section that keeps the old link")
+    # The sentence every family section opens with points at `ops/global_restrictions.md`.
+    # The pre-feature link pointed at a `common/` directory that does not exist in this
+    # repository, and a document that keeps it is answering the guidelines as they were: it
+    # is refused at the writer, like a type family ONNX does not admit (scenario 29), so no
+    # round of the loop and no compliance review is spent on it.
+    workdir = Path(tempfile.mkdtemp(prefix="sonnx-ops-"))
+    ops = workdir / "ops"
+    settings = Settings(op="Neg", run_dir=workdir, spec_path=workdir / "Neg.md", verbose=False,
+                        restrictions_dir=ops)
+    check("a document with the new link is a document",
+          graph._carries_restrictions(SPEC, settings), "")
+    check("the old link is refused",
+          graph._carries_restrictions(STALE_LINK_SPEC, settings)
+          .startswith("the restrictions"), True)
+    check("and the reason names the sentence to carry",
+          graph.GENERAL_LINK in graph._carries_restrictions(STALE_LINK_SPEC, settings), True)
+    check("the retry says to return the whole document",
+          "every other sentence as it is"
+          in graph._writer_retry_note(graph._carries_restrictions(STALE_LINK_SPEC, settings)),
+          True)
+
+    s = Scenario(verifier="ok", fail_times=0, stale_link=1)
+    state = run(s)
+    check("outcome", outcome(state), "converged")
+    check("writer calls", s.writer_calls, 2)
+    carried = Path(state["spec_path"]).read_text(encoding="utf-8")
+    check("the document on disk carries the new link", graph.GENERAL_LINK in carried, True)
+    check("and not the old one", graph.OLD_GENERAL_LINK in carried, False)
+
+    print("\n32. the operator's rows are carried verbatim into every section")
+    # The operator's restriction file is the single source of the `## Restrictions` table:
+    # the writer is given the file, and the rows are compared as normalized `(tag, statement,
+    # origin)` triples, so a dropped, invented, reordered or reworded row is refused where the
+    # writer is, with the `[Rn]` tags and the section named.  The table is per family section,
+    # so the guard pairs each block with its own family — which only holds if the anchors are
+    # read in the document's order.
+    workdir = Path(tempfile.mkdtemp(prefix="sonnx-ops-"))
+    ops = workdir / "ops"
+    ops.mkdir()
+    (ops / "neg_restrictions.md").write_text(RESTRICTIONS_FILE, encoding="utf-8")
+    settings = Settings(op="Neg", run_dir=workdir, spec_path=workdir / "Neg.md", verbose=False,
+                        restrictions_dir=ops)
+    check("the row reader", harness.restriction_rows(RESTRICTIONS_FILE),
+          [("R1", "Input tensor $A$ has at most 4 axes", "Transient")])
+    check("and it reads neither the header nor the separator",
+          harness.restriction_rows("| Restriction | Statement | Origin |\n"
+                                   "| -------- | ------- | ------- |\n"), [])
+    check("a document that carries the file's rows is a document",
+          graph._carries_restrictions(RESTRICTED_SPEC, settings), "")
+    check("a section that still says 'no specific restrictions' is refused for the missing row",
+          "missing `[R1]`" in graph._carries_restrictions(SPEC, settings), True)
+    check("an invented row is refused",
+          "not in the file: `[R9]`" in graph._carries_restrictions(INVENTED_ROW_SPEC, settings),
+          True)
+    check("the sections are read in Contents order, not sorted",
+          (harness.section_anchors(TWO_FAMILY_SPEC), harness.sections(TWO_FAMILY_SPEC)),
+          (["real", "float"], ["float", "real"]))
+    plain = Settings(op="Neg", run_dir=workdir, spec_path=workdir / "Neg.md", verbose=False,
+                     restrictions_dir=workdir / "no-such-ops")
+    check("two family sections carrying the sentence pass",
+          graph._carries_restrictions(TWO_FAMILY_SPEC, plain), "")
+    check("but a second section without the file's row is refused",
+          "missing `[R1]`"
+          in graph._carries_restrictions(TWO_FAMILY_ONE_RESTRICTED, settings), True)
+
+    s = Scenario(verifier="ok", fail_times=0, missing_rows=1, spec_answer=RESTRICTED_SPEC)
+    state = run(s, operator_restrictions=RESTRICTIONS_FILE)
+    check("outcome", outcome(state), "converged")
+    check("writer calls", s.writer_calls, 2)
+    check("the retry names the row that was missing", "missing `[R1]`" in s.writer_users[-1],
+          True)
+    check("and the row is on disk",
+          "| `[R1]` | Input tensor $A$ has at most 4 axes | Transient |"
+          in Path(state["spec_path"]).read_text(encoding="utf-8"), True)
+
+    print("\n33. an operator with no restriction file carries the sentence, not a table")
+    # A missing file is the ordinary case: most operators introduce no restriction of their
+    # own, and the section then carries the mandatory sentence.  A table with no file behind
+    # it is an invented restriction, which is the more dangerous of the two ways to get this
+    # wrong, and the ONNX-case spelling of the file name is accepted too.
+    workdir = Path(tempfile.mkdtemp(prefix="sonnx-ops-"))
+    ops = workdir / "ops"
+    ops.mkdir()
+    settings = Settings(op="Neg", run_dir=workdir, spec_path=workdir / "Neg.md", verbose=False,
+                        restrictions_dir=ops)
+    check("there is no file to read", settings.restrictions_path(), None)
+    no_sentence = SPEC.replace("No specific restrictions apply to the **Neg** operator.\n", "")
+    check("the sentence is required when the file lists nothing",
+          "No specific restrictions apply"
+          in graph._carries_restrictions(no_sentence, settings), True)
+    check("and a table with no file behind it is refused as invented",
+          "does not have" in graph._carries_restrictions(RESTRICTED_SPEC, settings), True)
+    check("the ONNX-case spelling finds nothing yet",
+          Settings(op="MaxPool", restrictions_dir=ops).restrictions_path(), None)
+    (ops / "MaxPool_restrictions.md").write_text(RESTRICTIONS_FILE, encoding="utf-8")
+    check("ops/MaxPool_restrictions.md is found for --op MaxPool",
+          Settings(op="MaxPool", restrictions_dir=ops).restrictions_path(),
+          ops / "MaxPool_restrictions.md")
+
+    print("\n34. the implementer is not given the restriction files")
+    # The blind implementer reads the document alone.  The global file is linked by the
+    # document and not restated in it, so giving it to the implementer would add an input the
+    # document does not carry; the operator's rows reach it only inside the document's own
+    # sections, which is what keeps the implementation a reading of the document.
+    s = Scenario(verifier="ok", fail_times=0, spec_answer=RESTRICTED_SPEC)
+    state = run(s, global_restrictions=GLOBAL_RESTRICTIONS_FILE,
+                operator_restrictions=RESTRICTIONS_FILE)
+    check("outcome", outcome(state), "converged")
+    check("one answer was enough", s.writer_calls, 1)
+    check("the writer was given the global file",
+          "GLOBAL-RESTRICTION-SENTINEL" in s.writer_users[-1], True)
+    check("the verifier was given it", "GLOBAL-RESTRICTION-SENTINEL" in s.verifier_users[-1],
+          True)
+    check("the tester was given it", "GLOBAL-RESTRICTION-SENTINEL" in s.tester_users[-1], True)
+    # the fake implementer asserted the sentinel never reached it (see Scenario.ask)
+    check("the implementer saw the operator's rows only through the document",
+          "[R1]" in Path(state["spec_path"]).read_text(encoding="utf-8"), True)
+
+    print("\n35. a section with no case, and the case set that covers it when asked")
+    # A section with no case is a defect of the *case set* — the document announced it and
+    # the cases did not exercise it — so it is the tester's to repair, within the budget it
+    # has for the defects of its case set.  Measured on 2026-10-05: **MaxPool** attempt 6's
+    # case module compared its `real` section in a sweep and left `COVERAGE["real"] = 0`,
+    # and the loop stopped the run on it without ever asking the tester.
+    s = Scenario(verifier="ok", fail_times=0, uncovered=1)
+    state = run(s)
+    check("outcome", outcome(state), "converged")
+    check("the tester was asked once more", s.tester_calls, 2)
+    check("and told which section had no case", "`#real`" in s.tester_users[-1], True)
+    check("and that a sweep's checks are counted into COVERAGE",
+          "sweep" in s.tester_users[-1], True)
+    check("nothing was left uncovered", state.get("uncovered"), [])
+    check("and the coverage is the repaired one", state.get("coverage"), {"real": 3})
+
+    print("\n36. the operator's restriction file appears while the writer is answering")
+    # The guard reads the restriction files for every answer, so the writer's request must be
+    # rebuilt for each attempt too: a request built once per round says "the operator
+    # introduces none of its own" while the guard, a second later, requires the rows of a file
+    # that has since appeared.  Measured on 2026-10-05: `ops/maxpool_restrictions.md` was
+    # created between the **MaxPool** writer node's entry and its first answer, the round's
+    # answers were refused for missing `[R1]`-`[R5]` rows the request itself had said did not
+    # exist, and the run stopped `stalled`.
+    s = Scenario(verifier="ok", fail_times=0, missing_rows=1, spec_answer=RESTRICTED_SPEC)
+    state = run(s, late_restrictions=(1, RESTRICTIONS_FILE))
+    check("outcome", outcome(state), "converged")
+    check("the writer was asked again", s.writer_calls, 2)
+    # the discriminator is the file's *content*: the guard's own refusal names `[R1]` in the
+    # note it appends, so a row tag could be there for the wrong reason
+    check("the first request was built before the file existed",
+          "the operator introduces none of its own" in s.writer_users[0], True)
+    check("the retry request carries the file's rows",
+          "has at most 4 axes" in s.writer_users[-1], True)
+
+    print("\n37. a blocking finding that withdraws itself is not an amendment")
+    # The writer is asked for exactly the change a finding's `fix` gives.  A finding the
+    # document already satisfies therefore leaves the loop an amendment that cannot be made:
+    # the writer returns the document it was given, the compliance check sees the same
+    # document twice, and the run stops `stalled` — the one outcome that blames the document
+    # for the reviewer's bookkeeping.  Measured on 2026-10-05 in the **MaxPool** run: two
+    # reviews in a row refused the round-3 document for findings whose own `fix` read "No
+    # change required." and "No change: ...", the writer's round-1 answer was the document
+    # byte for byte (`md5 b635a8a0…`, unchanged), and the run stopped `stalled` at round 1.
+    check("a `fix` that asks for no change withdraws the finding",
+          graph._withdraws({"severity": "blocking", "fix": "No change required."}), True)
+    check("so does one withdrawn in its own `why`",
+          graph._withdraws({"severity": "blocking", "fix": "Reword the sentence.",
+                            "why": "the two agree, so this is not a defect. Withdrawing "
+                                   "this finding."}), True)
+    check("a finding that gives a change is not withdrawn",
+          graph._withdraws({"severity": "blocking", "fix": "add Example 1"}), False)
+    s = Scenario(verifier="ok", fail_times=0, withdrawing=True)
+    state = run(s)
+    check("outcome", outcome(state), "converged")
+    check("the writer was never asked to amend", s.writer_calls, 1)
+    check("and its request carries no finding",
+          "No change required" in s.writer_users[0], False)
+    check("the reviewer was asked again", s.verifier_calls, 2)
+    check("and told what the contradiction is",
+          "asks for no change" in s.verifier_users[-1], True)
+    reviewers = [e for e in state["result"]["history"] if e.get("agent") == "checker"]
+    check("the withdrawn finding is kept as evidence",
+          [f["fix"] for f in reviewers[-1].get("withdrawn") or []], ["No change required."])
+    check("and it is not counted as a blocking finding",
+          reviewers[-1].get("blocking"), [])
+    # a reviewer that corrects itself on the note costs one review and no amendment
+    s = Scenario(verifier="ok", fail_times=0, withdrawing=1)
+    state = run(s)
+    check("a reviewer that corrects itself", outcome(state), "converged")
+    check("costs one more review", s.verifier_calls, 2)
+    check("and still no amendment", s.writer_calls, 1)
 
     print("\nall scenarios hold")
     return 0

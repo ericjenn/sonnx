@@ -1,0 +1,654 @@
+{
+  "spec": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md",
+  "op": "MaxPool",
+  "opset": 14,
+  "impl": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/iter-001-impl.py",
+  "entry": "maxpool",
+  "generated": "2026-10-05T19:04:07Z",
+  "cases": {
+    "total": 87,
+    "passed": 67,
+    "mismatched": [
+      {
+        "case": "float16: signed zeros",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            2,
+            2
+          ],
+          "pads": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "-0.0",
+            "impl": "0.0",
+            "ort_bits": "[32768]",
+            "impl_bits": "[0]"
+          },
+          {
+            "index": 0,
+            "ort": "-0.0",
+            "impl": "0.0",
+            "ort_bits": "[32768]",
+            "impl_bits": "[0]"
+          },
+          {
+            "index": 0,
+            "ort": "-0.0",
+            "impl": "0.0",
+            "ort_bits": "[32768]",
+            "impl_bits": "[0]"
+          },
+          {
+            "index": 0,
+            "ort": "-0.0",
+            "impl": "0.0",
+            "ort_bits": "[32768]",
+            "impl_bits": "[0]"
+          }
+        ]
+      },
+      {
+        "case": "float16: nan",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            2,
+            2
+          ],
+          "pads": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "inf",
+            "impl": "nan",
+            "ort_bits": "[31744]",
+            "impl_bits": "[32256]"
+          },
+          {
+            "index": 0,
+            "ort": "inf",
+            "impl": "nan",
+            "ort_bits": "[31744]",
+            "impl_bits": "[32256]"
+          },
+          {
+            "index": 0,
+            "ort": "inf",
+            "impl": "nan",
+            "ort_bits": "[31744]",
+            "impl_bits": "[32256]"
+          },
+          {
+            "index": 0,
+            "ort": "inf",
+            "impl": "nan",
+            "ort_bits": "[31744]",
+            "impl_bits": "[32256]"
+          }
+        ]
+      },
+      {
+        "case": "float16: NaN operand, quiet, payload 1",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[32257]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[32257]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[32257]"
+          }
+        ]
+      },
+      {
+        "case": "float16: NaN operand, quiet, payload 1, sign set",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[65025]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[65025]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[65025]"
+          }
+        ]
+      },
+      {
+        "case": "float16: NaN operand, signalling",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[31745]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[31745]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[15360]",
+            "impl_bits": "[31745]"
+          }
+        ]
+      },
+      {
+        "case": "float32: nan",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            2,
+            2
+          ],
+          "pads": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "inf",
+            "impl": "nan",
+            "ort_bits": "[2139095040]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "inf",
+            "impl": "nan",
+            "ort_bits": "[2139095040]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "inf",
+            "impl": "nan",
+            "ort_bits": "[2139095040]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "inf",
+            "impl": "nan",
+            "ort_bits": "[2139095040]",
+            "impl_bits": "[2143289344]"
+          }
+        ]
+      },
+      {
+        "case": "float32: NaN operand, quiet, payload 1",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          }
+        ]
+      },
+      {
+        "case": "float32: NaN operand, quiet, payload 1, sign set",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          }
+        ]
+      },
+      {
+        "case": "float32: NaN operand, signalling",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          },
+          {
+            "index": 0,
+            "ort": "1.0",
+            "impl": "nan",
+            "ort_bits": "[1065353216]",
+            "impl_bits": "[2143289344]"
+          }
+        ]
+      },
+      {
+        "case": "float64: signed zeros",
+        "elements_differing": 1,
+        "attrs": {
+          "kernel_shape": [
+            2,
+            2
+          ],
+          "strides": [
+            2,
+            2
+          ],
+          "pads": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "first_differences": [
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "-0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[9223372036854775808]"
+          },
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "-0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[9223372036854775808]"
+          },
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "-0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[9223372036854775808]"
+          },
+          {
+            "index": 0,
+            "ort": "0.0",
+            "impl": "-0.0",
+            "ort_bits": "[0]",
+            "impl_bits": "[9223372036854775808]"
+          }
+        ]
+      }
+    ],
+    "open": [
+      {
+        "case": "float16: zero-sized spatial axis, padded",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "float32: zero-sized spatial axis, padded",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "float64: zero-sized spatial axis, padded",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "int8: zero-sized spatial axis, padded",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "uint8: zero-sized spatial axis, padded",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,1,0}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            1
+          ],
+          "pads": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "case": "float16: zero-sized channel",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "float32: zero-sized channel",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "float64: zero-sized channel",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "int8: zero-sized channel",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "case": "uint8: zero-sized channel",
+        "reason": "Fail: [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running MaxPool node. Name:'node0' Status Message: /onnxruntime_src/onnxruntime/core/providers/cpu/nn/pool_attributes.h:124 onnxruntime::TensorShapeVector onnxruntime::PoolAttributes::SetOutputSize(const onnxruntime::TensorShape&, int64_t, onnxruntime::TensorShapeVector*, bool) const input_shape.Size() > 0 || input_shape[0] == 0 was false. Invalid input shape. Only N can be zero. Got:{1,0,4}\n",
+        "attrs": {
+          "kernel_shape": [
+            2
+          ],
+          "strides": [
+            2
+          ],
+          "pads": [
+            0,
+            0
+          ]
+        }
+      }
+    ],
+    "nan_payload": [
+      {
+        "case": "float64: NaN operand, quiet, payload 1"
+      },
+      {
+        "case": "float64: NaN operand, quiet, payload 1, sign set"
+      },
+      {
+        "case": "float64: NaN operand, signalling"
+      }
+    ]
+  },
+  "sweeps": [
+    {
+      "sweep": "the document's type families vs the ONNX schema",
+      "summary": "declared ['tensor(double)', 'tensor(float)', 'tensor(float16)', 'tensor(int8)', 'tensor(uint8)']; ONNX admits ['tensor(double)', 'tensor(float)', 'tensor(float16)', 'tensor(int64)', 'tensor(int8)', 'tensor(uint8)']",
+      "failures": []
+    },
+    {
+      "sweep": "the document's worked examples",
+      "summary": "4 examples, as documented vs ONNX Runtime vs implementation",
+      "failures": [
+        {
+          "who": "float Example 2",
+          "detail": "documented [[[nan, 3.0]]], ONNX Runtime [[[1.0, 3.0]]]"
+        }
+      ]
+    },
+    {
+      "sweep": "sweep_special_values",
+      "error": "ValueError: cannot reshape array of size 2 into shape (1,1,2,2)",
+      "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 271, in check_sweeps\n    out.append(sweep(impl))\n               ~~~~~^^^^^^\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/cases.py\", line 252, in sweep_special_values\n    for label, x, k, s, p in _special_windows(dt):\n                             ~~~~~~~~~~~~~~~~^^^^\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/cases.py\", line 235, in _special_windows\n    x = np.array(flat, dtype=dt).reshape(1, 1, 2, 2)\nValueError: cannot reshape array of size 2 into shape (1,1,2,2)\n"
+    },
+    {
+      "sweep": "sweep_int_domain",
+      "error": "ValueError: cannot reshape array of size 131072 into shape (1,1,2,512)",
+      "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 271, in check_sweeps\n    out.append(sweep(impl))\n               ~~~~~^^^^^^\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/cases.py\", line 321, in sweep_int_domain\n    x = np.stack([a, b], axis=0).reshape(1, 1, 2, len(vals) * 2)\nValueError: cannot reshape array of size 131072 into shape (1,1,2,512)\n"
+    },
+    {
+      "sweep": "sweep_real_section",
+      "error": "ValueError: kernel_shape has rX - 2 values",
+      "traceback": "Traceback (most recent call last):\n  File \"/run/media/eric/Work1/Work/gits/sonnx/.claude/skills/operator-spec/assets/specloop.py\", line 271, in check_sweeps\n    out.append(sweep(impl))\n               ~~~~~^^^^^^\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/cases.py\", line 428, in sweep_real_section\n    want = doc_maxpool(x, k, s, p)\n  File \"/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/cases.py\", line 78, in doc_maxpool\n    raise ValueError(\"kernel_shape has rX - 2 values\")\nValueError: kernel_shape has rX - 2 values\n"
+    }
+  ],
+  "ok": false
+}

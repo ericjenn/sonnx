@@ -20,7 +20,7 @@ where:
 
 ## Restrictions
 
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 No specific restrictions apply to the **Div** operator.
 
@@ -136,7 +136,7 @@ where
  - $C$: result of element-wise division of $A$ by $B$
 
 ## Restrictions
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 No specific restrictions apply to the **Div** operator.
 
@@ -246,7 +246,7 @@ where int is in {int8, int16, int32, int64, uint8, uint16, uint32, uint64}.
  - $C$: result of the element-wise division of $A$ by $B$
 
 ## Restrictions
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 No specific restrictions apply to the **Div** operator.
 

@@ -72,6 +72,47 @@ def missing_sections(document: str) -> list[str]:
     return [anchor for anchor in sections(document) if anchor not in declared]
 
 
+# A restriction table row: ``| `[R1]` | Statement | Origin |``.  The tag is captured
+# without its backticks and the two cells are stripped, so a row copied into a document is
+# compared by its content and not by the width of the markdown columns around it.  The
+# header (`| Restriction | Statement | Origin |`) and the separator row do not match: their
+# first cell is not a backticked tag.
+_RESTRICTION_ROW = re.compile(
+    r"^\s*\|\s*`\[([A-Za-z]+\d+)\]`\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*$", re.M)
+
+
+def restriction_rows(text: str) -> list[tuple[str, str, str]]:
+    """`(tag, statement, origin)` for every ``| `[Rn]` | ... | ... |`` row, in file order.
+
+    This is the one reader of a restriction file and of a document's `## Restrictions`
+    table alike, so that "the rows the file gives" and "the rows the document carries" are
+    the same kind of thing and can be compared as they are.
+    """
+    return [(match.group(1), match.group(2).strip(), match.group(3).strip())
+            for match in _RESTRICTION_ROW.finditer(text)]
+
+
+def section_anchors(text: str) -> list[str]:
+    """The family anchors of the Contents list, in **document** order.
+
+    Deliberately not `sections()`, which returns `sorted(set(...))`: the restriction guard
+    pairs each `## Restrictions` block with the family it belongs to, and a sorted list
+    would pair `#float` with the `real` block of any document whose Contents follows the
+    guidelines' order (`real`, `float`, `int`, `uint`).
+    """
+    return _CONTENTS_LINK.findall(text)
+
+
+def restriction_blocks(document: str) -> list[str]:
+    """The body of every `## Restrictions` section, in document order.
+
+    The section ends at the next `## ` heading; a `### ` subheading does not end it.  A
+    document with no `## Restrictions` section gives an empty list.
+    """
+    parts = re.split(r"(?m)^## Restrictions[ \t]*\r?$", document)
+    return [re.split(r"(?m)^## ", part, maxsplit=1)[0].strip() for part in parts[1:]]
+
+
 def run_lint(settings: Settings, spec_path: Path) -> dict:
     """`lint_spec.py`: the mechanical rules.  Returns {ok, findings, stdout}."""
     proc = subprocess.run(

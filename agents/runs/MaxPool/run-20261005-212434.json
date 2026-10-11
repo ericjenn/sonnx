@@ -1,0 +1,105 @@
+{
+  "op": "MaxPool",
+  "opset": 14,
+  "outcome": "stalled",
+  "spec": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md",
+  "spec_md5": "ab3ba83ee62255d5b748bbaa1eb62a23",
+  "iterations": 0,
+  "spec_rounds": 2,
+  "test_ok": null,
+  "coverage": null,
+  "uncovered": null,
+  "impl": null,
+  "cases": null,
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md",
+      "characters": 38344
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "## Restrictions (all four family sections)",
+          "what": "Each `## Restrictions` block carries a five-row table (`[R1]`\u2013`[R5]`) although the operator's restriction file does not exist and lists none.",
+          "why": "The guidelines require that, with no restriction file or a file that lists none, the block carries the sentence `No specific restrictions apply to the **MaxPool** operator.` and no table; the rows are copied from the file, not composed by the writer.",
+          "fix": "Delete the table from all four `## Restrictions` blocks and add the sentence `No specific restrictions apply to the **MaxPool** operator.` after the general-restrictions link in each."
+        },
+        {
+          "severity": "blocking",
+          "section": "## Restrictions (all four family sections)",
+          "what": "The general-restrictions link is written `[General restrictions](./../common/general_restrictions.md) are applicable.`",
+          "why": "The guidelines fix the link target as `./global_restrictions.md`; the profile's global file is `global_restrictions.md`, and the document points at a path that does not exist.",
+          "fix": "Replace the link with `[General restrictions](./global_restrictions.md) are applicable.` in every family section."
+        },
+        {
+          "severity": "blocking",
+          "section": "## Function (all four family sections)",
+          "what": "The formula `Y[...] = max_{k_0,...,k_{m-1}} X_p[...]` takes the maximum over the window indices $k_t \\in [0, dK_t-1]$ of the padded tensor $X_p$, and the padded elements are excluded only by the prose that follows.",
+          "why": "The formula as written is not a total function of the window: it applies `max` to padded positions that are not elements of $X$, so a reader must choose what value a padded element contributes. The case is decided by the prose, but the formula and the prose must be one statement; as it stands the formula alone is undefined on the padded region.",
+          "fix": "Restrict the index set in the formula itself, e.g. take the maximum over the $k_t$ such that $j_t \\cdot s_t + k_t - p_{t,\\text{begin}}$ lies in $[0, dX_{t+2}-1]$ for every $t$, and keep the prose sentence as the explanation of that restriction."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 2,
+      "path": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md",
+      "characters": 38344
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "## Restrictions (all four family sections)",
+          "what": "The `[R4]` row reads \"Attribute `dilations` is restricted to $1$ along each spatial axis\", but the operator's restriction file gives `[R4]` as \"The padding of a spatial axis is at most the size of the kernel along that axis, i.e. $p^b_k \\le k_k$ and $p^e_k \\le k_k$ for every spatial axis $k$\".",
+          "why": "The rows of `ops/maxpool_restrictions.md` are copied into every family section verbatim and in the file's order; a reworded row is a finding (checklist, per restrictions).",
+          "fix": "Replace the `[R4]` row in all four `## Restrictions` tables with the file's row verbatim: `| `[R4]` | The padding of a spatial axis is at most the size of the kernel along that axis, i.e. $p^b_k \\le k_k$ and $p^e_k \\le k_k$ for every spatial axis $k$ | Transient |`."
+        },
+        {
+          "severity": "blocking",
+          "section": "## Restrictions (all four family sections)",
+          "what": "The `[R5]` row reads \"The output $\\text{Indices}$ is not supported\", but the file gives `[R5]` as \"The output `Indices` is not supported\".",
+          "why": "Same rule: a row copied with a changed wording is a finding.",
+          "fix": "Write the `[R5]` row exactly as the file gives it, with `Indices` in code font: `| `[R5]` | The output `Indices` is not supported | Transient |`."
+        },
+        {
+          "severity": "blocking",
+          "section": "## Restrictions (all four family sections)",
+          "what": "The link sentence is `[General restrictions](./../common/general_restrictions.md) are applicable.`, but the profile's file is `global_restrictions.md` and the required sentence is `[General restrictions](./global_restrictions.md) are applicable.`",
+          "why": "Every family section's `## Restrictions` block opens with the mandatory link sentence to `global_restrictions.md` (checklist, per restrictions).",
+          "fix": "Change the link target to `./global_restrictions.md` in all four sections."
+        },
+        {
+          "severity": "blocking",
+          "section": "## Function (real, float, int, uint) and ## Inputs / ## Outputs",
+          "what": "The restriction `[R4]` (padding at most the kernel size) is nowhere reflected in the semantics: the Function section, the `pads` attribute and the `E_MAXPOOL_*_CONSTR_X_0020` window-coverage constraint all allow $p_{t,\\text{begin}} + p_{t,\\text{end}} \\ge dK_t$ with no upper bound on either padding.",
+          "why": "The consequence of a restriction that bears on the operator is stated where the semantics are stated; a section that contradicts a restriction is a finding (checklist, per restrictions).",
+          "fix": "State the bound in the `pads` attribute description and in the window-coverage constraint (e.g. add `$p_{t,\\text{begin}} \\le dK_t$ and $p_{t,\\text{end}} \\le dK_t$` to the statement of `E_MAXPOOL_<FAM>_CONSTR_X_0020`), so that the Function section's padding paragraph no longer admits paddings the restriction forbids."
+        },
+        {
+          "severity": "blocking",
+          "section": "## Function (float)",
+          "what": "The float section's case analysis of the maximum does not decide the case of a window that covers both $+\\text{inf}$ and $-\\text{inf}$: it says $+\\text{inf}$ is greater than every finite value and than $-\\text{inf}$, and that a window whose elements are all $-\\text{inf}$ gives $-\\text{inf}$, but the mixed case is left to the reader.",
+          "why": "Every case that applies to the operator is decided by the specification or declared open; the special values of the floating-point types as operands and as results are among the cases that shall be stated (Function, part 2).",
+          "fix": "Add one sentence to the float case analysis: a window that covers $+\\text{inf}$ gives $+\\text{inf}$, whatever the other elements of the window are."
+        }
+      ]
+    }
+  ],
+  "report": null,
+  "cases_unusable": null,
+  "impl_unusable": null,
+  "finished": "2026-10-05T21:24:34"
+}

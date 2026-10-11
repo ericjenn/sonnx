@@ -82,6 +82,35 @@ compares something — the report's open list is the record of what the referenc
 judge — but a case set whose *every* case is open compares nothing, and the run does not
 accept that: it is stopped and sent back to you (see *A case set that compared nothing*).
 
+## Restrictions are the domain's boundary, not a mismatch
+
+The document's `## Restrictions` blocks bound what the operator is defined to do. A case
+they rule out is not a case: no implementation is wrong to do something else there, because
+the document does not define it — the restrictions are the profile's own decisions about the
+operator, and a case beyond them tests nothing.
+
+The trap is that `specloop.py` records a case as *open* **only when ONNX Runtime refuses to
+build or run the model**. A restriction is not something the runtime enforces by itself:
+`storage_order=1`, `ceil_mode=1` and `auto_pad="VALID"` are all accepted at `MaxPool`, so a
+case that sets one of them **is compared** — against an implementation that is right to do
+something the document never stated — and it comes back as a **mismatch**, failing the
+implementation for following the document. An out-of-domain case that the runtime accepts is
+therefore the worst kind of case in `cases()`: it never shows itself as open.
+
+So:
+
+- a case whose operands or attributes a restriction rules out belongs in a **sweep** — where
+  you decide it by the document's own rule, or record it in the summary — or is left out of
+  the case set. It never sits in `cases()`;
+- the **boundary** case is inside the domain and must be compared: `pads == kernel_shape`,
+  `storage_order=0`, `auto_pad="NOTSET"`, `ceil_mode=0`, `dilations=1` are the values a
+  restriction is written about, and they stay in `COVERAGE`;
+- and a restricted case the runtime happens to refuse is *open*, which is the runtime's word
+  and not your verdict: keep it for coverage, as any open case is kept.
+
+An implementation is never reported as failing the document on a case the document's
+restrictions exclude.
+
 ## A type the runtime does not implement
 
 A type the document specifies may have no kernel at all in the ONNX Runtime you run

@@ -24,7 +24,7 @@ where
 
 ## Restrictions
 
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 No specific restrictions apply to the **Add** operator.
 
@@ -154,7 +154,7 @@ where
 
 ## Restrictions
 
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 No specific restrictions apply to the **Add** operator.
 
@@ -313,7 +313,7 @@ where
 
 ## Restrictions
 
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 No specific restrictions apply to the **Add** operator.
 
@@ -440,7 +440,7 @@ where
 
 ## Restrictions
 
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 No specific restrictions apply to the **Add** operator.
 

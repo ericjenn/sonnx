@@ -46,6 +46,7 @@ class SpecState(TypedDict, total=False):
     previous_failure: str
     case_rounds: int          # times the tester was sent back to its case set, this iteration
     report_runs: int          # harness runs made for this iteration, so each keeps its report
+    reports: Annotated[list[str], operator.add]   # every report *this* run wrote, in order
 
     # the diagnoser's verdict, and the loop's bookkeeping
     verdict: str              # "spec" | "code" | "test" | "pass" | "stop"

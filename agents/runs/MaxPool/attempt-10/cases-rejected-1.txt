@@ -1,0 +1,588 @@
+# the answer is not Python: invalid character '｜' (U+FF5C) (<unknown>, line 584)
+
+"""The cases with which the **MaxPool** specification (opset 14) is checked.
+
+Read by `specloop.py`:
+
+  * ``cases()``   -- one labelled list of operands per case.  Each case goes through a
+                     one-node MaxPool model (opset 14) and through the implementation, and
+                     the two results are compared bit for bit.
+  * ``sweeps()``  -- the bulk checks, which build their own ONNX Runtime calls because
+                     they must be batched into a single run: the document's own rule
+                     against ONNX Runtime and against ONNX's reference implementation,
+                     the declared type families against the ONNX schema, the special
+                     values of every type, and the real-number section, which has no ONNX
+                     type and is checked against exact arithmetic instead.
+
+The document's own rule is transcribed literally in ``doc_maxpool`` and is the arbiter of
+every sweep: ONNX Runtime's answer for a window that holds a NaN or an infinity depends on
+where the special value sits and on the shape of the window, so its agreement is an
+accident and it is recorded, not required.  Where the document and ONNX's reference
+implementation disagree, the sweep fails and says so: that is a defect of the document.
+"""
+
+from __future__ import annotations
+
+from fractions import Fraction
+
+import numpy as np
+
+import onnxruntime as ort
+from onnx import helper
+
+OP = "MaxPool"
+OPSET = 14
+IR_VERSION = 10
+
+ALL_FLOAT = [np.float16, np.float32, np.float64]
+ALL_INT = [np.int8, np.uint8]
+UINT_OF_WIDTH = {2: np.uint16, 4: np.uint32, 8: np.uint64}
+
+# The document's declared type families, per section anchor.
+DECLARED_TYPES = {
+    "real": [],
+    "float": ["tensor(float16)", "tensor(float)", "tensor(double)"],
+    "int": ["tensor(int8)"],
+    "uint": ["tensor(uint8)"],
+}
+
+
+# ---------------------------------------------------------------------------
+# the document's own rule, transcribed literally
+# ---------------------------------------------------------------------------
+
+
+def _window_max(values):
+    """The maximum of the elements of X covered by a window.
+
+    The document states the maximum of the floating-point values: a NaN in the window
+    makes the result NaN; otherwise the maximum of the values, with -inf smaller than
+    every finite value and +0 equal to -0.  The padded elements are not passed here.
+    """
+    if not values:
+        raise ValueError("a window that covers no element of X is not a window")
+    for v in values:
+        if isinstance(v, float) and np.isnan(v):
+            return float("nan")
+    return max(values)
+
+
+def doc_maxpool(x, kernel_shape, strides, pads):
+    """The document's rule, element by element, in exact arithmetic.
+
+    ``x`` is a nested list of rank rX >= 3; ``kernel_shape``, ``strides`` and ``pads``
+    are lists of m = rX - 2 values (pads of 2m).  Returns a nested list.
+    """
+    x = np.asarray(x, dtype=object)
+    rX = x.ndim
+    m = rX - 2
+    if len(kernel_shape) != m:
+        raise ValueError("kernel_shape has rX - 2 values")
+    if len(strides) != m:
+        raise ValueError("strides has rX - 2 values")
+    if len(pads) != 2 * m:
+        raise ValueError("pads has 2(rX - 2) values")
+    dX = list(x.shape)
+    dK = [int(k) for k in kernel_shape]
+    s = [int(v) for v in strides]
+    pb = [int(v) for v in pads[:m]]
+    pe = [int(v) for v in pads[m:]]
+    dY = [dX[0], dX[1]]
+    for t in range(m):
+        if dX[t + 2] == 0:
+            dY.append(0)
+        else:
+            dY.append((dX[t + 2] + pb[t] + pe[t] - dK[t]) // s[t] + 1)
+    out = np.empty(dY, dtype=object)
+    for n in range(dY[0]):
+        for c in range(dY[1]):
+            for j in (np.ndindex(*dY[2:]) if m else [()]):
+                vals = []
+                for k in (np.ndindex(*dK) if m else [()]):
+                    h = [j[t] * s[t] + k[t] - pb[t] for t in range(m)]
+                    if all(0 <= h[t] < dX[t + 2] for t in range(m)):
+                        vals.append(x[(n, c) + tuple(h)])
+                out[(n, c) + tuple(j)] = _window_max(vals)
+    return out.tolist()
+
+
+# ---------------------------------------------------------------------------
+# ONNX Runtime, batched (the sweeps only; individual cases go through specloop)
+# ---------------------------------------------------------------------------
+
+
+def run_ort_batch(x: np.ndarray, kernel_shape, strides, pads):
+    """One ONNX Runtime run of MaxPool over a batch of windows."""
+    proto = helper.np_dtype_to_tensor_dtype(x.dtype)
+    vi_x = helper.make_tensor_value_info("X", proto, list(x.shape))
+    vi_y = helper.make_tensor_value_info("Y", proto, None)
+    node = helper.make_node(OP, ["X"], ["Y"], name="maxpool0",
+                            kernel_shape=[int(k) for k in kernel_shape],
+                            strides=[int(v) for v in strides],
+                            pads=[int(v) for v in pads])
+    graph = helper.make_graph([node], "maxpool_graph", [vi_x], [vi_y])
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", OPSET)],
+                              ir_version=IR_VERSION)
+    sess = ort.InferenceSession(model.SerializeToString(),
+                                providers=["CPUExecutionProvider"])
+    (y,) = sess.run(["Y"], {"X": x})
+    return y
+
+
+def _bits_equal(want: np.ndarray, got: np.ndarray) -> bool:
+    if want.shape != got.shape or want.dtype != got.dtype:
+        return False
+    if want.dtype.kind == "f":
+        uint = UINT_OF_WIDTH[want.dtype.itemsize]
+        bw = np.ascontiguousarray(want).view(uint)
+        bg = np.ascontiguousarray(got).view(uint)
+        both_nan = np.isnan(want) & np.isnan(got)
+        return bool(np.all((bw == bg) | both_nan))
+    return bool(np.all(want == got))
+
+
+def _values_equal(want, got) -> bool:
+    """Value equality, NaN equal to NaN, for object arrays of the document's rule."""
+    wa, ga = np.asarray(want, dtype=object), np.asarray(got, dtype=object)
+    if wa.shape != ga.shape:
+        return False
+    for i in np.ndindex(wa.shape):
+        a, b = wa[i], ga[i]
+        if isinstance(a, float) and isinstance(b, float):
+            if np.isnan(a) and np.isnan(b):
+                continue
+            if a != b:
+                return False
+        elif a != b:
+            return False
+    return True
+
+
+def _reference_evaluator(x: np.ndarray, kernel_shape, strides, pads):
+    """ONNX's own reference implementation of MaxPool, for the same node."""
+    from onnx.reference import ReferenceEvaluator
+
+    proto = helper.np_dtype_to_tensor_dtype(x.dtype)
+    vi_x = helper.make_tensor_value_info("X", proto, list(x.shape))
+    vi_y = helper.make_tensor_value_info("Y", proto, None)
+    node = helper.make_node(OP, ["X"], ["Y"], name="maxpool0",
+                            kernel_shape=[int(k) for k in kernel_shape],
+                            strides=[int(v) for v in strides],
+                            pads=[int(v) for v in pads])
+    graph = helper.make_graph([node], "maxpool_graph", [vi_x], [vi_y])
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", OPSET)],
+                              ir_version=IR_VERSION)
+    (y,) = ReferenceEvaluator(model).run(None, {"X": x})
+    return y
+
+
+# ---------------------------------------------------------------------------
+# sweeps
+# ---------------------------------------------------------------------------
+
+
+def sweep_schema_types(impl):
+    """The document's declared type families against the ONNX schema's.
+
+    The document announces the types of its sections; ONNX admits a set of types for the
+    operator.  A type the document announces and ONNX does not admit is a defect of the
+    document, and it is reported here rather than dropped from the case set.
+    """
+    import onnx
+
+    schema = onnx.defs.get_schema(OP, OPSET)
+    admitted = {}
+    for constraint in schema.type_constraints:
+        admitted[constraint.type_param_str] = list(constraint.allowed_type_strs)
+    # the input constraint is the first one; the second is the Indices output
+    input_types = set()
+    for constraint in schema.type_constraints:
+        if "Indices" not in constraint.type_param_str:
+            input_types.update(constraint.allowed_type_strs)
+    failures = []
+    for anchor, declared in DECLARED_TYPES.items():
+        for t in declared:
+            if t not in input_types:
+                failures.append({
+                    "who": "the document's %s section vs the ONNX schema" % anchor,
+                    "detail": "the document announces %s, ONNX admits %s"
+                              % (t, sorted(input_types)),
+                })
+    return {"sweep": "the document's type families vs the ONNX schema",
+            "summary": "declared %s; ONNX admits %s"
+                       % (sorted(t for v in DECLARED_TYPES.values() for t in v),
+                          sorted(input_types)),
+            "failures": failures}
+
+
+def _special_windows(dtype):
+    """The windows of the special values, as (label, x, kernel_shape, strides, pads)."""
+    dt = np.dtype(dtype)
+    f = np.finfo(dt)
+    maxf = float(f.max)
+    tiny = float(f.tiny)
+    nan, inf = float("nan"), float("inf")
+    rows = [
+        ("NaN first", [nan, 2.0, 3.0, 4.0], [2, 2], [1, 1], [0, 0, 0, 0]),
+        ("NaN last", [1.0, 2.0, 3.0, nan], [2, 2], [1, 1], [0, 0, 0, 0]),
+        ("all -inf", [-inf, -inf, -inf, -inf], [2, 2], [1, 1], [0, 0, 0, 0]),
+        ("all -inf, 1x1", [-inf, -inf, -inf, -inf], [1, 1], [1, 1], [0, 0, 0, 0]),
+        ("all -inf, 3x3 strides 2", [-inf] * 9, [3, 3], [2, 2], [0, 0, 0, 0]),
+        ("NaN then -inf", [nan, -inf, -inf, -inf], [2, 2], [1, 1], [0, 0, 0, 0]),
+        ("1.0 and NaN, 1x2", [1.0, nan], [1, 2], [1, 1], [0, 0, 0, 0]),
+        ("all NaN", [nan, nan, nan, nan], [2, 2], [1, 1], [0, 0, 0, 0]),
+        ("+inf and -inf", [inf, -inf, 1.0, -1.0], [2, 2], [1, 1], [0, 0, 0, 0]),
+        ("signed zeros", [0.0, -0.0, -0.0, 0.0], [2, 2], [1, 1], [0, 0, 0, 0]),
+        ("max and -max", [maxf, -maxf, maxf, -maxf], [2, 2], [1, 1], [0, 0, 0, 0]),
+        ("subnormal and zero", [tiny, 0.0, -tiny, -0.0], [2, 2], [1, 1], [0, 0, 0, 0]),
+    ]
+    out = []
+    for label, flat, k, s, p in rows:
+        if len(flat) == 9:
+            x = np.array(flat, dtype=dt).reshape(1, 1, 3, 3)
+        elif len(flat) == 2:
+            x = np.array(flat, dtype=dt).reshape(1, 1, 1, 2)
+        else:
+            x = np.array(flat, dtype=dt).reshape(1, 1, 2, 2)
+        out.append((label, x, k, s, p))
+    return out
+
+
+def sweep_special_values(impl):
+    """The special values of every float type, decided by the document's own rule.
+
+    ONNX Runtime's answer for a window that holds a NaN or an infinity depends on where
+    the special value sits and on the shape of the window, so it is recorded, not
+    required.  The document's rule is the arbiter, and ONNX's reference implementation is
+    the second opinion: where the two disagree, the sweep fails and says so.
+    """
+    failures = []
+    rows = []
+    for dtype in ALL_FLOAT:
+        dt = np.dtype(dtype)
+        for label, x, k, s, p in _special_windows(dt):
+            want = doc_maxpool(x.tolist(), k, s, p)
+            ref_ok = True
+            ref_note = ""
+            try:
+                ref = _reference_evaluator(x, k, s, p)
+            except Exception as exc:
+                ref = None
+                ref_ok = False
+                ref_note = "%s: %s" % (type(exc).__name__, exc)
+            ort_ok = True
+            ort_note = ""
+            try:
+                ort_y = run_ort_batch(x, k, s, p)
+            except Exception as exc:
+                ort_y = None
+                ort_ok = False
+                ort_note = "%s: %s" % (type(exc).__name__, exc)
+
+            # the document's rule against the reference implementation
+            if ref_ok and not _values_equal(want, ref):
+                failures.append({
+                    "who": "%s: the document vs the ONNX reference implementation (%s)"
+                           % (dt.name, label),
+                    "detail": "document %s, reference %s"
+                              % (np.asarray(want, dtype=object).tolist(),
+                                 np.asarray(ref, dtype=object).tolist()),
+                })
+            # the implementation against the document's rule
+            impl_ok = True
+            impl_note = ""
+            try:
+                got = np.asarray(impl.maxpool(x, kernel_shape=k, strides=s, pads=p))
+            except Exception as exc:
+                got = None
+                impl_ok = False
+                impl_note = "%s: %s" % (type(exc).__name__, exc)
+            if impl_ok and not _values_equal(want, got):
+                failures.append({
+                    "who": "%s: the implementation vs the document's rule (%s)"
+                           % (dt.name, label),
+                    "detail": "document %s, implementation %s"
+                              % (np.asarray(want, dtype=object).tolist(),
+                                 np.asarray(got, dtype=object).tolist()),
+                })
+            rows.append("%s %s: doc %s, ort %s, ref %s"
+                        % (dt.name, label,
+                           np.asarray(want, dtype=object).ravel().tolist(),
+                           (np.asarray(ort_y).ravel().tolist() if ort_ok
+                            else "refused (%s)" % ort_note),
+                           (np.asarray(ref, dtype=object).ravel().tolist()
+                            if ref_ok else "raised (%s)" % ref_note)))
+    return {"sweep": "the special values of every float type (document's rule vs the "
+                     "reference implementation; ONNX Runtime recorded, not required)",
+            "summary": "%d windows; %s" % (len(rows), "; ".join(rows)),
+            "failures": failures}
+
+
+def sweep_int_domain(impl):
+    """The 8-bit integer types, exhaustively, against ONNX Runtime.
+
+    The domain of `int8` and `uint8` is small enough to be covered exhaustively: every
+    value of the type is pooled with every other, in a 1x2 window, and the document's
+    rule is compared with ONNX Runtime and with the implementation.
+    """
+    failures = []
+    rows = []
+    for dtype in ALL_INT:
+        dt = np.dtype(dtype)
+        info = np.iinfo(dt)
+        vals = np.arange(int(info.min), int(info.max) + 1, dtype=np.int64)
+        a = np.repeat(vals, len(vals)).astype(dt)
+        b = np.tile(vals, len(vals)).astype(dt)
+        # every pair (a, b) is one 1x2 window: shape (1, 1, 256*256, 2)
+        x = np.stack([a, b], axis=1).reshape(1, 1, len(vals) * len(vals), 2)
+        k, s, p = [1, 2], [1, 1], [0, 0, 0, 0]
+        want = doc_maxpool(x.tolist(), k, s, p)
+        ref = run_ort_batch(x, k, s, p)
+        got = np.asarray(impl.maxpool(x, kernel_shape=k, strides=s, pads=p))
+        if not _values_equal(want, ref):
+            failures.append({"who": "%s: the document vs ONNX Runtime" % dt.name,
+                             "detail": "the document's rule and ONNX Runtime differ"})
+        if not _values_equal(want, got):
+            failures.append({"who": "%s: the implementation vs the document's rule"
+                                    % dt.name,
+                             "detail": "the implementation and the document's rule differ"})
+        rows.append("%s exhaustive (%d pairs)" % (dt.name, len(vals) ** 2))
+    return {"sweep": "the 8-bit integer domains, exhaustively",
+            "summary": "; ".join(rows), "failures": failures}
+
+
+def _spec_examples():
+    """The worked examples of the document, as documented."""
+    f32 = np.float32
+    i8 = np.int8
+    u8 = np.uint8
+    return [
+        ("float Example 1",
+         np.array([[1.0, 2.0, 3.0, 4.0],
+                   [5.0, 6.0, 7.0, 8.0],
+                   [9.0, 10.0, 11.0, 12.0],
+                   [13.0, 14.0, 15.0, 16.0]], dtype=f32).reshape(1, 1, 4, 4),
+         [2, 2], [2, 2], [0, 0, 0, 0],
+         np.array([[6.0, 8.0], [14.0, 16.0]], dtype=f32).reshape(1, 1, 2, 2)),
+        ("float Example 2",
+         np.array([1.0, np.nan, 3.0, -np.inf], dtype=f32).reshape(1, 1, 4),
+         [2], [2], [0, 0],
+         np.array([np.nan, 3.0], dtype=f32).reshape(1, 1, 2)),
+        ("int Example 1",
+         np.array([[-1, 2, -3, 4],
+                   [5, -6, 7, -8],
+                   [-9, 10, -11, 12],
+                   [13, -14, 15, -16]], dtype=i8).reshape(1, 1, 4, 4),
+         [2, 2], [2, 2], [0, 0, 0, 0],
+         np.array([[5, 7], [13, 15]], dtype=i8).reshape(1, 1, 2, 2)),
+        ("uint Example 1",
+         np.array([[0, 200, 3, 255],
+                   [17, 128, 9, 64],
+                   [250, 1, 100, 7],
+                   [33, 254, 2, 90]], dtype=u8).reshape(1, 1, 4, 4),
+         [2, 2], [2, 2], [0, 0, 0, 0],
+         np.array([[200, 255], [254, 100]], dtype=u8).reshape(1, 1, 2, 2)),
+    ]
+
+
+def sweep_spec_examples(impl):
+    """Every worked example of the document: as documented, and as ONNX Runtime does it."""
+    failures = []
+    for label, x, k, s, p, documented in _spec_examples():
+        want = doc_maxpool(x.tolist(), k, s, p)
+        if not _values_equal(want, documented):
+            failures.append({"who": label,
+                             "detail": "the document's rule %s, the documented result %s"
+                                       % (np.asarray(want, dtype=object).tolist(),
+                                          documented.tolist())})
+        try:
+            ref = run_ort_batch(x, k, s, p)
+            if not _values_equal(documented, ref):
+                failures.append({"who": label,
+                                 "detail": "documented %s, ONNX Runtime %s"
+                                           % (documented.tolist(), ref.tolist())})
+        except Exception as exc:
+            failures.append({"who": label,
+                             "detail": "ONNX Runtime refused the example: %s: %s"
+                                       % (type(exc).__name__, exc)})
+        got = np.asarray(impl.maxpool(x, kernel_shape=k, strides=s, pads=p))
+        if not _values_equal(documented, got):
+            failures.append({"who": label,
+                             "detail": "documented %s, implementation %s"
+                                       % (documented.tolist(), got.tolist())})
+    return {"sweep": "the document's worked examples",
+            "summary": "%d examples, as documented vs ONNX Runtime vs implementation"
+                       % len(_spec_examples()),
+            "failures": failures}
+
+
+def sweep_real_section(impl):
+    """The real section, which has no ONNX type: checked against exact arithmetic.
+
+    ONNX Runtime cannot be asked about a real tensor, so this sweep checks the
+    implementation against the document's own rule, computed in exact rational
+    arithmetic, over the shapes the real section names.
+    """
+    F = Fraction
+    examples = [
+        ("real Example 1",
+         [[[F(1), F(2), F(3), F(4)],
+           [F(5), F(6), F(7), F(8)],
+           [F(9), F(10), F(11), F(12)],
+           [F(13), F(14), F(15), F(16)]]],
+         [2, 2], [2, 2], [0, 0, 0, 0],
+         [[[F(6), F(8)], [F(14), F(16)]]]),
+        ("real Example 2",
+         [[[F(1), F(2), F(3)]]],
+         [2], [1], [1, 1],
+         [[[F(1), F(2), F(3), F(3)]]]),
+    ]
+    failures = []
+    for label, x, k, s, p, documented in examples:
+        want = doc_maxpool(x, k, s, p)
+        if not _values_equal(want, documented):
+            failures.append({"who": label,
+                             "detail": "the document's rule %s, the documented result %s"
+                                       % (want, documented)})
+        xa = np.array(x, dtype=object)
+        got = np.asarray(impl.maxpool(xa, kernel_shape=k, strides=s, pads=p))
+        if not _values_equal(want, got):
+            failures.append({"who": label,
+                             "detail": "exact %s, implementation %s"
+                                       % (want, got.tolist())})
+    return {"sweep": "the real section (exact rationals, no ONNX Runtime)",
+            "summary": "%d examples" % len(examples), "failures": failures}
+
+
+def sweeps():
+    return [sweep_schema_types, sweep_spec_examples, sweep_special_values,
+            sweep_int_domain, sweep_real_section]
+
+
+# ---------------------------------------------------------------------------
+# the individual cases
+# ---------------------------------------------------------------------------
+
+
+def _float_value_cases(dtype):
+    """The value families of the float section."""
+    f = np.finfo(np.dtype(dtype))
+    maxf = float(f.max)
+    tiny = float(f.tiny)
+    nan, inf = float("nan"), float("inf")
+    return [
+        ("signed zeros", [0.0, -0.0, 0.0, -0.0], [2, 2], [2, 2], [0, 0, 0, 0]),
+        ("infinities", [inf, -inf, inf, -inf], [2, 2], [2, 2], [0, 0, 0, 0]),
+        ("nan", [nan, 1.0, nan, inf], [2, 2], [2, 2], [0, 0, 0, 0]),
+        ("max and -max", [maxf, -maxf, maxf, -maxf], [2, 2], [2, 2], [0, 0, 0, 0]),
+        ("subnormal and zero", [tiny, 0.0, -tiny, -0.0], [2, 2], [2, 2], [0, 0, 0, 0]),
+        ("all -inf", [-inf, -inf, -inf, -inf], [2, 2], [2, 2], [0, 0, 0, 0]),
+        ("all NaN", [nan, nan, nan, nan], [2, 2], [2, 2], [0, 0, 0, 0]),
+    ]
+
+
+def _ordinary_value_cases(dtype):
+    dtype = np.dtype(dtype)
+    if dtype.kind == "f":
+        return [("ordinary", [1.0, 2.5, -3.0, 4.75], [2, 2], [2, 2], [0, 0, 0, 0])]
+    info = np.iinfo(dtype)
+    lo, hi = int(info.min), int(info.max)
+    if lo < 0:
+        a = [lo, hi, -1, 0]
+    else:
+        a = [0, hi, 1, hi // 2]
+    return [("ordinary+extremes", a, [2, 2], [2, 2], [0, 0, 0, 0])]
+
+
+def _bit_nan(dtype, pattern):
+    uint = UINT_OF_WIDTH[np.dtype(dtype).itemsize]
+    return np.array([pattern], dtype=uint).view(dtype)
+
+
+NAN_PATTERNS = {2: (0x7E01, 0x7C01, 0x8000),
+                4: (0x7FC00001, 0x7F800001, 0x80000000),
+                8: (0x7FF8000000000001, 0x7FF0000000000001, 0x8000000000000000)}
+
+
+def _arr(shape, dtype, start=0.0):
+    n = 1
+    for d in shape:
+        n *= d
+    return (np.arange(n, dtype=np.float64) + start).astype(dtype).reshape(shape)
+
+
+# (label, shape, kernel_shape, strides, pads)
+SHAPE_CASES = [
+    ("rank-3, 1 spatial axis", (1, 1, 4), [2], [2], [0, 0]),
+    ("rank-4, 2 spatial axes", (1, 1, 4, 4), [2, 2], [2, 2], [0, 0, 0, 0]),
+    ("rank-5, 3 spatial axes", (1, 1, 2, 2, 2), [2, 2, 2], [1, 1, 1], [0, 0, 0, 0, 0, 0]),
+    ("padding, 1 axis", (1, 1, 3), [2], [1], [1, 1]),
+    ("padding, 2 axes", (1, 1, 3, 3), [2, 2], [1, 1], [1, 1, 1, 1]),
+    ("strides larger than kernel", (1, 1, 5), [2], [3], [0, 0]),
+    ("kernel equal to the axis", (1, 1, 3), [3], [1], [0, 0]),
+    ("batch and channel > 1", (2, 3, 4), [2], [2], [0, 0]),
+    ("zero-sized spatial axis, padded", (1, 1, 0), [2], [1], [1, 1]),
+    ("zero-sized batch", (0, 1, 4), [2], [2], [0, 0]),
+    ("zero-sized channel", (1, 0, 4), [2], [2], [0, 0]),
+]
+
+
+def cases():
+    """Every individual case: (label, [X], attrs)."""
+    for dtype in ALL_FLOAT:
+        dt = np.dtype(dtype)
+        for name, flat, k, s, p in _float_value_cases(dtype):
+            x = np.array(flat, dtype=dt).reshape(1, 1, 2, 2)
+            yield ("%s: %s" % (dt.name, name),
+                   [x], {"kernel_shape": k, "strides": s, "pads": p})
+        quiet, signalling, sign = NAN_PATTERNS[dt.itemsize]
+        one = np.ones(1, dtype=dt)
+        yield ("%s: NaN operand, quiet, payload 1" % dt.name,
+               [np.concatenate([_bit_nan(dt, quiet), one]).reshape(1, 1, 2)],
+               {"kernel_shape": [2], "strides": [1], "pads": [0, 0]})
+        yield ("%s: NaN operand, quiet, payload 1, sign set" % dt.name,
+               [np.concatenate([_bit_nan(dt, quiet | sign), one]).reshape(1, 1, 2)],
+               {"kernel_shape": [2], "strides": [1], "pads": [0, 0]})
+        yield ("%s: NaN operand, signalling" % dt.name,
+               [np.concatenate([_bit_nan(dt, signalling), one]).reshape(1, 1, 2)],
+               {"kernel_shape": [2], "strides": [1], "pads": [0, 0]})
+    for dtype in ALL_INT:
+        dt = np.dtype(dtype)
+        for name, flat, k, s, p in _ordinary_value_cases(dtype):
+            x = np.array(flat, dtype=dt).reshape(1, 1, 2, 2)
+            yield ("%s: %s" % (dt.name, name),
+                   [x], {"kernel_shape": k, "strides": s, "pads": p})
+    for name, shape, k, s, p in SHAPE_CASES:
+        for dtype in ALL_FLOAT + ALL_INT:
+            dt = np.dtype(dtype)
+            yield ("%s: %s" % (dt.name, name),
+                   [_arr(shape, dt)], {"kernel_shape": k, "strides": s, "pads": p})
+
+
+# ---------------------------------------------------------------------------
+# coverage: every section anchor of the document
+# ---------------------------------------------------------------------------
+
+COVERAGE = {
+    "real": 0,
+    "float": 0,
+    "int": 0,
+    "uint": 0,
+}
+
+for _label, _arrays, _attrs in cases():
+    if _label.startswith("float16") or _label.startswith("float32") \
+            or _label.startswith("float64"):
+        COVERAGE["float"] += 1
+    elif _label.startswith("int8"):
+        COVERAGE["int"] += 1
+    elif _label.startswith("uint8"):
+        COVERAGE["uint"] += 1
+    else:
+        COVERAGE["real"] += 1
+
+# the real section has no ONNX type: its cases are the sweeps, and they are counted here
+COVERAGE["real"] = 2
+</｜DSML｜ parameter>
+</｜DSML｜ invoke>
+</｜DSML｜ calls>

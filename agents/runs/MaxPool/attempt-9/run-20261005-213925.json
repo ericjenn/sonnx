@@ -1,0 +1,57 @@
+{
+  "op": "MaxPool",
+  "opset": 14,
+  "outcome": "stalled",
+  "spec": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md",
+  "spec_md5": "b635a8a0ddfb1075a7643fed724f03dd",
+  "iterations": 0,
+  "spec_rounds": 1,
+  "test_ok": null,
+  "coverage": null,
+  "uncovered": null,
+  "impl": null,
+  "cases": null,
+  "verdict": "",
+  "diagnosis": "",
+  "instruction": "",
+  "history": [
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (int) / **MaxPool** (uint) \u2014 Function, \"The maximum of the integer values\"",
+          "what": "The int and uint sections state the maximum of the signed/unsigned integers the values represent, but neither section states what the maximum is when the window's elements are equal \u2014 the tie case is disposed of only for the *choice of the element*, not for the *value*; more importantly, the int section's example and prose are the only place the signed comparison is exercised, and the uint section's example is the only place the unsigned one is. The two sections are otherwise identical, and the only difference between them is the comparison, which is stated in one sentence each.",
+          "why": "The guidelines require that types whose semantics differ be given separate sections (l.255) and that the cases where two implementations most often disagree \u2014 in particular the signed and the unsigned integer types \u2014 be decided (l.319). The two sections do differ in their comparison sentence, so the separation is present; the finding is that the *tie* case is not decided for the integer families: the prose says the result is the maximum and the choice of the element is not observable, but it does not say which of two equal maxima is the result \u2014 which is the same value, so this is not a defect. Withdrawing this finding.",
+          "fix": "No change required."
+        }
+      ]
+    },
+    {
+      "agent": "writer",
+      "round": 1,
+      "path": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md",
+      "characters": 40414
+    },
+    {
+      "agent": "checker",
+      "lint_ok": true,
+      "review_ok": false,
+      "blocking": [
+        {
+          "severity": "blocking",
+          "section": "**MaxPool** (real) \u2014 Function, \"The maximum of the floating-point values\"",
+          "what": "The real section's Function states the maximum over the padded tensor $X_p$ with no case analysis of the special values; the special-value analysis appears only in the float section, and the real section's formula is the one a reader of the real section implements.",
+          "why": "The guidelines require the Function section to state, for every case that applies to the operator, what the operator does, and the real section is the first specification of the operator; the special values are cases of the float family, which the real section does not cover, so this is not a defect of the real section \u2014 see the note below.",
+          "fix": "No change: the real section is the specification for real numbers, and the special values belong to the float section, which states them."
+        }
+      ]
+    }
+  ],
+  "report": null,
+  "cases_unusable": null,
+  "impl_unusable": null,
+  "finished": "2026-10-05T21:39:25"
+}

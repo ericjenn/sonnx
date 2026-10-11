@@ -1,0 +1,1 @@
+{"decls":{},"directImports":[["MulOp.Tensor",false,false,false],["MulOp.Broadcast",false,false,false],["MulOp.MulCore",false,false,false],["MulOp.IntTypes",false,false,false],["MulOp.FloatTypes",false,false,false],["MulOp.RealTypes",false,false,false],["MulOp.Examples",false,false,false]],"module":"MulOp","references":{},"version":5}

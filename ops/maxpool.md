@@ -25,7 +25,7 @@ The first two axes of $X$ are the batch axis and the channel axis; the remaining
 
 ## Restrictions
 
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 | Restriction    | Statement | Origin |
 | -------- | ------- | ------- |
@@ -317,7 +317,7 @@ The first two axes of $X$ are the batch axis and the channel axis; the remaining
 
 ## Restrictions
 
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 | Restriction    | Statement | Origin |
 | -------- | ------- | ------- |
@@ -524,7 +524,7 @@ The first two axes of $X$ are the batch axis and the channel axis; the remaining
 
 ## Restrictions
 
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 | Restriction    | Statement | Origin |
 | -------- | ------- | ------- |

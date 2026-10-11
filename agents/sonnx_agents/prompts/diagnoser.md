@@ -52,6 +52,12 @@ Ask what the failing case needed. Then:
   agreeing), and says to record the runtime's value in the sweep's summary rather than fail
   anybody for it.
 
+**An open case is outside the domain, not evidence of a defect.** `specloop.py` records a
+case as open when ONNX Runtime refuses to build or run the model — a type the build has no
+kernel for, an operand the document's constraints rule out — and the report's open list is
+the record of what the reference could not judge; it is not a mismatch, and an open case
+never by itself sends the verdict to `spec` or to `code`.
+
 **A type ONNX does not admit is a defect of the document, not a narrow runtime.** The
 document's type families are the operator's `T` in the schema, and ONNX Runtime refuses what
 the schema refuses — but with a different error, and it is the error that misleads: an

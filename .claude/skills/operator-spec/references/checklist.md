@@ -70,6 +70,23 @@ Run this before showing a draft, and again after every amendment. The mechanical
 - [ ] If there is no error condition, the section says so, and the table still shows that each
       condition was considered.
 
+## Per restrictions
+
+- [ ] Every family section's `## Restrictions` block opens with
+      `[General restrictions](./global_restrictions.md) are applicable.`
+- [ ] The rows of the operator's restriction file (`ops/<op>_restrictions.md`) are carried into
+      **every** family section verbatim and in the file's order — none dropped, none invented, none
+      reordered, none reworded. The same rows appear in each section: a restriction is the
+      operator's, not the family's.
+- [ ] With no file, or a file that lists none, the block carries the mandatory sentence
+      `No specific restrictions apply to the **Op** operator.` and no table.
+- [ ] No sentence of the section's own Signature, Function or Attributes contradicts a restriction
+      of `global_restrictions.md`: that file is linked and not copied, so a rule it states is a rule
+      of every operator, and the consequence of a global restriction that bears on this operator is
+      stated where the semantics are stated.
+- [ ] A row is copied text and obeys the document's modality: an indicative limit, never `must` or
+      `should`, never a `---`, never a code fence.
+
 ## Per document
 
 - [ ] Contents, the `Based on ONNX ...` line and the `Revision` line are present and consistent with

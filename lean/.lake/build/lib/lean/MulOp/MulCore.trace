@@ -1,0 +1,32 @@
+{"synthetic": false,
+ "schemaVersion": "2025-09-10",
+ "outputs":
+ {"o": ["1ca21b4515a065cf.olean"],
+  "m": false,
+  "i": "8a13eee776524b8b.ilean",
+  "c": "9bdad60f99ffd029.c"},
+ "log":
+ [{"message":
+   ".> LEAN_PATH=/run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean /home/eric/.elan/toolchains/leanprover--lean4---v4.33.1/bin/lean /run/media/eric/Work1/Work/gits/sonnx/lean/MulOp/MulCore.lean -o /run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean/MulOp/MulCore.olean -i /run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean/MulOp/MulCore.ilean -c /run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/ir/MulOp/MulCore.c --setup /run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/ir/MulOp/MulCore.setup.json --json",
+   "level": "trace"}],
+ "inputs":
+ [["deps",
+   [["mul_op/MulOp:extraDep", [["@mul_op:extraDep", "00000000000006bb"]]],
+    ["imports",
+     [["MulOp.Broadcast transitive imports (legacy)", "13af8e7c78bf497e"],
+      ["MulOp.Broadcast:importAllArts", "43dd696c898e7b36"]]]]],
+  ["libs",
+   [["import dynlibs", "00000000000006bb"],
+    ["package external libraries", "00000000000006bb"],
+    ["module dynlibs", "00000000000006bb"],
+    ["module plugins", "00000000000006bb"]]],
+  ["Lean 4.33.1, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6",
+   "0051240b7c23c453"],
+  ["/run/media/eric/Work1/Work/gits/sonnx/lean/MulOp/MulCore.lean",
+   "775812ed148babb5"],
+  ["options", "00000000000006bb"],
+  ["isModule: false", "feefd2a0d3a1847e"],
+  ["Module.name: MulOp.MulCore", "a8216969d51cbbd7"],
+  ["Package.id?: (some mul_op)", "295be2707c3c052a"],
+  ["Module.leanArgs: #[]", "00000000000006bb"]],
+ "depHash": "0ce312cb8fc92c69"}

@@ -1,0 +1,9 @@
+{"plugins": [],
+ "package": "mul_op",
+ "options": {},
+ "name": "MulOp.Broadcast",
+ "isModule": false,
+ "importArts":
+ {"MulOp.Tensor":
+  [["/run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean/MulOp/Tensor.olean"]]},
+ "dynlibs": []}

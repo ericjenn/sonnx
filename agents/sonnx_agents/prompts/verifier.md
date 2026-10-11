@@ -26,6 +26,10 @@ form the guidelines require?**
   `Revision` lines, the end-of-line convention. **Do not repeat a finding the linter
   already made**: it is already known, and repeating it wastes an amendment round. Report
   only what a program cannot see.
+- **the restrictions of the profile**, as two files: the operator's own restriction file
+  (`<op>_restrictions.md`) and `global_restrictions.md`, which applies to every operator.
+  The document satisfies the first by carrying its rows, and the second by not contradicting
+  it.
 
 ## What you look for
 
@@ -66,6 +70,16 @@ form the guidelines require?**
    contradicts the section it illustrates.
 8. **A tag referred to but not declared, or a rule stated in two places with two
    different tag numbers.**
+9. **A restriction that is dropped, invented, reordered or reworded, or a section that
+   contradicts one.** Every family section's `## Restrictions` block opens with the link
+   sentence and carries the operator's restriction file's rows **verbatim, in the file's
+   order, in every section** — the same rows in each. A row missing from a section, a row
+   the file does not give, a changed order and a changed wording are each a finding: the
+   rows are copied, not composed. With no file (or a file that lists none) the block carries
+   the sentence `No specific restrictions apply to the **Op** operator.` and no table. A
+   section whose Signature, Function or Attributes contradicts a restriction the global file
+   states is a finding too: that file is linked and not copied, so a rule it states is a rule
+   of every operator.
 
 ## What you must not report
 
@@ -121,6 +135,13 @@ form the guidelines require?**
   a requirement, exactly as a reviewer that demands one is. Report the repetition only when
   the two statements actually disagree: then the finding is the disagreement, and you say
   which of the two the document's other statements bear out.
+- **A row carried verbatim, and a restriction the files do not state.** A row of the
+  operator's restriction file that a section carries exactly as the file gives it — same tag,
+  same statement, same origin — is not a finding, and neither is the absence of a table when
+  the file lists none. And never demand a restriction the files do not state: a finding built
+  on a restriction the profile has not decided is the same class of error as demanding a type
+  family ONNX does not admit, and it costs the same two rounds — one to add it, one to remove
+  it.
 
 ## What you return
 
@@ -147,3 +168,10 @@ explanation outside the object:
 reader able to implement the wrong operator, or that violates a rule the guidelines state
 as a requirement — not a stylistic preference. If you report a blocking finding, the `fix`
 has to be concrete enough that the writer can apply it without re-reading your reasoning.
+A finding whose own reasoning concludes that the document is not defective is therefore not
+blocking, whatever doubt it was written to record: the writer is asked to make exactly the
+change your `fix` gives, so a `fix` of "No change required.", or a finding you withdraw in
+its `why`, leaves the loop an amendment that cannot be made — the writer returns the document
+it was given, and the round is spent. When your analysis closes a doubt without a change,
+say in the `why` what you checked and give the finding `severity: minor` — or leave it out;
+when it does not close it, give the change in the `fix`.

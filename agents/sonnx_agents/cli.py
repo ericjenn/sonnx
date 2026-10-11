@@ -118,14 +118,30 @@ def publish(settings: Settings, state: dict) -> None:
     loop_target.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(state["spec_path"], spec_target)
     shutil.copyfile(state["cases_path"], cases_target)
-    for iteration in range(1, int(state.get("iteration", 0)) + 1):
-        source = settings.impl_path(iteration)
+    # the implementations this run wrote, from the record of them — the same reason as the
+    # reports below: a directory holds the files of every attempt that ran in it
+    implementations = [Path(entry["path"]) for entry in state.get("history") or []
+                       if entry.get("agent") == "implementer" and entry.get("path")]
+    if not implementations:
+        implementations = [settings.impl_path(iteration)
+                           for iteration in range(1, int(state.get("iteration", 0)) + 1)]
+    for source in implementations:
         if source.exists():
             shutil.copyfile(source, loop_target / source.name)
-    # every harness report, not only the first of each iteration: the runs after the first
-    # are the evidence of what a revised case set or a repaired module did
-    for source in sorted(settings.resolved_run_dir().glob("iter-*-report*.json")):
-        shutil.copyfile(source, loop_target / source.name)
+    # every harness report *of this run*, not only the first of each iteration: the runs after
+    # the first are the evidence of what a revised case set or a repaired module did.  The
+    # reports the run names are the ones it wrote, and not every file of that shape in the
+    # directory: a second attempt at the same operator shares the run directory, and a
+    # `report-<n>.json` of the attempt before is not evidence about this one (see
+    # `test` in `graph.py`).  A record written before the run named them is read the old way.
+    named = [Path(p) for p in state.get("reports") or []]
+    if named:
+        for source in named:
+            if source.exists():
+                shutil.copyfile(source, loop_target / source.name)
+    else:
+        for source in sorted(settings.resolved_run_dir().glob("iter-*-report*.json")):
+            shutil.copyfile(source, loop_target / source.name)
     print("published: %s, %s, %s" % (spec_target, cases_target, loop_target))
 
 

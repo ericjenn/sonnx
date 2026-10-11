@@ -283,6 +283,40 @@ def guidelines_context() -> str:
     )
 
 
+def restrictions_context(settings: Settings) -> str:
+    """The two restriction files, as the agents that may see them are given them.
+
+    The global file states the restrictions that apply to every operator; it is context for
+    the operator's semantics and is *not* copied into the document, whose `## Restrictions`
+    section links to it.  The operator's file states the rows every such section carries.
+
+    The blind implementer is never given either file: the operator's rows reach it only as
+    part of the document, whose sections already carry them.  The global file is not
+    restated there, so giving it to the implementer would add an input the document does not
+    have — which is why this function is called from the writer, the verifier, the tester
+    and the adjudicator, and never from `implement`.
+    """
+    global_path = settings.global_restrictions_path()
+    op_path = settings.restrictions_path()
+    if global_path.exists():
+        global_body = clip(global_path.read_text(encoding="utf-8").strip(), 12000,
+                           "global restrictions")
+    else:
+        global_body = "(no `ops/global_restrictions.md` in this repository)"
+    if op_path is not None:
+        op_body = ("# The restrictions of this operator (file `%s`)\n\n%s"
+                   % (op_path.name,
+                      clip(op_path.read_text(encoding="utf-8").strip(), 12000,
+                           "operator restrictions")))
+    else:
+        op_body = ("# The restrictions of this operator\n\n"
+                   "(no `ops/%s_restrictions.md`: the operator introduces none of its own, "
+                   "so each of its `## Restrictions` sections carries the mandatory "
+                   "sentence and no table)" % settings.entry)
+    return ("# The global restrictions of the profile (file `%s`)\n\n%s\n\n%s"
+            % (global_path.name, global_body, op_body))
+
+
 def findings_text(state: SpecState) -> str:
     """What the writer must answer: the linter, the verifier, the adjudicator."""
     parts = []
@@ -404,6 +438,135 @@ def _announces_only(spec: str, op: str, opset: int) -> str:
                ", ".join("`%s`" % name for name in sorted(admitted))))
 
 
+# The sentence every `## Restrictions` section opens with, and the one it replaced.  The
+# guidelines fix the first (`informal_corrected.md`, "## Restrictions"); the second pointed
+# at a `common/` directory that does not exist in this repository and is what the published
+# documents carried before the restriction files moved into `ops/`.
+GENERAL_LINK = "[General restrictions](./global_restrictions.md) are applicable."
+OLD_GENERAL_LINK = ("[General restrictions](./../common/general_restrictions.md) "
+                    "are applicable.")
+
+
+def _carries_restrictions(spec: str, settings: Settings) -> str:
+    """Why the document does not carry the restrictions, or "" when it does.
+
+    The document's `## Restrictions` sections are the operator restriction file's rows: the
+    writer is given the file, and a document that drops, invents, reorders or rewords a row
+    is a document whose reader would not see the restriction, while the writer's own answer
+    looked complete.  The rows are compared as normalized `(tag, statement, origin)`
+    triples, so "verbatim" means the row and not the width of the columns around it.
+
+    The guard is the restriction counterpart of `_announces_only`, and it exists for the
+    same reason: a driver guard refuses the answer where the writer is, a sentence away from
+    the file, instead of spending a loop round and a verifier review on a document that
+    contradicts what the profile decided.  When the operator has no restriction file, the
+    sections must carry the mandatory `No specific restrictions apply to the **Op**
+    operator.` sentence instead of a table — a table with no file behind it is an invented
+    restriction, which is the more dangerous of the two ways to get this wrong.
+
+    Nothing here is semantic: whether a restriction is meaningful, or whether a section
+    contradicts a global rule, is the verifier's business, not the driver's.
+    """
+    op_path = settings.restrictions_path()
+    want = (harness.restriction_rows(op_path.read_text(encoding="utf-8"))
+            if op_path is not None else [])
+    blocks = harness.restriction_blocks(spec)
+    anchors = harness.section_anchors(spec)
+    if not blocks:
+        return ("the restrictions are not carried: the document has no `## Restrictions` "
+                "section")
+    if len(blocks) != len(anchors):
+        return ("the restrictions are not carried into every family section: %d "
+                "`## Restrictions` section(s) for %d family section(s)"
+                % (len(blocks), len(anchors)))
+    for anchor, block in zip(anchors, blocks):
+        if OLD_GENERAL_LINK in block or GENERAL_LINK not in block:
+            return ("the restrictions are not carried into every family section: #%s keeps "
+                    "the old link or has none; every section opens with `%s`"
+                    % (anchor, GENERAL_LINK))
+        rows = harness.restriction_rows(block)
+        if want:
+            if rows != want:
+                missing = [row for row in want if row not in rows]
+                extra = [row for row in rows if row not in want]
+                if not missing and not extra:
+                    return ("the restrictions are not carried into every family section: "
+                            "#%s lists them in a different order from the file" % anchor)
+                detail = []
+                if missing:
+                    detail.append("missing %s"
+                                  % ", ".join("`[%s]`" % row[0] for row in missing))
+                if extra:
+                    detail.append("not in the file: %s"
+                                  % ", ".join("`[%s]`" % row[0] for row in extra))
+                return ("the restrictions are not carried into every family section: #%s %s"
+                        % (anchor, "; ".join(detail)))
+        else:
+            if rows:
+                return ("the restrictions are not carried into every family section: #%s "
+                        "carries rows the operator's restriction file does not have (there "
+                        "is no `ops/%s_restrictions.md`)" % (anchor, settings.entry))
+            if not re.search(r"No specific restrictions apply to the \*\*%s\*\* operator\."
+                             % re.escape(settings.op), block):
+                return ("the restrictions are not carried into every family section: #%s "
+                        "has neither a row nor the sentence `No specific restrictions apply "
+                        "to the **%s** operator.`" % (anchor, settings.op))
+    return ""
+
+
+# What a finding's `fix` says when the verifier withdraws the finding it belongs to.  The
+# `fix` is the answer's own field for "the smallest change that would satisfy the rule", so a
+# `fix` that asks for no change is the verifier's statement that there is nothing to amend,
+# and a `why` that withdraws the finding says the same in its other field.
+_NO_CHANGE = ("no change", "none required", "none needed", "no amendment", "no action",
+              "not required", "nothing to change", "no fix needed", "withdraw", "none.")
+
+
+def _withdraws(finding: dict) -> bool:
+    """True when the finding's own words withdraw it, whatever its `severity` says.
+
+    A blocking finding is one that "leaves a reader able to implement the wrong operator",
+    and its `fix` is the change the writer is asked to make.  A finding the document already
+    satisfies has neither, and a verifier that reports it as blocking nevertheless leaves the
+    loop with an amendment that cannot be made: the writer returns the document it was given,
+    the compliance check sees the same document twice, and the run stops `stalled` — the one
+    outcome that blames the document for the reviewer's bookkeeping.  Measured on 2026-10-05
+    in the **MaxPool** run: the first review refused the document for a tie case its own
+    `why` closed with "Withdrawing this finding." and its `fix` read "No change required.",
+    the writer returned the round-3 document byte for byte, and the review that followed
+    refused it again for a real-number section whose special values "belong to the float
+    section, which states them", with the same `fix: No change: ...`.  The run stopped
+    `stalled`, naming the one artifact that was right.
+    """
+    fix = str(finding.get("fix") or "").strip().lower()
+    if any(fix.startswith(prefix) for prefix in _NO_CHANGE):
+        return True
+    return "withdraw" in str(finding.get("why") or "").lower()
+
+
+def _findings_brief(findings: list[dict]) -> str:
+    """The findings named in one log line: their section, and what their `fix` asks for."""
+    return clip("; ".join("%s (%s)" % (clip(str(f.get("section") or "no section"), 60),
+                                       clip(str(f.get("fix") or "no fix"), 60))
+                          for f in findings), 400, "the withdrawn findings")
+
+
+def _withdrawal_note(findings: list[dict]) -> str:
+    """What the verifier is told when its own `fix` asks for no change."""
+    return (
+        "The review is not usable as an amendment: these findings are marked `blocking` "
+        "while their own `fix` asks for no change, so there is nothing for the writer to "
+        "do about them —\n\n%s\n\n"
+        "A blocking finding is one that leaves a reader able to implement the wrong "
+        "operator, and its `fix` gives the change the writer is asked to make. A complaint "
+        "the document already answers, or that its own reasoning closes, is not blocking: "
+        "give it `severity: minor`, or leave it out. Return the whole verdict again, with "
+        "each finding's `severity` agreeing with what its own `why` and `fix` conclude."
+        % "\n\n".join("- %s\n  what: %s\n  fix: %s"
+                      % (f.get("section"), clip(str(f.get("what") or ""), 400),
+                         f.get("fix")) for f in findings))
+
+
 def _writer_retry_note(problem: str) -> str:
     """What the writer is told when its answer cannot be written to disk."""
     if problem.startswith("the document announces"):
@@ -411,6 +574,15 @@ def _writer_retry_note(problem: str) -> str:
                 "%s. Correct the Contents entry of that family and the sentence that opens its "
                 "section, and return the whole document again — every other sentence as it is."
                 % problem)
+    if problem.startswith("the restrictions"):
+        return ("Your previous answer does not carry the restrictions into every family "
+                "section: %s. Every family section's `## Restrictions` opens with "
+                "`%s`, then the rows of the operator's restriction file, verbatim and in the "
+                "file's order — the same table in every section. When that file lists none, "
+                "the sentence `No specific restrictions apply to the **Op** operator.` "
+                "(with this operator's own name) follows the link instead of a table. Return "
+                "the whole document again — every other sentence as it is."
+                % (problem, GENERAL_LINK))
     return ("Your previous answer was cut off before the end of the document and cannot be "
             "used: %s. Return the *complete* document: every section the Contents lists, every "
             "red span closed by its `[END]`, every example. If the document does not fit in "
@@ -426,41 +598,66 @@ def write_spec(state: SpecState, settings: Settings) -> dict:
     round_number = int(state.get("spec_round", 0)) + 1
     log(settings, "writer  round %d: %s" % (round_number, "amending" if current else "drafting"))
 
-    task = [
-        "Operator: **%s** (ONNX type `%s`, opset %d)." % (settings.op, settings.op, settings.opset),
-        "Entry point of the implementation that will be read from your document: `%s`."
-        % settings.entry,
-        "The document is written to `%s`." % spec_path,
-    ]
-    if current:
-        task.append("This is an **amendment**: the document below already exists. Return the "
-                    "whole document again, with the smallest change that answers the findings; "
-                    "leave every other sentence as it is.")
-    else:
-        task.append("This is the **first draft**: there is no document yet.")
-    task.append("\n## The ONNX definition of the operator\n\n%s" % onnx_definition(settings))
-    if current:
-        task.append("\n## The document as it stands\n\n%s" % current)
-    task.append("\n## What must be answered\n\n%s"
-                % (findings or "Nothing: this is the first draft."))
+    def build_question() -> str:
+        """The writer's request, built for each attempt rather than once for the round.
+
+        It carries the restriction files, and those are read from disk: the guard reads them
+        for every answer, so a file that appears while the writer is answering would
+        otherwise have the guard refuse rows the request had said the operator does not have
+        — the node telling the writer one thing and its guard requiring another.  Measured on
+        2026-10-05: `ops/maxpool_restrictions.md` was created between the writer node's entry
+        and its first answer, and the round's answers were refused for missing `[R1]`-`[R5]`
+        rows the request itself had said did not exist, which stopped the run as `stalled`.
+        """
+        task = [
+            "Operator: **%s** (ONNX type `%s`, opset %d)."
+            % (settings.op, settings.op, settings.opset),
+            "Entry point of the implementation that will be read from your document: `%s`."
+            % settings.entry,
+            "The document is written to `%s`." % spec_path,
+        ]
+        if current:
+            task.append("This is an **amendment**: the document below already exists. Return the "
+                        "whole document again, with the smallest change that answers the findings; "
+                        "leave every other sentence as it is.")
+        else:
+            task.append("This is the **first draft**: there is no document yet.")
+        task.append("\n## The ONNX definition of the operator\n\n%s" % onnx_definition(settings))
+        task.append("\n## The restrictions\n\n%s\n\nCarry the rows of the operator's restriction "
+                    "file into the `## Restrictions` table of *every* family section, verbatim "
+                    "and in the file's order; do not invent a row and do not drop one. The "
+                    "global restrictions are context for the operator's semantics — they are "
+                    "not copied into the document, which links to them, so state their "
+                    "consequence where the document specifies the affected input, attribute or "
+                    "result."
+                    % restrictions_context(settings))
+        if current:
+            task.append("\n## The document as it stands\n\n%s" % current)
+        task.append("\n## What must be answered\n\n%s"
+                    % (findings or "Nothing: this is the first draft."))
+        return "\n\n".join(task)
 
     started = time.time()
-    system, question = (prompt("writer.md") + "\n\n" + guidelines_context(), "\n\n".join(task))
+    system, question = (prompt("writer.md") + "\n\n" + guidelines_context(), build_question())
     answer = _artifact(settings, system, question, "writer  round %d" % round_number)
     spec = extract.extract_markdown(answer)
-    problem = _not_a_document(spec) or _announces_only(spec, settings.op, settings.opset)
+    problem = (_not_a_document(spec) or _announces_only(spec, settings.op, settings.opset)
+               or _carries_restrictions(spec, settings))
     for attempt in range(settings.max_writer_retries):
         if not problem:
             break
         # a model answer can stop in the middle of the document, or announce a type family
         # ONNX does not have.  The skill's linter reads the first of the two and would catch
         # it, but only after spending a round of the loop; neither answer must be written to
-        # disk as if it were a document.
+        # disk as if it were a document.  The request is rebuilt, because the restriction
+        # files it carries are read from disk and the guard has just read them again.
         log(settings, "writer  round %d: %s; asking again" % (round_number, problem))
+        question = build_question()
         answer = ask(settings, system, question + "\n\n## Note\n\n" + _writer_retry_note(problem),
                      max_tokens=settings.max_tokens * 2, thinking=settings.thinking)
         spec = extract.extract_markdown(answer)
-        problem = _not_a_document(spec) or _announces_only(spec, settings.op, settings.opset)
+        problem = (_not_a_document(spec) or _announces_only(spec, settings.op, settings.opset)
+                   or _carries_restrictions(spec, settings))
     if problem:
         if current:
             # a whole document is never replaced by one that is not a document
@@ -506,23 +703,39 @@ def check_spec(state: SpecState, settings: Settings) -> dict:
     admitted = type_constraints_text(settings.op, settings.opset)
     if admitted:
         user += "\n\n" + admitted
+    user += "\n\n" + restrictions_context(settings)
     review_prompt = (
         prompt("verifier.md")
         + "\n\n# The normative guidelines\n\n%s\n\n# The review checklist of this repository\n\n%s\n"
         % (GUIDELINES.read_text(encoding="utf-8"),
            (REFERENCES_DIR / "checklist.md").read_text(encoding="utf-8"))
     )
-    review, failure = {}, ""
+    review, failure, withdrawn = {}, "", []
+    asked = user
     for attempt in range(settings.max_review_retries + 1):
         try:
-            review = extract.extract_json(
-                ask(settings, review_prompt, user, max_tokens=settings.max_review_tokens,
+            answer = extract.extract_json(
+                ask(settings, review_prompt, asked, max_tokens=settings.max_review_tokens,
                     thinking=settings.verdict_thinking))
-            break
         except Exception as exc:
             failure = str(exc)
             log(settings, "checker review: no verdict (%s)%s" % (
                 failure, "; asking again" if attempt < settings.max_review_retries else ""))
+            continue
+        review = answer
+        # a review whose blocking findings withdraw themselves is not a refusal of the
+        # document, and the amendment it asks for cannot be made: the writer would return
+        # the document it was given and the round would end `stalled`.  The reviewer is
+        # asked again, and a finding still withdrawn after the retries is not counted.
+        withdrawn = [f for f in (review.get("findings") or [])
+                     if f.get("severity") == "blocking" and _withdraws(f)]
+        if not withdrawn:
+            break
+        log(settings, "checker review: %d blocking finding(s) ask for no change: %s%s"
+            % (len(withdrawn), _findings_brief(withdrawn),
+               "; asking again" if attempt < settings.max_review_retries else "; not counted"))
+        if attempt < settings.max_review_retries:
+            asked = user + "\n\n## Note\n\n" + _withdrawal_note(withdrawn)
     if not review:
         # The reviewer did not answer. That is a failure of this run, not a finding against
         # the document: the writer must not be sent to amend a document the verifier never
@@ -537,8 +750,18 @@ def check_spec(state: SpecState, settings: Settings) -> dict:
                          % failure}],
             "trace": ["checker: no verdict"],
         }
+    if withdrawn:
+        # the retries are spent and the finding still asks for no change: it is not an
+        # amendment to ask the writer for, and it is kept in the history as evidence of the
+        # review that refused the document for it.
+        review = dict(review, findings=[f for f in (review.get("findings") or [])
+                                        if f not in withdrawn])
     blocking = [f for f in review.get("findings", []) if f.get("severity") == "blocking"]
-    ok = bool(lint["ok"]) and bool(review.get("ok")) and not blocking
+    # `ok` is defined by the findings ("true when there is no blocking finding"), so a
+    # review whose blocking findings were withdrawn is not a refusal: the verifier said, in
+    # the finding's own `fix`, that there is nothing to amend.
+    review_ok = bool(review.get("ok")) or bool(withdrawn and not blocking)
+    ok = bool(lint["ok"]) and review_ok and not blocking
     log(settings, "checker review: %s (%d blocking, %d minor)"
         % ("ok" if review.get("ok") else "NOT ok", len(blocking),
            len(review.get("findings", [])) - len(blocking)))
@@ -556,7 +779,8 @@ def check_spec(state: SpecState, settings: Settings) -> dict:
         "no_progress": bool(previous and not ok and previous == md5),
         "seen_amendments": seen,
         "history": [{"agent": "checker", "lint_ok": lint["ok"],
-                     "review_ok": bool(review.get("ok")), "blocking": blocking}],
+                     "review_ok": bool(review.get("ok")), "blocking": blocking,
+                     "withdrawn": withdrawn}],
         "trace": ["checker: %s" % ("ok" if ok else "not ok")],
     }
 
@@ -778,13 +1002,13 @@ def _cases_module_problem(module: str) -> str | None:
 
 def _write_cases(state: SpecState, settings: Settings, error: str = "",
                  findings: str = "", report: dict | None = None,
-                 compared_nothing: str = "") -> Path:
+                 compared_nothing: str = "", uncovered: str = "") -> Path:
     """Ask the tester for the case module, or for a repair of the one that raised.
 
     An answer that is not a case module is not written: the tester is asked again, and the
     node stops with `cases-unusable` when it never answers with one.
 
-    Three kinds of repair are asked for, and they are not the same request.  A module that
+    Four kinds of repair are asked for, and they are not the same request.  A module that
     *raised* is repaired against the Python error (`error`).  A case set whose every case the
     runtime refused compared nothing, and is repaired against the refusals
     (`compared_nothing`) — it is not an error of the module and not a failure of the
@@ -796,6 +1020,12 @@ def _write_cases(state: SpecState, settings: Settings, error: str = "",
     2026-10-04: the second case set of **Asin** failed on the same two cases as the first,
     having been asked for with neither the report nor the adjudicator's instruction, and the
     run stopped.
+
+    A case set that leaves a section of the document with no case is repaired against the
+    uncovered sections (`uncovered`), for the same reason: the section is the tester's
+    omission and the document and the implementation are not being asked about it, so neither
+    the error nor the adjudicator's instruction would be a true brief.  See
+    `_uncovered_reason`.
     """
     spec = harness.read_spec(Path(state["spec_path"]))
     cases_path = settings.cases_path()
@@ -804,6 +1034,7 @@ def _write_cases(state: SpecState, settings: Settings, error: str = "",
         % (settings.op, settings.opset, settings.entry),
         "The case module is written to `%s`." % cases_path,
         "\n# The specification under test\n\n%s" % spec,
+        "\n# The restrictions that apply to this operator\n\n%s" % restrictions_context(settings),
         "\n# The harness that will run your cases\n\n```python\n%s\n```"
         % clip(harness.SPECLOOP.read_text(encoding="utf-8"), 14000, "harness"),
         "\n# The shape to follow: the accepted case module of another operator\n\n```python\n%s\n```"
@@ -829,6 +1060,21 @@ def _write_cases(state: SpecState, settings: Settings, error: str = "",
             "any type of this operator then it cannot be verified against ONNX Runtime at "
             "all, and the run stops rather than converging on a comparison that never "
             "happened." % clip(compared_nothing, 4000, "refusals"))
+    if uncovered:
+        user.append(
+            "\n# The case set leaves sections uncovered\n\nThe harness ran your case module "
+            "and it did not exercise every section of the document: %s. `COVERAGE` is read as "
+            "the module leaves it, and every anchor of the document's Contents must have a "
+            "count above zero; a section with no case passes vacuously, which is worse than a "
+            "failure, so the run is stopped on it and sent back to the case set — not to the "
+            "document and not to the implementation.\n\nCover each section named above by the "
+            "means that fits it: a section the runtime can be asked about gets cases in "
+            "`cases()`; a section it cannot — the `real` section, which has no ONNX type — is "
+            "covered by a sweep, and the checks of that sweep are counted into `COVERAGE` "
+            "where the module leaves it, as the accepted case modules of this repository do. "
+            "An uncovered count is not a reason to narrow the document or to drop the section "
+            "from `COVERAGE`: the count follows the cases.\n\nReturn the whole module again."
+            % clip(uncovered, 2000, "uncovered sections"))
     if findings or report:
         user.append(
             "\n# The case module failed\n\nThe harness ran it and it did not pass, and the "
@@ -954,6 +1200,30 @@ def _broken_reason(result: dict) -> str:
     return json.dumps(report)[:2000]
 
 
+def _uncovered_reason(uncovered: list[str], coverage: dict) -> str:
+    """The reason a case set with a section of no case is sent back to the tester.
+
+    A section with no case passes vacuously — worse than a failure, which is why the
+    scheduler stops on it rather than accepting the run — and it is a defect of the case
+    set, not of the document and not of the implementation: the document announced the
+    section, the case set did not exercise it.  The defect is one the tester has a repair
+    budget for (`--max-case-repairs`), so it is repaired before it is stopped on.  Measured
+    on 2026-10-05, in the **MaxPool** run: attempt 6's case module compared its `real`
+    section in a sweep and left `COVERAGE["real"] = 0` — the accepted case modules of this
+    repository count that sweep's checks into `COVERAGE` by hand, with a comment — and the
+    loop stopped the run on `uncovered-section` without ever asking the tester to repair a
+    module it could have repaired.  The two ways to cover a section are the two the
+    returned line names.
+    """
+    return ("the case set leaves %d section(s) of the document with no case: %s. `COVERAGE` "
+            "gives every anchor of the Contents a count and these are zero (read back as "
+            "%s). Every anchor has a way to be covered: the sections with an ONNX type by "
+            "cases in `cases()`, and a section the runtime cannot be asked about — `real` — "
+            "by a sweep's checks counted into `COVERAGE` where the module leaves it."
+            % (len(uncovered), ", ".join("`#%s`" % s for s in uncovered),
+               json.dumps(coverage)))
+
+
 def test(state: SpecState, settings: Settings) -> dict:
     """The test agent: the case set, then the comparison with ONNX Runtime."""
     spec_path = Path(state["spec_path"])
@@ -992,6 +1262,11 @@ def test(state: SpecState, settings: Settings) -> dict:
     report_path = settings.report_path(iteration)
     before = int(state.get("report_runs", 0))   # harness runs already made for this iteration
     runs = 0
+    # the reports *this* run wrote, in the order it wrote them.  The run directory is not
+    # emptied between attempts — a second attempt at the same operator runs in the same
+    # directory, and so does a run resumed after a stop — so a directory listing is not the
+    # record of a run: the runs that are not this one's are the ones it did not write.
+    written: list[str] = []
 
     def run_harness() -> tuple[dict, Path]:
         """One harness run, and the report it wrote.
@@ -1007,35 +1282,57 @@ def test(state: SpecState, settings: Settings) -> dict:
         number = before + runs
         path = report_path if number == 1 else report_path.with_name(
             "%s-%d%s" % (report_path.stem, number, report_path.suffix))
-        return _run_harness(settings, spec_path, cases_path, impl_path, path), path
+        result = _run_harness(settings, spec_path, cases_path, impl_path, path)
+        written.append(str(path))
+        return result, path
 
     result, used = run_harness()
     log(settings, "tester  iteration %d: %s"
         % (iteration, (result["stdout"].splitlines() or ["(no output)"])[0]))
 
+    def coverage_now() -> tuple[dict, list[str]]:
+        """`COVERAGE` as the case module leaves it, and the anchors it leaves with no case.
+
+        Read inside the repair loop as well as after it: a section with no case is a defect
+        of the case set, and the tester has a budget of its own for the defects of its case
+        set, so the loop repairs it instead of stopping the run on it.  `uncovered-section`
+        is what the run stops with *after* the repairs are exhausted.
+        """
+        cov = coverage_of(cases_path, settings)
+        anchors = harness.sections(harness.read_spec(spec_path))
+        return cov, [s for s in anchors if int(cov.get(s, 0) or 0) <= 0]
+
+    coverage, uncovered = coverage_now()
+
     repairs = 0
-    while _broken(result["report"]) and repairs < settings.max_case_repairs:
+    while (_broken(result["report"]) or uncovered) and repairs < settings.max_case_repairs:
         repairs += 1
-        reason = _broken_reason(result)
-        nothing = _vacuous(result["report"])
-        log(settings, "tester  repair %d: %s"
-            % (repairs, ("nothing was compared: " if nothing else "")
-               + (reason.splitlines() or [""])[0][:160]))
+        if uncovered and not _broken(result["report"]):
+            # the report is sound and the case set is not: the repair is the coverage, and
+            # the brief is the uncovered sections rather than an error or a failure
+            reason = _uncovered_reason(uncovered, coverage)
+            log(settings, "tester  repair %d: %s"
+                % (repairs, (reason.splitlines() or [""])[0][:160]))
+            request = {"uncovered": reason}
+        else:
+            reason = _broken_reason(result)
+            nothing = _vacuous(result["report"])
+            log(settings, "tester  repair %d: %s"
+                % (repairs, ("nothing was compared: " if nothing else "")
+                   + (reason.splitlines() or [""])[0][:160]))
+            request = {"compared_nothing": reason} if nothing else {"error": reason}
         try:
-            _write_cases(state, settings, **({"compared_nothing": reason} if nothing
-                                             else {"error": reason}))
+            _write_cases(state, settings, **request)
         except Exception as exc:
             return {"test_ok": False, "report": {"error": str(exc)},
-                    "cases_path": str(cases_path),
+                    "cases_path": str(cases_path), "reports": written,
                     "cases_unusable": str(exc),
                     "trace": ["tester: the case set could not be repaired: %s" % exc]}
         result, used = run_harness()
+        coverage, uncovered = coverage_now()
 
-    coverage = coverage_of(cases_path, settings)
     report = result["report"] or {"error": "the harness produced no report",
                                   "stdout": result["stdout"][-4000:]}
-    sections = harness.sections(harness.read_spec(spec_path))
-    uncovered = [s for s in sections if int(coverage.get(s, 0) or 0) <= 0]
     # `_broken` and not the harness's exit status alone: a case set whose every case the
     # runtime refused exits 0 and would pass the run having compared nothing
     ok = bool(result["ok"]) and not uncovered and not _broken(report)
@@ -1049,6 +1346,7 @@ def test(state: SpecState, settings: Settings) -> dict:
         "coverage": coverage,
         "uncovered": uncovered,
         "test_ok": ok,
+        "reports": written,
         "rebuild_cases": False,
         "report_runs": before + runs,
         # a previous iteration's unusable answer is not this one's
@@ -1072,6 +1370,7 @@ def diagnose(state: SpecState, settings: Settings) -> dict:
     user = [
         "# The operator\n\n%s, ONNX opset %d." % (settings.op, settings.opset),
         "# The specification under test\n\n%s" % spec,
+        "# The restrictions that apply to this operator\n\n%s" % restrictions_context(settings),
         "# The implementation, with its DECISION points\n\n```python\n%s\n```\n\n"
         "## The DECISION points alone\n\n%s"
         % (clip(impl, 20000, "implementation"), state.get("decisions", "")),

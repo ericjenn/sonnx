@@ -290,7 +290,7 @@ An example is given hereafter
 
 Some SONNX restrictions apply to all the operators. Therefore, this section shall always contain the following markdown link:
 
-> [General restrictions](./../common/general_restrictions.md) are applicable.
+> [General restrictions](./global_restrictions.md) are applicable.
 
 When there are no other restrictions, the following sentence shall be added:
 

@@ -13,6 +13,10 @@ guidelines require. In this repository that document is `ops/<op>.md`, and it is
 - the ONNX definition of the operator you are writing, for the opset under which it is
   specified. ONNX is the reference for the *semantics*; the guidelines are the reference
   for the *form*;
+- **the restrictions of the profile**, as two files: the operator's own restriction file
+  (`<op>_restrictions.md`, beside the specification under `ops/`) and the profile's
+  `global_restrictions.md`, which applies to every operator. The first is data you carry
+  into the document; the second is context, and the document links it;
 - when you are amending an existing document rather than drafting one, that document and
   the findings against it.
 
@@ -43,6 +47,21 @@ amendment is a new full text, not a patch.
 - **Each section has the same skeleton**: `## Signature`, `## Restrictions`, `## Function`,
   its examples, `## Error conditions`, `## Attributes`, `## Inputs`, `## Outputs` — with
   the tagged constraints under Inputs and Outputs.
+- **The `## Restrictions` block is opened by the link sentence**
+  `[General restrictions](./global_restrictions.md) are applicable.` — that file carries the
+  restrictions of every operator, and it is linked and never quoted. After the sentence come
+  the rows of the operator's restriction file, **copied verbatim and in the file's order,
+  into every family section**: the same rows in each, because a restriction is a property of
+  the operator and not of a family. Do not drop a row, invent one, reorder them, or reword
+  them. When the file lists none, or the repository has no file for this operator, replace
+  the table by the mandatory sentence `No specific restrictions apply to the **Op**
+  operator.`. A row is copied text and obeys the document's modality: an indicative limit
+  ("The padding of a spatial axis is at most the size of the kernel"), never `must`, never
+  `should`.
+- **A link is not a specification.** A restriction of `global_restrictions.md` that bears on
+  this operator is **stated where the semantics are stated** — in Signature, Function or
+  Attributes — and the link in `## Restrictions` points at the rule; the reader of a formula
+  is not sent away to find out what the formula means. Never rely on the link alone.
 - **The specifying part is the red span** in `## Function`: the opening line names the tag
   and the closing line is `[END]`, each as
   `<span style="background: red; color: white; font-size:0.7em;">[...]</br></span>`.

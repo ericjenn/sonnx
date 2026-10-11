@@ -1,0 +1,34 @@
+SONNX multi-agent specification system
+model: deepseek-v4.1-flash:cloud at http://127.0.0.1:11434
+run  : /run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool
+[20:48:28] writer  round 1: amending
+[20:49:00] writer  round 1: the document announces a type ONNX does not admit for MaxPool: `int64` (ONNX admits `double`, `float`, `float16`, `int8`, `uint8`); asking again
+[20:49:52] writer  round 1: 38344 characters in 84s -> /run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md
+[20:49:52] checker lint: clean (0 finding(s))
+[20:49:54] checker review: ok (0 blocking, 0 minor)
+[20:49:54] blind   iteration 1: implementing from maxpool.md
+[20:51:09] blind   iteration 1: 8207 characters, 2 DECISION point(s) in 75s -> /run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/iter-001-impl.py
+[20:51:09] tester  writing the case set for maxpool.md
+[20:53:31] tester: the answer was empty; asking once more without deliberation
+[20:53:48] tester  the answer is not a case module (attempt 1): the answer is not Python: invalid syntax (<unknown>, line 698) (kept as cases-rejected-1.txt)
+[20:55:44] tester: the answer was empty; asking once more without deliberation
+[20:56:20] tester  iteration 1: spec      : /run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md
+[20:56:20] tester  repair 1: sweep_real_section: ValueError: cannot reshape array of size 16 into shape (1,1,4)
+[20:58:33] tester: the answer was empty; asking once more without deliberation
+[20:58:50] tester  repair 2: sweep_real_section: IndexError: list index out of range
+[21:00:56] tester: the answer was empty; asking once more without deliberation
+[21:01:26] tester  repair 3: sweep_real_section: ValueError: kernel_shape has rX - 2 values
+[21:03:48] tester: the answer was empty; asking once more without deliberation
+[21:04:10] tester  iteration 1: FAIL (1 uncovered section(s))
+[21:04:10] record  uncovered-section -> /run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/run-20261005-210410.json
+[21:04:10] stop    uncovered-section: a section of the document has no case
+
+==============================================================================
+operator     : MaxPool (ONNX opset 14)
+outcome      : uncovered-section
+specification: /run/media/eric/Work1/Work/gits/sonnx/agents/runs/MaxPool/maxpool.md (md5 ab3ba83ee62255d5b748bbaa1eb62a23)
+rounds       : 1 spec round(s), 1 implement/test iteration(s)
+cases        : 87 run, 67 passed, 10 mismatched, 10 open
+coverage     : {"real": 0, "float": 63, "int": 12, "uint": 12}
+stopped      : a section of the document has no case
+==============================================================================

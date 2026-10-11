@@ -2,7 +2,7 @@
 
 - **MaxPool** operator for type [real](#real)
 - **MaxPool** operator for types [`float16`, `float`, `double`](#float)
-- **MaxPool** operator for types [`int8`, `int64`](#int)
+- **MaxPool** operator for types [`int8`](#int)
 - **MaxPool** operator for types [`uint8`](#uint)
 
 Based on ONNX documentation [MaxPool version 14](https://onnx.ai/onnx/operators/onnx__MaxPool.html#maxpool-14).
@@ -15,24 +15,23 @@ Revision 2026-10-03: first issue of this specification, based on ONNX opset 14.
 
 ## Signature
 
-$Y\,[, \text{Indices}] = \textbf{MaxPool}(X)$
+$Y = \textbf{MaxPool}(X)$
 
 where
 - $X$: input tensor of rank $rX \ge 3$
 - $Y$: result of the max pooling of $X$
-- $\text{Indices}$: optional tensor of the flattened indices of the elements of $X$ selected by the pooling windows
 
 ## Restrictions
 
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 | Restriction    | Statement | Origin |
 | -------- | ------- | ------- |
 | `[R1]` | Attribute `auto_pad` is restricted to `NOTSET` | Transient |
 | `[R2]` | Attribute `storage_order` is restricted to `0` | Transient |
 | `[R3]` | Attribute `ceil_mode` is restricted to `0` | Transient |
-| `[R4]` | Attribute `dilations` is restricted to $1$ along each spatial axis | Transient |
-| `[R5]` | The output $\text{Indices}$ is not supported | Transient |
+| `[R4]` | The padding of a spatial axis is at most the size of the kernel along that axis, i.e. $p^b_k \le k_k$ and $p^e_k \le k_k$ for every spatial axis $k$ | Transient |
+| `[R5]` | The output `Indices` is not supported | Transient |
 
 ## Function
 
@@ -46,7 +45,7 @@ The first two axes of $X$ are the batch axis and the channel axis; they are not 
 For any [tensor index](./../common/definitions.md#tensor_index) $i = (n, c, j_0, \dots, j_{m-1})$ of the result $Y$:
 
 $$
-Y[n, c, j_0, \dots, j_{m-1}] = \max_{k_0, \dots, k_{m-1}} X_p[n, c, j_0 \cdot s_0 + k_0, \dots, j_{m-1} \cdot s_{m-1} + k_{m-1}]
+Y[n, c, j_0, \dots, j_{m-1}] = \max_{\substack{k_0, \dots, k_{m-1} \\ j_t \cdot s_t + k_t - p_{t,\text{begin}} \in [0, dX_{t+2}-1] \text{ for every } t}} X_p[n, c, j_0 \cdot s_0 + k_0, \dots, j_{m-1} \cdot s_{m-1} + k_{m-1}]
 $$
 
 where
@@ -56,23 +55,27 @@ where
 - $k_t \in [0, dK_t-1]$ is the index along spatial axis $t$ of the window, $dK_t$ being the value of `kernel_shape` along that axis,
 - $s_t$ is the value of `strides` along spatial axis $t$,
 - $X_p$ is the tensor obtained by padding $X$ with the values of `pads`, and $X_p[n, c, h_0, \dots, h_{m-1}]$ is one of its elements,
-- the maximum is taken over the $dK_0 \times \dots \times dK_{m-1}$ elements of the window.
+- the maximum is taken over the positions of the window that are elements of $X$, i.e. those for which $j_t \cdot s_t + k_t - p_{t,\text{begin}} \in [0, dX_{t+2}-1]$ for every $t$.
 
-**Padding.** The padding adds $p_{t,\text{begin}}$ elements before and $p_{t,\text{end}}$ elements after the input along spatial axis $t$, where $p_{t,\text{begin}}$ and $p_{t,\text{end}}$ are the two values of `pads` for that axis. The padded elements are not elements of $X$: they are excluded from the maximum, so that the maximum is taken over the elements of $X$ covered by the window only. A window that covers no element of $X$ is not a window of the result: the shape of $Y$ is such that every window covers at least one element of $X$.
+**Padding.** The padding adds $p_{t,\text{begin}}$ elements before and $p_{t,\text{end}}$ elements after the input along spatial axis $t$, where $p_{t,\text{begin}}$ and $p_{t,\text{end}}$ are the two values of `pads` for that axis. The padded elements are not elements of $X$: they are excluded from the maximum, so that the maximum is taken over the elements of $X$ covered by the window only. A window that covers no element of $X$ is not a window of the result: the shape of $Y$ is such that every window covers at least one element of $X$. The precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_REAL_CONSTR_X_0020</span></b>](#E_MAXPOOL_REAL_CONSTR_X_0020) rules this case out, so that the maximum is always taken over at least one element of $X$.
 
 **Shape of the result.** The spatial dimensions of $Y$ are
 
 $$
-dY_{t+2} = \left\lfloor \frac{dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t}{s_t} \right\rfloor + 1
+dY_{t+2} =
+\begin{cases}
+\left\lfloor \frac{dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t}{s_t} \right\rfloor + 1 & \text{if } dX_{t+2} \ge 1 \\
+0 & \text{if } dX_{t+2} = 0
+\end{cases}
 $$
 
-for every $t \in [0, m-1]$, and $dY_0 = dX_0$, $dY_1 = dX_1$. The floor is the one of the `ceil_mode` attribute, which is restricted to $0$ by [<b><span style="font-family: 'Courier New', monospace">R3</span></b>](#R3); the formula above is the one of the ONNX definition with `ceil_mode` disabled and `dilations` equal to $1$.
+for every $t \in [0, m-1]$, and $dY_0 = dX_0$, $dY_1 = dX_1$. The floor is the one of the `ceil_mode` attribute, which is restricted to $0$ by [<b><span style="font-family: 'Courier New', monospace">R3</span></b>](#R3); the first case is the formula of the ONNX definition with `ceil_mode` disabled and `dilations` equal to $1$. The second case is the one of a zero-sized spatial dimension, for which the precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_REAL_CONSTR_X_0020</span></b>](#E_MAXPOOL_REAL_CONSTR_X_0020) gives $p_{t,\text{begin}} + p_{t,\text{end}} \ge dK_t$.
 
-**Tensors with no dimension.** The input tensor $X$ has at least three axes, since the batch axis, the channel axis and at least one spatial axis are required; a rank-0 tensor is not a valid input.
+**Tensors with no dimension.** The input tensor $X$ has at least three axes, since the batch axis, the channel axis and at least one spatial axis are required. An input tensor $X$ of rank 0, 1 or 2 has no spatial axis, and the operator is not applicable to it; the precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_REAL_CONSTR_X_0010</span></b>](#E_MAXPOOL_REAL_CONSTR_X_0010) rules such a call out.
 
-**Zero-sized dimensions.** A spatial dimension of $X$ may have size $0$. The formula above then gives a spatial dimension of $Y$ of size $0$ when $p_{t,\text{begin}} + p_{t,\text{end}} \ge dK_t$, and the corresponding dimension of $Y$ is empty; otherwise the operator is not applicable, since a window would cover no element of $X$. A batch or channel dimension of size $0$ gives a dimension of $Y$ of size $0$, and $Y$ is empty.
+**Zero-sized dimensions.** A spatial dimension of $X$ may have size $0$. The formula above then gives a spatial dimension of $Y$ of size $0$ when $p_{t,\text{begin}} + p_{t,\text{end}} \ge dK_t$: the corresponding dimension of $Y$ is empty, the formula is not evaluated for any index along that axis, and no maximum over an empty window is taken. Otherwise the precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_REAL_CONSTR_X_0020</span></b>](#E_MAXPOOL_REAL_CONSTR_X_0020) rules the call out, so that the formula is never applied to that case. A batch or channel dimension of size $0$ gives a dimension of $Y$ of size $0$, and $Y$ is empty.
 
-**Ties.** When several elements of a window are equal to the maximum, the result is that maximum, and the choice of the element that realizes it is not observable in $Y$. The output $\text{Indices}$ would make that choice observable; it is not supported by this profile, as stated by [<b><span style="font-family: 'Courier New', monospace">R5</span></b>](#R5).
+**Ties.** When several elements of a window are equal to the maximum, the result is that maximum, and the choice of the element that realizes it is not observable in $Y$. The output `Indices` would make that choice observable; it is not supported by this profile, as stated by [<b><span style="font-family: 'Courier New', monospace">R5</span></b>](#R5).
 
 <span style="background: red; color: white; font-size:0.7em;">[END]</br></span>
 
@@ -151,7 +154,7 @@ No error condition.
 
 ### `dilations`: `list of int`
 
-`dilations` gives the dilation along each spatial axis. It is restricted to $1$ along each spatial axis by [<b><span style="font-family: 'Courier New', monospace">R4</span></b>](#R4), so that the window covers consecutive elements of $X$.
+`dilations` gives the dilation along each spatial axis. Its value is $1$ along each spatial axis, so that the window covers consecutive elements of $X$.
 
 #### Constraints
 
@@ -184,10 +187,14 @@ No error condition.
 <a id="E_MAXPOOL_REAL_CONSTR_pads_0020"></a>
 - `[E_MAXPOOL_REAL_CONSTR_pads_0020]` Values of `pads`
   - Statement: Every value of `pads` is at least $0$.
+<a id="E_MAXPOOL_REAL_CONSTR_pads_0030"></a>
+- `[E_MAXPOOL_REAL_CONSTR_pads_0030]` Bound on the padding
+  - Statement: For every spatial axis $t$, $p_{t,\text{begin}} \le dK_t$ and $p_{t,\text{end}} \le dK_t$.
+  - Rationale: The padding of a spatial axis is at most the size of the kernel along that axis, as stated by [<b><span style="font-family: 'Courier New', monospace">R4</span></b>](#R4).
 
 ### `storage_order`: `int`
 
-`storage_order` selects the order in which the flattened index of the output $\text{Indices}$ is computed. It is restricted to $0$ by [<b><span style="font-family: 'Courier New', monospace">R2</span></b>](#R2), and the output $\text{Indices}$ is not supported by this profile, as stated by [<b><span style="font-family: 'Courier New', monospace">R5</span></b>](#R5).
+`storage_order` selects the order in which the flattened index of the output `Indices` is computed. It is restricted to $0$ by [<b><span style="font-family: 'Courier New', monospace">R2</span></b>](#R2), and the output `Indices` is not supported by this profile, as stated by [<b><span style="font-family: 'Courier New', monospace">R5</span></b>](#R5).
 
 #### Constraints
 
@@ -235,7 +242,7 @@ The result of the max pooling of $X$.
 
 <a id="E_MAXPOOL_REAL_CONSTR_Y_0010"></a>
 - `[E_MAXPOOL_REAL_CONSTR_Y_0010]` Shape definition
-  - Statement: $dY_0 = dX_0$, $dY_1 = dX_1$, and for every spatial axis $t$, $dY_{t+2} = \lfloor (dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t)/s_t \rfloor + 1$.
+  - Statement: $dY_0 = dX_0$, $dY_1 = dX_1$, and for every spatial axis $t$, $dY_{t+2} = \lfloor (dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t)/s_t \rfloor + 1$ when $dX_{t+2} \ge 1$, and $dY_{t+2} = 0$ when $dX_{t+2} = 0$.
 
 <a id="float"></a>
 
@@ -247,24 +254,23 @@ The three types share one semantics: the operator selects one of the elements of
 
 ## Signature
 
-$Y\,[, \text{Indices}] = \textbf{MaxPool}(X)$
+$Y = \textbf{MaxPool}(X)$
 
 where
 - $X$: input tensor of rank $rX \ge 3$
 - $Y$: result of the max pooling of $X$
-- $\text{Indices}$: optional tensor of the flattened indices of the elements of $X$ selected by the pooling windows
 
 ## Restrictions
 
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 | Restriction    | Statement | Origin |
 | -------- | ------- | ------- |
 | `[R1]` | Attribute `auto_pad` is restricted to `NOTSET` | Transient |
 | `[R2]` | Attribute `storage_order` is restricted to `0` | Transient |
 | `[R3]` | Attribute `ceil_mode` is restricted to `0` | Transient |
-| `[R4]` | Attribute `dilations` is restricted to $1$ along each spatial axis | Transient |
-| `[R5]` | The output $\text{Indices}$ is not supported | Transient |
+| `[R4]` | The padding of a spatial axis is at most the size of the kernel along that axis, i.e. $p^b_k \le k_k$ and $p^e_k \le k_k$ for every spatial axis $k$ | Transient |
+| `[R5]` | The output `Indices` is not supported | Transient |
 
 ## Function
 
@@ -278,7 +284,7 @@ The first two axes of $X$ are the batch axis and the channel axis; they are not 
 For any [tensor index](./../common/definitions.md#tensor_index) $i = (n, c, j_0, \dots, j_{m-1})$ of the result $Y$:
 
 $$
-Y[n, c, j_0, \dots, j_{m-1}] = \max_{k_0, \dots, k_{m-1}} X_p[n, c, j_0 \cdot s_0 + k_0, \dots, j_{m-1} \cdot s_{m-1} + k_{m-1}]
+Y[n, c, j_0, \dots, j_{m-1}] = \max_{\substack{k_0, \dots, k_{m-1} \\ j_t \cdot s_t + k_t - p_{t,\text{begin}} \in [0, dX_{t+2}-1] \text{ for every } t}} X_p[n, c, j_0 \cdot s_0 + k_0, \dots, j_{m-1} \cdot s_{m-1} + k_{m-1}]
 $$
 
 where
@@ -288,29 +294,33 @@ where
 - $k_t \in [0, dK_t-1]$ is the index along spatial axis $t$ of the window, $dK_t$ being the value of `kernel_shape` along that axis,
 - $s_t$ is the value of `strides` along spatial axis $t$,
 - $X_p$ is the tensor obtained by padding $X$ with the values of `pads`, and $X_p[n, c, h_0, \dots, h_{m-1}]$ is one of its elements,
-- the maximum is taken over the elements of $X$ covered by the window, the padded elements being excluded.
+- the maximum is taken over the positions of the window that are elements of $X$, i.e. those for which $j_t \cdot s_t + k_t - p_{t,\text{begin}} \in [0, dX_{t+2}-1]$ for every $t$, the padded elements being excluded.
 
 **The maximum of the floating-point values.** The maximum is the one of the values of the type, and it is not the maximum of the real numbers they represent: the values of the type include the special numbers $\pm 0$, $\pm\text{inf}$ and NaN, and the maximum is defined on them as follows.
 
-- NaN is not comparable with any value, itself included. When a window covers an element that is NaN, the result of that window is NaN. The NaN of the result is a quiet NaN; its sign and its payload are not specified, so that every quiet NaN of the type of $X$ and $Y$ is a conforming result.
+- NaN is not comparable with any value, itself included. When a window covers an element that is NaN, the result of that window is NaN. The NaN of the result is a quiet NaN; its sign and its payload are not specified, so that every quiet NaN of the type of $X$ and $Y$ is a conforming result. NaN propagates over every other value of the window, including $+\text{inf}$ and $-\text{inf}$; a signaling NaN operand is quieted, and the result is a quiet NaN.
 - $+\text{inf}$ is greater than every finite value and than $-\text{inf}$, and $-\text{inf}$ is smaller than every finite value. A window whose elements are all $-\text{inf}$ gives $-\text{inf}$.
-- $+0$ and $-0$ are equal, and neither is greater than the other. A window whose elements are all null gives a null result; its sign is not specified, so that $+0$ and $-0$ are both conforming results.
+- $+0$ and $-0$ are equal, and neither is greater than the other. A window whose elements are all null gives a null result; its sign is not specified, so that every null of the type of $X$ is a conforming result. A window that contains both $+0$ and $-0$ gives a null result as well, whose sign is not specified either, so that every null of the type of $X$ is a conforming result. A null is smaller than every positive value and than $+\text{inf}$, so that a window that contains a null and a positive value or $+\text{inf}$ has that positive value or $+\text{inf}$ as its maximum. When a window contains a null and a negative value and no positive value and no $+\text{inf}$, its maximum is that null, since a null is greater than every negative value; the sign of that null is not specified, so that every null of the type of $X$ is a conforming result.
 
-**Padding.** The padding adds $p_{t,\text{begin}}$ elements before and $p_{t,\text{end}}$ elements after the input along spatial axis $t$, where $p_{t,\text{begin}}$ and $p_{t,\text{end}}$ are the two values of `pads` for that axis. The padded elements are not elements of $X$: they are excluded from the maximum, so that the maximum is taken over the elements of $X$ covered by the window only. A window that covers no element of $X$ is not a window of the result: the shape of $Y$ is such that every window covers at least one element of $X$.
+**Padding.** The padding adds $p_{t,\text{begin}}$ elements before and $p_{t,\text{end}}$ elements after the input along spatial axis $t$, where $p_{t,\text{begin}}$ and $p_{t,\text{end}}$ are the two values of `pads` for that axis. The padded elements are not elements of $X$: they are excluded from the maximum, so that the maximum is taken over the elements of $X$ covered by the window only. A window that covers no element of $X$ is not a window of the result: the shape of $Y$ is such that every window covers at least one element of $X$. The precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_FLOAT_CONSTR_X_0020</span></b>](#E_MAXPOOL_FLOAT_CONSTR_X_0020) rules this case out, so that the maximum is always taken over at least one element of $X$.
 
 **Shape of the result.** The spatial dimensions of $Y$ are
 
 $$
-dY_{t+2} = \left\lfloor \frac{dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t}{s_t} \right\rfloor + 1
+dY_{t+2} =
+\begin{cases}
+\left\lfloor \frac{dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t}{s_t} \right\rfloor + 1 & \text{if } dX_{t+2} \ge 1 \\
+0 & \text{if } dX_{t+2} = 0
+\end{cases}
 $$
 
-for every $t \in [0, m-1]$, and $dY_0 = dX_0$, $dY_1 = dX_1$. The floor is the one of the `ceil_mode` attribute, which is restricted to $0$ by [<b><span style="font-family: 'Courier New', monospace">R3</span></b>](#R3); the formula above is the one of the ONNX definition with `ceil_mode` disabled and `dilations` equal to $1$.
+for every $t \in [0, m-1]$, and $dY_0 = dX_0$, $dY_1 = dX_1$. The floor is the one of the `ceil_mode` attribute, which is restricted to $0$ by [<b><span style="font-family: 'Courier New', monospace">R3</span></b>](#R3); the first case is the formula of the ONNX definition with `ceil_mode` disabled and `dilations` equal to $1$. The second case is the one of a zero-sized spatial dimension, for which the precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_FLOAT_CONSTR_X_0020</span></b>](#E_MAXPOOL_FLOAT_CONSTR_X_0020) gives $p_{t,\text{begin}} + p_{t,\text{end}} \ge dK_t$.
 
-**Tensors with no dimension.** The input tensor $X$ has at least three axes, since the batch axis, the channel axis and at least one spatial axis are required; a rank-0 tensor is not a valid input.
+**Tensors with no dimension.** The input tensor $X$ has at least three axes, since the batch axis, the channel axis and at least one spatial axis are required. An input tensor $X$ of rank 0, 1 or 2 has no spatial axis, and the operator is not applicable to it; the precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_FLOAT_CONSTR_X_0010</span></b>](#E_MAXPOOL_FLOAT_CONSTR_X_0010) rules such a call out.
 
-**Zero-sized dimensions.** A spatial dimension of $X$ may have size $0$. The formula above then gives a spatial dimension of $Y$ of size $0$ when $p_{t,\text{begin}} + p_{t,\text{end}} \ge dK_t$, and the corresponding dimension of $Y$ is empty; otherwise the operator is not applicable, since a window would cover no element of $X$. A batch or channel dimension of size $0$ gives a dimension of $Y$ of size $0$, and $Y$ is empty.
+**Zero-sized dimensions.** A spatial dimension of $X$ may have size $0$. The formula above then gives a spatial dimension of $Y$ of size $0$ when $p_{t,\text{begin}} + p_{t,\text{end}} \ge dK_t$: the corresponding dimension of $Y$ is empty, the formula is not evaluated for any index along that axis, and no maximum over an empty window is taken. Otherwise the precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_FLOAT_CONSTR_X_0020</span></b>](#E_MAXPOOL_FLOAT_CONSTR_X_0020) rules the call out, so that the formula is never applied to that case. A batch or channel dimension of size $0$ gives a dimension of $Y$ of size $0$, and $Y$ is empty.
 
-**Ties.** When several elements of a window are equal to the maximum, the result is that maximum, and the choice of the element that realizes it is not observable in $Y$. The output $\text{Indices}$ would make that choice observable; it is not supported by this profile, as stated by [<b><span style="font-family: 'Courier New', monospace">R5</span></b>](#R5).
+**Ties.** When several elements of a window are equal to the maximum, the result is that maximum, and the choice of the element that realizes it is not observable in $Y$. The output `Indices` would make that choice observable; it is not supported by this profile, as stated by [<b><span style="font-family: 'Courier New', monospace">R5</span></b>](#R5).
 
 <span style="background: red; color: white; font-size:0.7em;">[END]</br></span>
 
@@ -396,7 +406,7 @@ The result of the max pooling of $X$.
 
 <a id="E_MAXPOOL_FLOAT_CONSTR_Y_0010"></a>
 - `[E_MAXPOOL_FLOAT_CONSTR_Y_0010]` Shape definition
-  - Statement: $dY_0 = dX_0$, $dY_1 = dX_1$, and for every spatial axis $t$, $dY_{t+2} = \lfloor (dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t)/s_t \rfloor + 1$.
+  - Statement: $dY_0 = dX_0$, $dY_1 = dX_1$, and for every spatial axis $t$, $dY_{t+2} = \lfloor (dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t)/s_t \rfloor + 1$ when $dX_{t+2} \ge 1$, and $dY_{t+2} = 0$ when $dX_{t+2} = 0$.
 - `[E_MAXPOOL_FLOAT_CONSTR_Y_0020]` Type consistency
   - Statement: see constraint [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_FLOAT_CONSTR_X_0030</span></b>](#E_MAXPOOL_FLOAT_CONSTR_X_0030) on tensor $X$.
 
@@ -404,30 +414,29 @@ The result of the max pooling of $X$.
 
 # **MaxPool** (int)
 
-where int is in {`int8`, `int64`}.
+where int is in {`int8`}.
 
-The two types share one semantics: the operator selects one of the elements of the input tensor and performs no arithmetic on it, so that the result is the same for both, the comparison being the one of the signed integers they represent.
+The types of this section share one semantics: the operator selects one of the elements of the input tensor and performs no arithmetic on it, so that the result is the same for every type of the family, the comparison being the one of the signed integers they represent.
 
 ## Signature
 
-$Y\,[, \text{Indices}] = \textbf{MaxPool}(X)$
+$Y = \textbf{MaxPool}(X)$
 
 where
 - $X$: input tensor of rank $rX \ge 3$
 - $Y$: result of the max pooling of $X$
-- $\text{Indices}$: optional tensor of the flattened indices of the elements of $X$ selected by the pooling windows
 
 ## Restrictions
 
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 | Restriction    | Statement | Origin |
 | -------- | ------- | ------- |
 | `[R1]` | Attribute `auto_pad` is restricted to `NOTSET` | Transient |
 | `[R2]` | Attribute `storage_order` is restricted to `0` | Transient |
 | `[R3]` | Attribute `ceil_mode` is restricted to `0` | Transient |
-| `[R4]` | Attribute `dilations` is restricted to $1$ along each spatial axis | Transient |
-| `[R5]` | The output $\text{Indices}$ is not supported | Transient |
+| `[R4]` | The padding of a spatial axis is at most the size of the kernel along that axis, i.e. $p^b_k \le k_k$ and $p^e_k \le k_k$ for every spatial axis $k$ | Transient |
+| `[R5]` | The output `Indices` is not supported | Transient |
 
 ## Function
 
@@ -441,7 +450,7 @@ The first two axes of $X$ are the batch axis and the channel axis; they are not 
 For any [tensor index](./../common/definitions.md#tensor_index) $i = (n, c, j_0, \dots, j_{m-1})$ of the result $Y$:
 
 $$
-Y[n, c, j_0, \dots, j_{m-1}] = \max_{k_0, \dots, k_{m-1}} X_p[n, c, j_0 \cdot s_0 + k_0, \dots, j_{m-1} \cdot s_{m-1} + k_{m-1}]
+Y[n, c, j_0, \dots, j_{m-1}] = \max_{\substack{k_0, \dots, k_{m-1} \\ j_t \cdot s_t + k_t - p_{t,\text{begin}} \in [0, dX_{t+2}-1] \text{ for every } t}} X_p[n, c, j_0 \cdot s_0 + k_0, \dots, j_{m-1} \cdot s_{m-1} + k_{m-1}]
 $$
 
 where
@@ -451,25 +460,29 @@ where
 - $k_t \in [0, dK_t-1]$ is the index along spatial axis $t$ of the window, $dK_t$ being the value of `kernel_shape` along that axis,
 - $s_t$ is the value of `strides` along spatial axis $t$,
 - $X_p$ is the tensor obtained by padding $X$ with the values of `pads`, and $X_p[n, c, h_0, \dots, h_{m-1}]$ is one of its elements,
-- the maximum is taken over the elements of $X$ covered by the window, the padded elements being excluded.
+- the maximum is taken over the positions of the window that are elements of $X$, i.e. those for which $j_t \cdot s_t + k_t - p_{t,\text{begin}} \in [0, dX_{t+2}-1]$ for every $t$, the padded elements being excluded.
 
-**The maximum of the integer values.** The maximum is the one of the values of the type, and it is the maximum of the signed integers they represent: for `int8`, the values range from $-128$ to $127$ and the maximum of $-128$ and $127$ is $127$; for `int64`, the values range from $-2^{63}$ to $2^{63}-1$. The comparison is the same for the two types, and the result is one of the elements of $X$, so that no overflow can occur.
+**The maximum of the integer values.** The maximum is the one of the values of the type, and it is the largest of the values of the window in the order of the signed integers they represent: for `int8`, the values range from $-128$ to $127$ and the maximum of $-128$ and $127$ is $127$. When all the elements of the window are equal, the result is that value. The result is one of the elements of $X$, so that no overflow can occur.
 
-**Padding.** The padding adds $p_{t,\text{begin}}$ elements before and $p_{t,\text{end}}$ elements after the input along spatial axis $t$, where $p_{t,\text{begin}}$ and $p_{t,\text{end}}$ are the two values of `pads` for that axis. The padded elements are not elements of $X$: they are excluded from the maximum, so that the maximum is taken over the elements of $X$ covered by the window only. A window that covers no element of $X$ is not a window of the result: the shape of $Y$ is such that every window covers at least one element of $X$.
+**Padding.** The padding adds $p_{t,\text{begin}}$ elements before and $p_{t,\text{end}}$ elements after the input along spatial axis $t$, where $p_{t,\text{begin}}$ and $p_{t,\text{end}}$ are the two values of `pads` for that axis. The padded elements are not elements of $X$: they are excluded from the maximum, so that the maximum is taken over the elements of $X$ covered by the window only. A window that covers no element of $X$ is not a window of the result: the shape of $Y$ is such that every window covers at least one element of $X$. The precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_INT_CONSTR_X_0020</span></b>](#E_MAXPOOL_INT_CONSTR_X_0020) rules this case out, so that the maximum is always taken over at least one element of $X$.
 
 **Shape of the result.** The spatial dimensions of $Y$ are
 
 $$
-dY_{t+2} = \left\lfloor \frac{dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t}{s_t} \right\rfloor + 1
+dY_{t+2} =
+\begin{cases}
+\left\lfloor \frac{dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t}{s_t} \right\rfloor + 1 & \text{if } dX_{t+2} \ge 1 \\
+0 & \text{if } dX_{t+2} = 0
+\end{cases}
 $$
 
-for every $t \in [0, m-1]$, and $dY_0 = dX_0$, $dY_1 = dX_1$. The floor is the one of the `ceil_mode` attribute, which is restricted to $0$ by [<b><span style="font-family: 'Courier New', monospace">R3</span></b>](#R3); the formula above is the one of the ONNX definition with `ceil_mode` disabled and `dilations` equal to $1$.
+for every $t \in [0, m-1]$, and $dY_0 = dX_0$, $dY_1 = dX_1$. The floor is the one of the `ceil_mode` attribute, which is restricted to $0$ by [<b><span style="font-family: 'Courier New', monospace">R3</span></b>](#R3); the first case is the formula of the ONNX definition with `ceil_mode` disabled and `dilations` equal to $1$. The second case is the one of a zero-sized spatial dimension, for which the precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_INT_CONSTR_X_0020</span></b>](#E_MAXPOOL_INT_CONSTR_X_0020) gives $p_{t,\text{begin}} + p_{t,\text{end}} \ge dK_t$.
 
-**Tensors with no dimension.** The input tensor $X$ has at least three axes, since the batch axis, the channel axis and at least one spatial axis are required; a rank-0 tensor is not a valid input.
+**Tensors with no dimension.** The input tensor $X$ has at least three axes, since the batch axis, the channel axis and at least one spatial axis are required. An input tensor $X$ of rank 0, 1 or 2 has no spatial axis, and the operator is not applicable to it; the precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_INT_CONSTR_X_0010</span></b>](#E_MAXPOOL_INT_CONSTR_X_0010) rules such a call out.
 
-**Zero-sized dimensions.** A spatial dimension of $X$ may have size $0$. The formula above then gives a spatial dimension of $Y$ of size $0$ when $p_{t,\text{begin}} + p_{t,\text{end}} \ge dK_t$, and the corresponding dimension of $Y$ is empty; otherwise the operator is not applicable, since a window would cover no element of $X$. A batch or channel dimension of size $0$ gives a dimension of $Y$ of size $0$, and $Y$ is empty.
+**Zero-sized dimensions.** A spatial dimension of $X$ may have size $0$. The formula above then gives a spatial dimension of $Y$ of size $0$ when $p_{t,\text{begin}} + p_{t,\text{end}} \ge dK_t$: the corresponding dimension of $Y$ is empty, the formula is not evaluated for any index along that axis, and no maximum over an empty window is taken. Otherwise the precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_INT_CONSTR_X_0020</span></b>](#E_MAXPOOL_INT_CONSTR_X_0020) rules the call out, so that the formula is never applied to that case. A batch or channel dimension of size $0$ gives a dimension of $Y$ of size $0$, and $Y$ is empty.
 
-**Ties.** When several elements of a window are equal to the maximum, the result is that maximum, and the choice of the element that realizes it is not observable in $Y$. The output $\text{Indices}$ would make that choice observable; it is not supported by this profile, as stated by [<b><span style="font-family: 'Courier New', monospace">R5</span></b>](#R5).
+**Ties.** When several elements of a window are equal to the maximum, the result is that maximum, and the choice of the element that realizes it is not observable in $Y$. The output `Indices` would make that choice observable; it is not supported by this profile, as stated by [<b><span style="font-family: 'Courier New', monospace">R5</span></b>](#R5).
 
 <span style="background: red; color: white; font-size:0.7em;">[END]</br></span>
 
@@ -497,7 +510,7 @@ Y = \begin{bmatrix}\begin{bmatrix}
 \end{bmatrix}\end{bmatrix}
 $$
 
-The window of the first element of $Y$ covers $-1, 2, 5, -6$, whose maximum is $5$; the window of the last element covers $-11, 12, 15, -16$, whose maximum is $15$. The negative values are smaller than the positive ones, and the result is one of the elements of $X$. The values of the example are values of `int8`; they are also values of `int64`, for which the comparison and the result are the same.
+The window of the first element of $Y$ covers $-1, 2, 5, -6$, whose maximum is $5$; the window of the last element covers $-11, 12, 15, -16$, whose maximum is $15$. The negative values are smaller than the positive ones, and the result is one of the elements of $X$.
 
 ## Error conditions
 
@@ -545,7 +558,7 @@ The result of the max pooling of $X$.
 
 <a id="E_MAXPOOL_INT_CONSTR_Y_0010"></a>
 - `[E_MAXPOOL_INT_CONSTR_Y_0010]` Shape definition
-  - Statement: $dY_0 = dX_0$, $dY_1 = dX_1$, and for every spatial axis $t$, $dY_{t+2} = \lfloor (dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t)/s_t \rfloor + 1$.
+  - Statement: $dY_0 = dX_0$, $dY_1 = dX_1$, and for every spatial axis $t$, $dY_{t+2} = \lfloor (dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t)/s_t \rfloor + 1$ when $dX_{t+2} \ge 1$, and $dY_{t+2} = 0$ when $dX_{t+2} = 0$.
 - `[E_MAXPOOL_INT_CONSTR_Y_0020]` Type consistency
   - Statement: see constraint [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_INT_CONSTR_X_0030</span></b>](#E_MAXPOOL_INT_CONSTR_X_0030) on tensor $X$.
 
@@ -559,24 +572,23 @@ The types of this section share one semantics: the operator selects one of the e
 
 ## Signature
 
-$Y\,[, \text{Indices}] = \textbf{MaxPool}(X)$
+$Y = \textbf{MaxPool}(X)$
 
 where
 - $X$: input tensor of rank $rX \ge 3$
 - $Y$: result of the max pooling of $X$
-- $\text{Indices}$: optional tensor of the flattened indices of the elements of $X$ selected by the pooling windows
 
 ## Restrictions
 
-[General restrictions](./../common/general_restrictions.md) are applicable.
+[General restrictions](./global_restrictions.md) are applicable.
 
 | Restriction    | Statement | Origin |
 | -------- | ------- | ------- |
 | `[R1]` | Attribute `auto_pad` is restricted to `NOTSET` | Transient |
 | `[R2]` | Attribute `storage_order` is restricted to `0` | Transient |
 | `[R3]` | Attribute `ceil_mode` is restricted to `0` | Transient |
-| `[R4]` | Attribute `dilations` is restricted to $1$ along each spatial axis | Transient |
-| `[R5]` | The output $\text{Indices}$ is not supported | Transient |
+| `[R4]` | The padding of a spatial axis is at most the size of the kernel along that axis, i.e. $p^b_k \le k_k$ and $p^e_k \le k_k$ for every spatial axis $k$ | Transient |
+| `[R5]` | The output `Indices` is not supported | Transient |
 
 ## Function
 
@@ -590,7 +602,7 @@ The first two axes of $X$ are the batch axis and the channel axis; they are not 
 For any [tensor index](./../common/definitions.md#tensor_index) $i = (n, c, j_0, \dots, j_{m-1})$ of the result $Y$:
 
 $$
-Y[n, c, j_0, \dots, j_{m-1}] = \max_{k_0, \dots, k_{m-1}} X_p[n, c, j_0 \cdot s_0 + k_0, \dots, j_{m-1} \cdot s_{m-1} + k_{m-1}]
+Y[n, c, j_0, \dots, j_{m-1}] = \max_{\substack{k_0, \dots, k_{m-1} \\ j_t \cdot s_t + k_t - p_{t,\text{begin}} \in [0, dX_{t+2}-1] \text{ for every } t}} X_p[n, c, j_0 \cdot s_0 + k_0, \dots, j_{m-1} \cdot s_{m-1} + k_{m-1}]
 $$
 
 where
@@ -600,25 +612,29 @@ where
 - $k_t \in [0, dK_t-1]$ is the index along spatial axis $t$ of the window, $dK_t$ being the value of `kernel_shape` along that axis,
 - $s_t$ is the value of `strides` along spatial axis $t$,
 - $X_p$ is the tensor obtained by padding $X$ with the values of `pads`, and $X_p[n, c, h_0, \dots, h_{m-1}]$ is one of its elements,
-- the maximum is taken over the elements of $X$ covered by the window, the padded elements being excluded.
+- the maximum is taken over the positions of the window that are elements of $X$, i.e. those for which $j_t \cdot s_t + k_t - p_{t,\text{begin}} \in [0, dX_{t+2}-1]$ for every $t$, the padded elements being excluded.
 
-**The maximum of the integer values.** The maximum is the one of the values of the type, and it is the maximum of the unsigned integers they represent: for `uint8`, the values range from $0$ to $255$ and the maximum of $0$ and $255$ is $255$. The result is one of the elements of $X$, so that no overflow can occur.
+**The maximum of the integer values.** The maximum is the one of the values of the type, and it is the largest of the values of the window in the order of the unsigned integers they represent: for `uint8`, the values range from $0$ to $255$ and the maximum of $0$ and $255$ is $255$. When all the elements of the window are equal, the result is that value. The result is one of the elements of $X$, so that no overflow can occur.
 
-**Padding.** The padding adds $p_{t,\text{begin}}$ elements before and $p_{t,\text{end}}$ elements after the input along spatial axis $t$, where $p_{t,\text{begin}}$ and $p_{t,\text{end}}$ are the two values of `pads` for that axis. The padded elements are not elements of $X$: they are excluded from the maximum, so that the maximum is taken over the elements of $X$ covered by the window only. A window that covers no element of $X$ is not a window of the result: the shape of $Y$ is such that every window covers at least one element of $X$.
+**Padding.** The padding adds $p_{t,\text{begin}}$ elements before and $p_{t,\text{end}}$ elements after the input along spatial axis $t$, where $p_{t,\text{begin}}$ and $p_{t,\text{end}}$ are the two values of `pads` for that axis. The padded elements are not elements of $X$: they are excluded from the maximum, so that the maximum is taken over the elements of $X$ covered by the window only. A window that covers no element of $X$ is not a window of the result: the shape of $Y$ is such that every window covers at least one element of $X$. The precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_UINT_CONSTR_X_0020</span></b>](#E_MAXPOOL_UINT_CONSTR_X_0020) rules this case out, so that the maximum is always taken over at least one element of $X$.
 
 **Shape of the result.** The spatial dimensions of $Y$ are
 
 $$
-dY_{t+2} = \left\lfloor \frac{dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t}{s_t} \right\rfloor + 1
+dY_{t+2} =
+\begin{cases}
+\left\lfloor \frac{dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t}{s_t} \right\rfloor + 1 & \text{if } dX_{t+2} \ge 1 \\
+0 & \text{if } dX_{t+2} = 0
+\end{cases}
 $$
 
-for every $t \in [0, m-1]$, and $dY_0 = dX_0$, $dY_1 = dX_1$. The floor is the one of the `ceil_mode` attribute, which is restricted to $0$ by [<b><span style="font-family: 'Courier New', monospace">R3</span></b>](#R3); the formula above is the one of the ONNX definition with `ceil_mode` disabled and `dilations` equal to $1$.
+for every $t \in [0, m-1]$, and $dY_0 = dX_0$, $dY_1 = dX_1$. The floor is the one of the `ceil_mode` attribute, which is restricted to $0$ by [<b><span style="font-family: 'Courier New', monospace">R3</span></b>](#R3); the first case is the formula of the ONNX definition with `ceil_mode` disabled and `dilations` equal to $1$. The second case is the one of a zero-sized spatial dimension, for which the precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_UINT_CONSTR_X_0020</span></b>](#E_MAXPOOL_UINT_CONSTR_X_0020) gives $p_{t,\text{begin}} + p_{t,\text{end}} \ge dK_t$.
 
-**Tensors with no dimension.** The input tensor $X$ has at least three axes, since the batch axis, the channel axis and at least one spatial axis are required; a rank-0 tensor is not a valid input.
+**Tensors with no dimension.** The input tensor $X$ has at least three axes, since the batch axis, the channel axis and at least one spatial axis are required. An input tensor $X$ of rank 0, 1 or 2 has no spatial axis, and the operator is not applicable to it; the precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_UINT_CONSTR_X_0010</span></b>](#E_MAXPOOL_UINT_CONSTR_X_0010) rules such a call out.
 
-**Zero-sized dimensions.** A spatial dimension of $X$ may have size $0$. The formula above then gives a spatial dimension of $Y$ of size $0$ when $p_{t,\text{begin}} + p_{t,\text{end}} \ge dK_t$, and the corresponding dimension of $Y$ is empty; otherwise the operator is not applicable, since a window would cover no element of $X$. A batch or channel dimension of size $0$ gives a dimension of $Y$ of size $0$, and $Y$ is empty.
+**Zero-sized dimensions.** A spatial dimension of $X$ may have size $0$. The formula above then gives a spatial dimension of $Y$ of size $0$ when $p_{t,\text{begin}} + p_{t,\text{end}} \ge dK_t$: the corresponding dimension of $Y$ is empty, the formula is not evaluated for any index along that axis, and no maximum over an empty window is taken. Otherwise the precondition [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_UINT_CONSTR_X_0020</span></b>](#E_MAXPOOL_UINT_CONSTR_X_0020) rules the call out, so that the formula is never applied to that case. A batch or channel dimension of size $0$ gives a dimension of $Y$ of size $0$, and $Y$ is empty.
 
-**Ties.** When several elements of a window are equal to the maximum, the result is that maximum, and the choice of the element that realizes it is not observable in $Y$. The output $\text{Indices}$ would make that choice observable; it is not supported by this profile, as stated by [<b><span style="font-family: 'Courier New', monospace">R5</span></b>](#R5).
+**Ties.** When several elements of a window are equal to the maximum, the result is that maximum, and the choice of the element that realizes it is not observable in $Y$. The output `Indices` would make that choice observable; it is not supported by this profile, as stated by [<b><span style="font-family: 'Courier New', monospace">R5</span></b>](#R5).
 
 <span style="background: red; color: white; font-size:0.7em;">[END]</br></span>
 
@@ -694,6 +710,6 @@ The result of the max pooling of $X$.
 
 <a id="E_MAXPOOL_UINT_CONSTR_Y_0010"></a>
 - `[E_MAXPOOL_UINT_CONSTR_Y_0010]` Shape definition
-  - Statement: $dY_0 = dX_0$, $dY_1 = dX_1$, and for every spatial axis $t$, $dY_{t+2} = \lfloor (dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t)/s_t \rfloor + 1$.
+  - Statement: $dY_0 = dX_0$, $dY_1 = dX_1$, and for every spatial axis $t$, $dY_{t+2} = \lfloor (dX_{t+2} + p_{t,\text{begin}} + p_{t,\text{end}} - dK_t)/s_t \rfloor + 1$ when $dX_{t+2} \ge 1$, and $dY_{t+2} = 0$ when $dX_{t+2} = 0$.
 - `[E_MAXPOOL_UINT_CONSTR_Y_0020]` Type consistency
   - Statement: see constraint [<b><span style="font-family: 'Courier New', monospace">E_MAXPOOL_UINT_CONSTR_X_0030</span></b>](#E_MAXPOOL_UINT_CONSTR_X_0030) on tensor $X$.

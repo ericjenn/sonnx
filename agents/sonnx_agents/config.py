@@ -23,6 +23,7 @@ PROMPTS_DIR = AGENTS_DIR / "sonnx_agents" / "prompts"
 GUIDELINES = REPO / "informal_corrected.md"
 TEMPLATE = REPO / "informal_spec_template.md"
 REFERENCE_SPEC = REPO / "ops" / "add.md"          # the accepted shape reference
+OPS_DIR = REPO / "ops"                            # where the restriction files are found
 WORKED_CASES = REPO / "verification" / "add" / "cases.py"   # the worked case-set example
 
 DEFAULT_PYTHON = str(Path.home() / "Venvs" / "sonnx" / "bin" / "python")
@@ -87,6 +88,7 @@ class Settings:
     spec_path: Path | None = None      # default: ops/<op>.md, or the run directory if it exists
     force: bool = False                # allow writing over an existing ops/<op>.md
     run_dir: Path | None = None        # default: agents/runs/<Op>/
+    restrictions_dir: Path | None = None   # default: ops/ — where the restriction files live
     onnx_doc: Path | None = None       # a file holding the ONNX operator definition
     fetch_onnx_doc: bool = True
     python: str = DEFAULT_PYTHON       # the interpreter that runs lint_spec.py and specloop.py
@@ -125,6 +127,30 @@ class Settings:
         if self.run_dir is not None:
             return Path(self.run_dir)
         return AGENTS_DIR / "runs" / self.op
+
+    def global_restrictions_path(self) -> Path:
+        """`ops/global_restrictions.md` — the restrictions that apply to every operator.
+
+        Linked by every `## Restrictions` section and never copied into a document, so it
+        is context for an operator's semantics and not part of what a document carries.
+        """
+        return (self.restrictions_dir or OPS_DIR) / "global_restrictions.md"
+
+    def restrictions_path(self) -> Path | None:
+        """`ops/<entry>_restrictions.md`, or the ONNX-case spelling `ops/<Op>_restrictions.md`.
+
+        The rows of this file are carried verbatim into every `## Restrictions` section of
+        the document (see `graph._carries_restrictions`).  The entry spelling is tried
+        first because the repository names its documents lowercase (`ops/maxpool.md`), and
+        the ONNX type case is accepted because the operator file is named after the
+        operator, not after the entry point.  `None` when neither file exists, which is the
+        ordinary case for an operator that introduces no restriction of its own.
+        """
+        ops = self.restrictions_dir or OPS_DIR
+        for name in ("%s_restrictions.md" % self.entry, "%s_restrictions.md" % self.op):
+            if (ops / name).exists():
+                return ops / name
+        return None
 
     def cases_path(self) -> Path:
         """The case module the tester writes.

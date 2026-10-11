@@ -1,0 +1,32 @@
+{"synthetic": false,
+ "schemaVersion": "2025-09-10",
+ "outputs":
+ {"o": ["59b75bd672e832a9.olean"],
+  "m": false,
+  "i": "6e1b6d1e33dd2af1.ilean",
+  "c": "604ddb803d2e7acc.c"},
+ "log":
+ [{"message":
+   ".> LEAN_PATH=/run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean /home/eric/.elan/toolchains/leanprover--lean4---v4.33.1/bin/lean /run/media/eric/Work1/Work/gits/sonnx/lean/MulOp/RealTypes.lean -o /run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean/MulOp/RealTypes.olean -i /run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/lib/lean/MulOp/RealTypes.ilean -c /run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/ir/MulOp/RealTypes.c --setup /run/media/eric/Work1/Work/gits/sonnx/lean/.lake/build/ir/MulOp/RealTypes.setup.json --json",
+   "level": "trace"}],
+ "inputs":
+ [["deps",
+   [["mul_op/MulOp:extraDep", [["@mul_op:extraDep", "00000000000006bb"]]],
+    ["imports",
+     [["MulOp.MulCore transitive imports (legacy)", "0771742b7c6c403d"],
+      ["MulOp.MulCore:importAllArts", "d6d5b45c794e20d0"]]]]],
+  ["libs",
+   [["import dynlibs", "00000000000006bb"],
+    ["package external libraries", "00000000000006bb"],
+    ["module dynlibs", "00000000000006bb"],
+    ["module plugins", "00000000000006bb"]]],
+  ["Lean 4.33.1, commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6",
+   "0051240b7c23c453"],
+  ["/run/media/eric/Work1/Work/gits/sonnx/lean/MulOp/RealTypes.lean",
+   "458b021470bbc279"],
+  ["options", "00000000000006bb"],
+  ["isModule: false", "feefd2a0d3a1847e"],
+  ["Module.name: MulOp.RealTypes", "e7261bbe0a617c47"],
+  ["Package.id?: (some mul_op)", "295be2707c3c052a"],
+  ["Module.leanArgs: #[]", "00000000000006bb"]],
+ "depHash": "405c8a6b2550bbd8"}
