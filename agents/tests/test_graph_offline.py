@@ -18,8 +18,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sonnx_agents import cli, extract, graph, harness  # noqa: E402
-from sonnx_agents.config import Settings  # noqa: E402
+from sonnx_agents import (cli, extract, graph, harness, lean as lean_support,
+                          lean_conformance)  # noqa: E402
+from sonnx_agents.config import REPO, Settings  # noqa: E402
 
 SPEC = """# Contents
 
@@ -35,7 +36,7 @@ Revision 2026-10-04: first issue of this specification.
 
 ## Restrictions
 
-[General restrictions](./global_restrictions.md) are applicable.
+[General restrictions](../global_restrictions.md) are applicable.
 
 No specific restrictions apply to the **Neg** operator.
 
@@ -101,12 +102,12 @@ WRONG_TYPE_SPEC = SPEC.replace(
     "- **Neg** operator for types [`uint8`, `uint16`](#uint)\n").replace(
     "C[i] = -A[i]", "where uint is in {`uint8`, `uint16`}\n\n$$\nC[i] = -A[i]")
 
-# The document a model returns when it keeps the pre-feature link: the sentence every
-# `## Restrictions` section opens with pointed at a `common/` directory that does not exist
-# in this repository before the restriction files moved into `ops/`.  Scenario 31.
+# The document a model returns when it keeps the link the documents carried while they sat
+# directly in `ops/`: the sentence now has one more `../`, because a document lives in its
+# operator's folder.  Scenario 31.
 STALE_LINK_SPEC = SPEC.replace(
-    "[General restrictions](./global_restrictions.md) are applicable.",
-    "[General restrictions](./../common/general_restrictions.md) are applicable.")
+    "[General restrictions](../global_restrictions.md) are applicable.",
+    "[General restrictions](./global_restrictions.md) are applicable.")
 
 # An operator restriction file: one row, the header and the separator that must not be read
 # as rows.  Scenario 32.
@@ -138,7 +139,7 @@ TWO_FAMILY_SPEC = SPEC.replace(
     '<span style="background: red; color: white; font-size:0.7em;">[END]</br></span>\n',
     '<span style="background: red; color: white; font-size:0.7em;">[END]</br></span>\n\n'
     '<a id="float"></a>\n\n# **Neg** (float)\n\n## Restrictions\n\n'
-    '[General restrictions](./global_restrictions.md) are applicable.\n\n'
+    '[General restrictions](../global_restrictions.md) are applicable.\n\n'
     'No specific restrictions apply to the **Neg** operator.\n')
 # and the same document with the row in the first family only: the carry is per section, so
 # a section that says "no specific restrictions" while the file gives one is refused
@@ -213,6 +214,20 @@ def maxpool(x, kernel_shape, strides=None, dilations=None, pads=None, ceil_mode=
     return Y, I
 '''
 
+# The descriptor the fake formalizer may declare, and the answer the fake C tester returns.
+# The rendering and the compilation are faked here — `test_c_stage.py` runs the real ones —
+# so the answer only has to be a program the stage's textual guard accepts.
+CGEN_DESCRIPTOR = '\n\ndef sonnxCGenOp : CGen.Elementwise := ⟨"neg", .sub⟩\n'
+
+CGEN_TEST = '''```c
+#include "sonnx_kernels.h"
+
+/* sonnx_neg_f32, sonnx_neg_f64, sonnx_neg_i32, sonnx_neg_u32 */
+int main(void) {
+  return 0;
+}
+```'''
+
 VERIFIER_OK = '{"ok": true, "findings": [], "notes": "checked"}'
 VERIFIER_BAD = json.dumps({"ok": False, "notes": "one blocking finding", "findings": [
     {"severity": "blocking", "section": "real", "what": "no example",
@@ -240,13 +255,22 @@ class Scenario:
                     "truncated_cases", "junk_cases", "raising_sweeps", "vacuous_cases",
                     "lose_section", "lose_section_after", "wrong_type_spec",
                     "stale_link", "missing_rows", "invented_rows", "spec_answer",
-                    "withdrawing"):
+                    "withdrawing", "lean_bad", "lean_partial", "library_bad", "conformance",
+                    "conformance_generate", "conformance_runner",
+                    "conformance_corpus_source", "cgen_answers", "cgen_descriptor",
+                    "cgen_emit"):
             setattr(self, key, kwargs.get(key))
         self.writer_calls = 0
         self.verifier_calls = 0
         self.implementer_calls = 0
         self.tester_calls = 0
         self.diagnoser_calls = 0
+        self.lean_calls = 0
+        self.runner_calls = 0
+        self.c_tester_calls = 0
+        self.c_compile_calls = 0
+        self.lean_users = []
+        self.c_tester_users = []
         self.seen = []
         # ("implementer"|"tester", thinking) for every artifact call, so that a test can see
         # whether the deliberation was on.  The fake does not model `llm.ask`'s own retry
@@ -310,6 +334,23 @@ class Scenario:
                 return "I have read the document and I have no verdict to give."
             # every mode but "bad" is a verifier that is satisfied with the document
             return VERIFIER_BAD if self.verifier == "bad" else VERIFIER_OK
+        if "Lean 4 formal-specification agent" in role:
+            self.lean_calls += 1
+            self.seen.append("formalizer")
+            self.lean_users.append(user)
+            if self.lean_bad and self.lean_calls <= self.lean_bad:
+                return ("```lean\nimport Sonnx\ndef broken : :=\n-- @trace "
+                        "E_NEG_REAL_FUNC_0010 status=specified decl=broken\n```")
+            imports = "import Sonnx\n" + ("import CGen\n" if self.cgen_descriptor else "")
+            if self.lean_partial:
+                return (imports + "def negSpec : Prop := True\n-- @trace "
+                        "E_NEG_REAL_FUNC_0010 status=partial decl=negSpec "
+                        "limitation=\"a deliberate test gap\"\n")
+            body = (imports + "def negSpec : Prop := True\n"
+                    "-- @trace E_NEG_REAL_FUNC_0010 status=specified decl=negSpec\n")
+            if self.cgen_descriptor:
+                body += CGEN_DESCRIPTOR
+            return "```lean\n%s```" % body
         if "blind implementer" in role:
             self.implementer_calls += 1
             self.seen.append("implementer")
@@ -331,6 +372,16 @@ class Scenario:
                 # the deliberation eats the whole budget, on every call that has one
                 return ""
             return "Here is the module:\n\n```python\n%s```\n" % IMPL
+        if "C implementation tester" in role:
+            self.c_tester_calls += 1
+            self.seen.append("c-tester")
+            self.c_tester_users.append(user)
+            assert "# Contents" in user, "the C tester must be given the document"
+            assert "sonnxCGenOp" in user, \
+                "the C tester must be given the Lean specification it tests against"
+            assert "sonnx_kernels.h" in user, "the C tester must be given the header"
+            assert "sonnx_kernels.c" in user, "the C tester must be given the source"
+            return CGEN_TEST
         if "test agent" in role:
             self.tester_calls += 1
             self.seen.append("tester")
@@ -481,21 +532,119 @@ def run(scenario: Scenario, stale_reports=(), operator_restrictions=None,
     """
     workdir = Path(tempfile.mkdtemp(prefix="sonnx-agents-"))
     for name in stale_reports:
-        (workdir / name).write_text('{"stale": "the attempt before this one"}\n',
-                                    encoding="utf-8")
+        (workdir / "loop").mkdir(exist_ok=True)
+        (workdir / "loop" / name).write_text(
+            '{"stale": "the attempt before this one"}\n', encoding="utf-8")
     ops_dir = workdir / "ops"
     ops_dir.mkdir()
     if operator_restrictions is not None:
         (ops_dir / "neg_restrictions.md").write_text(operator_restrictions, encoding="utf-8")
     if global_restrictions is not None:
         (ops_dir / "global_restrictions.md").write_text(global_restrictions, encoding="utf-8")
+    settings_kwargs.setdefault("lean_conformance_generate",
+                               bool(scenario.conformance_generate))
     settings = Settings(op="Neg", run_dir=workdir, spec_path=workdir / "Neg.md", verbose=False,
                         restrictions_dir=ops_dir,
                         max_iterations=settings_kwargs.pop("max_iterations", 5),
                         max_spec_rounds=settings_kwargs.pop("max_spec_rounds", 3),
                         max_case_repairs=settings_kwargs.pop("max_case_repairs", 2),
                         **settings_kwargs)
+    if settings.lean_only or settings.start_from == "spec":
+        Path(settings.spec_path).write_text(SPEC, encoding="utf-8")
     original_ask, original_lint, original_loop = graph.ask, harness.run_lint, harness.run_specloop
+    original_conformance = lean_support.run_conformance
+    original_runner = graph.write_conformance_runner
+    original_corpus = graph.ensure_conformance_corpus
+    original_profile = lean_conformance.profile
+    original_build = lean_support.build_library
+    original_emit_c = graph._emit_c_files
+    original_compile_c = graph._compile_and_run_c
+    build_calls = {"n": 0}
+
+    def fake_build(*_args, **_kwargs):
+        # building the shared library for real is covered by `test_lean.py`; here the
+        # answers are what is under test.  `library_bad` is 1 for "never builds" and 2
+        # for "builds once, then the library becomes unusable" (scenario 47).
+        build_calls["n"] += 1
+        if scenario.library_bad == 1 or (scenario.library_bad == 2
+                                         and build_calls["n"] > 1):
+            return {"ok": False, "returncode": 1,
+                    "stdout": "Sonnx/Tensor.lean:1:0: error: synthetic library failure",
+                    "command": ["lake", "build", "Sonnx"], "seconds": 0.0}
+        return {"ok": True, "returncode": 0,
+                "stdout": "Build completed successfully.",
+                "command": ["lake", "build", "Sonnx"], "seconds": 0.0}
+
+    def fake_emit_c(_settings, _text):
+        # The C stage's rendering is the CGen library's, verified by `test_c_stage.py`
+        # with the real `lake`; here what is under test is where the node goes and what it
+        # decides when the renderer fails.
+        header, source, emit = (_settings.c_header_path(), _settings.c_source_path(),
+                                _settings.c_emit_path())
+        header.parent.mkdir(parents=True, exist_ok=True)
+        emit.write_text("-- the fake renderer\n", encoding="utf-8")
+        if scenario.cgen_emit == "error":
+            return {"ok": False, "emit": emit, "header": header, "source": source,
+                    "name": "", "binop": "",
+                    "compiler": {"ok": False, "stdout": "synthetic renderer failure"}}
+        header.write_text("void sonnx_neg_f32(const float *a, const float *b, float *c, "
+                          "size_t n);\n", encoding="utf-8")
+        source.write_text('#include "sonnx_kernels.h"\n', encoding="utf-8")
+        return {"ok": True, "emit": emit, "header": header, "source": source,
+                "name": "neg", "binop": "sub", "compiler": {"ok": True, "stdout": ""}}
+
+    def fake_compile_c(_settings, _test_path):
+        # `test_c_stage.py` compiles and runs the real programs; this decides what the node
+        # does with a pass, a reported failure, and an unusable answer.
+        scenario.c_compile_calls += 1
+        result = {"ok": True, "unusable": "", "stage": "run", "command": [], "stdout": "",
+                  "stderr": "", "returncode": 0,
+                  "checks": {"total": 14, "passed": 14, "failed": 0}, "failures": []}
+        if scenario.cgen_answers == "unusable":
+            result.update({"ok": False, "stage": "compile", "returncode": 1,
+                           "unusable": "the test program did not compile: synthetic"})
+        elif scenario.cgen_answers == "fail":
+            result.update({"ok": False, "returncode": 1,
+                           "stdout": "FAIL neg f32: expected 1, got -1\n",
+                           "checks": {"total": 14, "passed": 13, "failed": 1},
+                           "failures": ["FAIL neg f32: expected 1, got -1"]})
+        return result
+
+    def fake_conformance(_settings, *args, **kwargs):
+        value = scenario.conformance
+        return dict(value) if isinstance(value, dict) else value(_settings)
+
+    def fake_corpus(_state, _settings):
+        path = _settings.lean_conformance_corpus_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(CASES, encoding="utf-8")
+        return {"path": path, "source": scenario.conformance_corpus_source or "published",
+                "spec_md5": harness.md5(Path(_state["spec_path"]))}
+
+    def fake_profile(_path, _python=None):
+        return {"case_count_sampled": 1, "arities": [1], "dtypes": ["float64"],
+                "attr_keys": [], "outputs": ["out"], "output_types": {},
+                "has_sweeps": False, "samples": []}
+
+    def fake_runner(_state, _settings, _corpus, _profile):
+        # The pipeline wiring is under test; the Lean compile and smoke run of a real
+        # runner are covered by test_lean_conformance.py with a fake lake.
+        scenario.runner_calls += 1
+        if scenario.conformance_runner == "fail":
+            return {"ok": False, "error": "the test runner never compiled",
+                    "artifacts": [], "attempts": []}
+        path = _settings.lean_conformance_runner_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("def main : IO Unit := pure ()\n", encoding="utf-8")
+        return {"ok": True, "path": str(path), "artifacts": [str(path)],
+                "attempts": [str(path)], "compiler": {"ok": True, "stdout": ""}}
+
+    if scenario.conformance is not None:
+        lean_support.run_conformance = fake_conformance
+    if scenario.conformance_generate:
+        graph.write_conformance_runner = fake_runner
+        graph.ensure_conformance_corpus = fake_corpus
+        lean_conformance.profile = fake_profile
 
     def fake_ask(_settings, system, user, max_tokens=None, thinking="auto"):
         result = scenario.ask(system, user, settings, max_tokens=max_tokens, thinking=thinking)
@@ -508,6 +657,9 @@ def run(scenario: Scenario, stale_reports=(), operator_restrictions=None,
     graph.ask = fake_ask
     harness.run_lint = scenario.lint
     harness.run_specloop = scenario.specloop
+    lean_support.build_library = fake_build
+    graph._emit_c_files = fake_emit_c
+    graph._compile_and_run_c = fake_compile_c
     try:
         state = graph.build_graph(settings).invoke(
             {"op": "Neg", "opset": 14, "spec_path": str(settings.resolved_spec_path()),
@@ -517,6 +669,13 @@ def run(scenario: Scenario, stale_reports=(), operator_restrictions=None,
     finally:
         graph.ask, harness.run_lint, harness.run_specloop = \
             original_ask, original_lint, original_loop
+        lean_support.run_conformance = original_conformance
+        graph.write_conformance_runner = original_runner
+        graph.ensure_conformance_corpus = original_corpus
+        lean_conformance.profile = original_profile
+        lean_support.build_library = original_build
+        graph._emit_c_files = original_emit_c
+        graph._compile_and_run_c = original_compile_c
     state["_dir"] = str(workdir)
     return state
 
@@ -532,6 +691,7 @@ def check(name: str, got, want) -> None:
 
 def main() -> int:
     print("the scheduler, with canned agents")
+    check("the shared library builds", lean_support.build_library()["ok"], True)
 
     print("\n1. the document complies, the implementation passes")
     s = Scenario(verifier="ok", fail_times=0)
@@ -801,7 +961,7 @@ def main() -> int:
     # next reader can tell a bad answer from a bad reading of a good one
     s = Scenario(verifier="ok", fail_times=0, blank_impl=9)
     state = run(s)
-    kept = sorted(Path(state["_dir"]).glob("*-rejected-*.txt"))
+    kept = sorted((Path(state["_dir"]) / "loop").glob("*-rejected-*.txt"))
     check("the refused answers were kept", [p.name for p in kept],
           ["iter-001-impl-rejected-1.txt", "iter-001-impl-rejected-2.txt"])
     check("and they hold the reason", kept[0].read_text(encoding="utf-8").splitlines()[0],
@@ -858,7 +1018,8 @@ def main() -> int:
     s = Scenario(verifier="ok", fail_times=9, diagnosis="test", change_cases=True)
     state = run(s, max_case_rounds=1)
     # the first run keeps the name a single run always had; the runs after it are numbered
-    reports = sorted(p.name for p in Path(state["_dir"]).glob("iter-001-report*.json"))
+    reports = sorted(p.name for p in (Path(state["_dir"]) / "loop").glob(
+        "iter-001-report*.json"))
     check("each harness run kept its report", reports,
           ["iter-001-report-2.json", "iter-001-report.json"])
 
@@ -941,7 +1102,7 @@ def main() -> int:
     # the run's history records the round by that path and the loop directory the run publishes
     # is what a reader judges it by: seen on 2026-10-04, the **Atan** record names
     # `iter-001-report-4.json` for a round killed at 600 s and the published
-    # `verification/atan/loop/` did not contain it.  This runs the real harness twice — on a real
+    # `ops/atan/loop/` did not contain it.  This runs the real harness twice — on a real
     # module with one character too many, and on a module that sleeps past the limit.
     workdir = Path(tempfile.mkdtemp(prefix="sonnx-agents-"))
     (workdir / "Neg.md").write_text(SPEC, encoding="utf-8")
@@ -1183,9 +1344,9 @@ def main() -> int:
     # The run directory is shared by every attempt at the operator, and the report names
     # repeat from one attempt to the next (`iter-001-report-2.json`).  A publish that copies
     # every file of that shape publishes the attempt before's evidence as this run's.
-    # Measured on 2026-10-05: `agents/runs/MaxPool/` held ten reports of attempt 4 when
+    # Measured on 2026-10-05: `ops/maxpool/` held ten reports of attempt 4 when
     # attempt 6 began, and attempt 6 would have published them into
-    # `verification/maxpool/loop/`.  A run now names the reports it wrote, and the record —
+    # `ops/maxpool/loop/`.  A run now names the reports it wrote, and the record —
     # not a directory listing — is what is published.
     s = Scenario(verifier="ok", fail_times=0, broken_cases=1)
     state = run(s, stale_reports=["iter-001-report-7.json"])
@@ -1195,18 +1356,13 @@ def main() -> int:
     check("and does not name the attempt before's",
           "iter-001-report-7.json" in state["reports"], False)
     check("which is still on disk, where it was",
-          (workdir / "iter-001-report-7.json").exists(), True)
+          (workdir / "loop" / "iter-001-report-7.json").exists(), True)
 
-    settings = Settings(op="Neg", run_dir=workdir, spec_path=Path(state["spec_path"]),
-                        verbose=False)
     repo = Path(tempfile.mkdtemp(prefix="sonnx-repo-"))
-    original_repo = cli.REPO
-    cli.REPO = repo
-    try:
-        cli.publish(settings, state)
-    finally:
-        cli.REPO = original_repo
-    loop = repo / "verification" / settings.entry / "loop"
+    settings = Settings(op="Neg", run_dir=workdir, spec_path=Path(state["spec_path"]),
+                        ops_dir=repo / "ops", verbose=False)
+    cli.publish(settings, state)
+    loop = repo / "ops" / settings.entry / "loop"
     check("the published loop holds this run's reports",
           sorted(p.name for p in loop.glob("*.json")),
           ["iter-001-report-2.json", "iter-001-report.json"])
@@ -1214,28 +1370,26 @@ def main() -> int:
     check("the implementation of this run is published too",
           sorted(p.name for p in loop.glob("iter-*impl.py")), ["iter-001-impl.py"])
     check("and the document is the one this run wrote",
-          harness.md5(repo / "ops" / "neg.md"), state["spec_md5"])
+          harness.md5(repo / "ops" / "neg" / "neg.md"), state["spec_md5"])
 
     # a record written before a run named its reports is read the old way: the guard changes
     # what a new run publishes, it does not make an old run unpublishable
     earlier = {k: v for k, v in state.items() if k != "reports"}
     repo2 = Path(tempfile.mkdtemp(prefix="sonnx-repo-"))
-    cli.REPO = repo2
-    try:
-        cli.publish(settings, earlier)
-    finally:
-        cli.REPO = original_repo
-    loop2 = repo2 / "verification" / settings.entry / "loop"
+    settings2 = Settings(op="Neg", run_dir=workdir, spec_path=Path(state["spec_path"]),
+                         ops_dir=repo2 / "ops", verbose=False)
+    cli.publish(settings2, earlier)
+    loop2 = repo2 / "ops" / settings.entry / "loop"
     check("a record with no list of reports falls back to the directory",
           sorted(p.name for p in loop2.glob("*.json")),
           ["iter-001-report-2.json", "iter-001-report-7.json", "iter-001-report.json"])
 
     print("\n31. a restriction section that keeps the old link")
-    # The sentence every family section opens with points at `ops/global_restrictions.md`.
-    # The pre-feature link pointed at a `common/` directory that does not exist in this
-    # repository, and a document that keeps it is answering the guidelines as they were: it
-    # is refused at the writer, like a type family ONNX does not admit (scenario 29), so no
-    # round of the loop and no compliance review is spent on it.
+    # The sentence every family section opens with points at `ops/global_restrictions.md`
+    # from the operator's folder.  A document that keeps the `./` link it carried while it
+    # sat directly in `ops/` is answering the guidelines as they were: it is refused at the
+    # writer, like a type family ONNX does not admit (scenario 29), so no round of the loop
+    # and no compliance review is spent on it.
     workdir = Path(tempfile.mkdtemp(prefix="sonnx-ops-"))
     ops = workdir / "ops"
     settings = Settings(op="Neg", run_dir=workdir, spec_path=workdir / "Neg.md", verbose=False,
@@ -1421,6 +1575,269 @@ def main() -> int:
     check("a reviewer that corrects itself", outcome(state), "converged")
     check("costs one more review", s.verifier_calls, 2)
     check("and still no amendment", s.writer_calls, 1)
+
+    print("\n38. Lean-only generation compiles and bypasses Python verification")
+    s = Scenario(verifier="ok")
+    state = run(s, lean=True, lean_only=True, start_from="spec")
+    check("outcome", outcome(state), "formalized")
+    check("formalizer calls", s.lean_calls, 1)
+    check("Python agents bypassed", (s.implementer_calls, s.tester_calls, s.diagnoser_calls),
+          (0, 0, 0))
+    check("compiled artifact promoted", Path(state["lean_path"]).is_file(), True)
+    check("source digest recorded", state["lean_source_md5"],
+          harness.md5(Path(state["spec_path"])))
+    check("source excerpt in Lean", "C[i] = -A[i]" in Path(state["lean_path"]).read_text(), True)
+    check("no conformance driver leaves the stage unchanged",
+          state["lean_conformance_status"], "unavailable")
+
+    print("\n39. Lean generation is part of the full loop and is regenerated after amendment")
+    s = Scenario(verifier="ok", fail_times=0)
+    state = run(s, lean=True)
+    check("full outcome", outcome(state), "converged")
+    check("formalizer before implementer", s.seen,
+          ["writer", "verifier", "formalizer", "implementer", "tester", "specloop"])
+    s = Scenario(verifier="ok", fail_times=1, diagnosis="spec", change_spec=True)
+    state = run(s, lean=True)
+    check("amended run still converges", outcome(state), "converged")
+    check("Lean regenerated after amendment", s.lean_calls, 2)
+    check("final digest is the amended document", state["lean_source_md5"], state["spec_md5"])
+
+    print("\n40. Lean diagnostics are repaired, and partial coverage is not success")
+    s = Scenario(verifier="ok", lean_bad=1)
+    state = run(s, lean=True, lean_only=True, start_from="spec")
+    check("compiler repair converges", outcome(state), "formalized")
+    check("repair attempts", s.lean_calls, 2)
+    check("diagnostic reaches repair", "Lean compiler" in s.lean_users[-1], True)
+    s = Scenario(verifier="ok", lean_partial=True)
+    state = run(s, lean=True, lean_only=True, start_from="spec")
+    check("partial outcome", outcome(state), "lean-partial")
+    check("partial artifact retained", Path(state["lean_path"]).is_file(), True)
+    check("partial not valid for convergence", state["lean_ok"], False)
+
+    print("\n41. repeated Lean failure is explicit and does not invoke Python")
+    s = Scenario(verifier="ok", lean_bad=9)
+    state = run(s, lean=True, lean_only=True, start_from="spec", max_lean_retries=1)
+    check("failure outcome", outcome(state), "lean-failed")
+    check("bounded attempts", s.lean_calls, 2)
+    check("no official artifact", state.get("lean_path"), None)
+    check("Python still bypassed", (s.implementer_calls, s.tester_calls), (0, 0))
+
+    print("\n42. Lean conformance is part of the Lean stage")
+    passed = {"status": "passed", "ok": True, "blocking": False,
+              "report_path": str(Path(tempfile.mkdtemp()) / "LeanConformance.json"),
+              "report": {"ok": True, "summary": {"total": 3, "passed": 3, "failed": 0}},
+              "error": ""}
+    s = Scenario(verifier="ok", conformance=passed)
+    state = run(s, lean=True, lean_only=True, start_from="spec")
+    check("conformance pass keeps formalized", outcome(state), "formalized")
+    check("status recorded", state["lean_conformance_status"], "passed")
+    check("run record carries the result", state["result"]["lean_conformance_ok"], True)
+    check("Python still bypassed", (s.implementer_calls, s.tester_calls), (0, 0))
+
+    failed = {"status": "failed", "ok": False, "blocking": True,
+              "report_path": str(Path(tempfile.mkdtemp()) / "LeanConformance.json"),
+              "report": {"ok": False, "summary": {"total": 3, "passed": 2, "failed": 1}},
+              "error": "the Lean conformance check did not pass"}
+    s = Scenario(verifier="ok", conformance=failed)
+    state = run(s, lean=True, lean_only=True, start_from="spec")
+    check("conformance failure is its own outcome", outcome(state), "lean-conformance-failed")
+    check("compiled artifact is retained", Path(state["lean_path"]).is_file(), True)
+    check("formalized is not claimed", state["lean_ok"], True)
+    check("failure is recorded", state["result"]["lean_conformance_status"], "failed")
+    check("Python still bypassed", (s.implementer_calls, s.tester_calls), (0, 0))
+
+    s = Scenario(verifier="ok", fail_times=0, conformance=failed)
+    state = run(s, lean=True)
+    check("failure also stops the full loop", outcome(state), "lean-conformance-failed")
+    check("implementer never runs after the failure", s.implementer_calls, 0)
+
+    print("\n43. the runner, driver and manifest are generated for a complete artifact")
+    passed = {"status": "passed", "ok": True, "blocking": False,
+              "report_path": str(Path(tempfile.mkdtemp()) / "LeanConformance.json"),
+              "report": {"generated_by": "sonnx-lean-pipeline-conformance",
+                         "protocol": "sonnx-conformance/1",
+                         "ok": True,
+                         "summary": {"total": 3, "compared": 3, "passed": 3, "failed": 0,
+                                     "unsupported": 1}},
+              "error": ""}
+    s = Scenario(verifier="ok", conformance=passed, conformance_generate=True)
+    state = run(s, lean=True, lean_only=True, start_from="spec")
+    check("outcome", outcome(state), "formalized")
+    check("one runner generated", s.runner_calls, 1)
+    check("generated flag recorded", state["lean_conformance_generated"], True)
+    check("runner promoted", Path(state["lean_conformance_runner"]).is_file(), True)
+    check("driver written", Path(state["lean_conformance_driver"]).is_file(), True)
+    check("manifest written", Path(state["lean_conformance_manifest"]).is_file(), True)
+    check("corpus frozen beside the runner", Path(state["lean_conformance_corpus"]).is_file(), True)
+    check("corpus source recorded", state["lean_conformance_corpus_source"], "published")
+    check("run record carries the generated artifacts",
+          bool(state["result"]["lean_conformance_runner"]), True)
+
+    print("\n44. an unusable generated runner is its own outcome, not a mismatch")
+    s = Scenario(verifier="ok", conformance=passed, conformance_generate=True,
+                 conformance_runner="fail")
+    state = run(s, lean=True, lean_only=True, start_from="spec")
+    check("outcome", outcome(state), "lean-conformance-error")
+    check("the runner was attempted", s.runner_calls, 1)
+    check("status recorded", state["lean_conformance_status"], "runner-unusable")
+    check("no conformance report claimed", state["lean_conformance_ok"], False)
+
+    print("\n45. a partial Lean artifact generates no runner")
+    s = Scenario(verifier="ok", lean_partial=True, conformance_generate=True)
+    state = run(s, lean=True, lean_only=True, start_from="spec")
+    check("outcome", outcome(state), "lean-partial")
+    check("no runner generated", s.runner_calls, 0)
+    check("stage marked skipped", state["lean_conformance_status"], "skipped-partial")
+
+    print("\n46. a shared library that does not build fails before the model is asked")
+    s = Scenario(verifier="ok", library_bad=1)
+    state = run(s, lean=True, lean_only=True, start_from="spec")
+    check("outcome", outcome(state), "lean-failed")
+    check("the formalizer was never asked", s.lean_calls, 0)
+    check("the failure names the library",
+          "shared Sonnx library does not build" in state["lean_error"], True)
+    check("no artifact claimed", state.get("lean_path"), None)
+    check("Python still bypassed", (s.implementer_calls, s.tester_calls), (0, 0))
+
+    print("\n47. a library that stops building after formalization blocks conformance")
+    s = Scenario(verifier="ok", conformance_generate=True, library_bad=2)
+    state = run(s, lean=True, lean_only=True, start_from="spec")
+    check("outcome", outcome(state), "lean-conformance-error")
+    check("artifact compiled first", state["lean_ok"], True)
+    check("status recorded", state["lean_conformance_status"], "library-unusable")
+    check("no runner generated", s.runner_calls, 0)
+    check("no conformance claimed", state["lean_conformance_ok"], False)
+
+    print("\n48. C is generated from the descriptor and passes before the Python loop")
+    # The C stage sits between the Lean conformance check and the implementer: the C is
+    # rendered from the Lean module's own descriptor, and the C tester's program is the
+    # evidence.  The rendering and the compilation are faked here; `test_c_stage.py` runs
+    # the real ones.
+    s = Scenario(verifier="ok", fail_times=0, cgen_answers="pass", cgen_descriptor=True)
+    state = run(s, lean=True, cgen=True)
+    check("outcome", outcome(state), "converged")
+    check("the C tester ran once", s.c_tester_calls, 1)
+    check("and before the implementer", s.seen,
+          ["writer", "verifier", "formalizer", "c-tester", "implementer", "tester",
+           "specloop"])
+    check("the accepted artifact carries the descriptor",
+          "sonnxCGenOp" in Path(state["lean_path"]).read_text(encoding="utf-8"), True)
+    check("the C passed", state["cgen_ok"], True)
+    check("the report counts the checks", state["cgen_report"]["checks"],
+          {"total": 14, "passed": 14, "failed": 0})
+    check("the run record carries the verdict", state["result"]["cgen_status"], "passed")
+
+    print("\n49. Lean-only generation with C stops after the C evidence")
+    s = Scenario(verifier="ok", cgen_answers="pass", cgen_descriptor=True)
+    state = run(s, lean=True, lean_only=True, start_from="spec", cgen=True)
+    check("outcome", outcome(state), "formalized")
+    check("no Python agent ran", (s.implementer_calls, s.tester_calls, s.diagnoser_calls),
+          (0, 0, 0))
+    check("the C tester ran", s.c_tester_calls, 1)
+    check("the C passed", state["cgen_ok"], True)
+
+    print("\n50. a C test that fails is final")
+    # A reported failure is evidence and is not retried: asking again would let the agent
+    # weaken the expectation until the generated C passes.
+    s = Scenario(verifier="ok", fail_times=0, cgen_answers="fail", cgen_descriptor=True)
+    state = run(s, lean=True, cgen=True)
+    check("outcome", outcome(state), "c-failed")
+    check("the tester was asked once", s.c_tester_calls, 1)
+    check("the implementer never ran", s.implementer_calls, 0)
+    check("the failing line is kept", state["cgen_report"]["failures"],
+          ["FAIL neg f32: expected 1, got -1"])
+    check("the run record carries the failure", state["result"]["cgen_status"], "failed")
+
+    print("\n51. an unusable C program is asked for again, within its budget")
+    s = Scenario(verifier="ok", fail_times=0, cgen_answers="unusable", cgen_descriptor=True)
+    state = run(s, lean=True, cgen=True, max_c_retries=1)
+    check("outcome", outcome(state), "c-failed")
+    check("the tester was asked twice", s.c_tester_calls, 2)
+    check("and told what was wrong", "did not compile" in s.c_tester_users[-1], True)
+    check("the reason is recorded", "no usable C test program" in state["cgen_error"], True)
+
+    print("\n52. an operator without a C descriptor is unsupported, not failed")
+    s = Scenario(verifier="ok", fail_times=0, cgen_descriptor=False)
+    state = run(s, lean=True, lean_only=True, start_from="spec", cgen=True)
+    check("outcome", outcome(state), "formalized")
+    check("C is recorded as unsupported", state["cgen_status"], "unsupported")
+    check("the reason names the declaration", "sonnxCGenOp" in state["cgen_error"], True)
+    check("the C tester was never asked", s.c_tester_calls, 0)
+
+    s = Scenario(verifier="ok", fail_times=0, cgen_descriptor=False)
+    state = run(s, lean=True, cgen=True)
+    check("the full loop still converges", outcome(state), "converged")
+    check("with no C evidence claimed", state["cgen_ok"], False)
+    check("and no C tester call", s.c_tester_calls, 0)
+
+    print("\n53. a renderer that fails stops the run")
+    s = Scenario(verifier="ok", fail_times=0, cgen_descriptor=True, cgen_emit="error")
+    state = run(s, lean=True, lean_only=True, start_from="spec", cgen=True)
+    check("outcome", outcome(state), "c-failed")
+    check("the error names the renderer", "did not render" in state["cgen_error"], True)
+    check("the tester was never asked", s.c_tester_calls, 0)
+
+    print("\n54. the C stage is asked for on the command line")
+    try:
+        cli.parse_args(["--op", "Neg", "--c"])
+    except SystemExit as exc:
+        code = exc.code
+    else:
+        code = None
+    check("--c without --lean is refused", code, 2)
+    parsed = cli.parse_args(["--op", "Neg", "--lean", "--c", "--cc", "gcc",
+                             "--max-c-retries", "1", "--c-timeout", "9"])
+    check("--c enables the stage", parsed.cgen, True)
+    check("--cc selects the compiler", parsed.c_compiler, "gcc")
+    check("the C budget is a parameter", (parsed.max_c_retries, parsed.c_timeout), (1, 9))
+
+    print("\n55. a run writes into the operator's folder")
+    # The default run directory is the operator's own folder: document, loop, Lean and C
+    # all live there.  A scratch run must not replace an existing document silently, and a
+    # publication of a run that is already in place copies nothing.
+    default = Settings(op="Neg", verbose=False)
+    check("the default run directory is the operator folder",
+          default.resolved_run_dir(), REPO / "ops" / "neg")
+    check("and the document lives in it",
+          default.resolved_spec_path(), REPO / "ops" / "neg" / "neg.md")
+    check("the loop holds the implementation",
+          default.impl_path(1), REPO / "ops" / "neg" / "loop" / "iter-001-impl.py")
+
+    workdir = Path(tempfile.mkdtemp(prefix="sonnx-operator-"))
+    existing = workdir / "ops" / "neg" / "neg.md"
+    existing.parent.mkdir(parents=True)
+    existing.write_text("published\n", encoding="utf-8")
+    scratch = Settings(op="Neg", ops_dir=workdir / "ops", verbose=False)
+    check("a scratch run on an existing document is refused",
+          "exists" in cli.existing_document_problem(scratch), True)
+    check("--force allows it",
+          cli.existing_document_problem(
+              Settings(op="Neg", ops_dir=workdir / "ops", force=True, verbose=False)), "")
+    check("--start-from spec allows it",
+          cli.existing_document_problem(
+              Settings(op="Neg", ops_dir=workdir / "ops", start_from="spec",
+                       verbose=False)), "")
+    check("--lean-only allows it",
+          cli.existing_document_problem(
+              Settings(op="Neg", ops_dir=workdir / "ops", lean_only=True, verbose=False)), "")
+    check("an explicit --run-dir does not trigger the guard",
+          cli.existing_document_problem(
+              Settings(op="Neg", run_dir=workdir / "scratch", verbose=False)), "")
+
+    same = workdir / "in-place"
+    operator = same / "ops" / "neg"
+    operator.mkdir(parents=True)
+    (operator / "neg.md").write_text("the document\n", encoding="utf-8")
+    (operator / "cases.py").write_text("def cases():\n    return []\n", encoding="utf-8")
+    state = {"spec_path": str(operator / "neg.md"),
+             "cases_path": str(operator / "cases.py"), "history": [], "reports": [],
+             "iteration": 0}
+    cli.publish(Settings(op="Neg", run_dir=operator, ops_dir=same / "ops",
+                         verbose=False), state)
+    check("publishing a run already in place leaves the document alone",
+          (operator / "neg.md").read_text(encoding="utf-8"), "the document\n")
+    check("and the case module", (operator / "cases.py").is_file(), True)
+    check("the loop directory exists", (operator / "loop").is_dir(), True)
 
     print("\nall scenarios hold")
     return 0

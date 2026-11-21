@@ -1,11 +1,13 @@
 # The multi-agent specification system
 
 A LangGraph implementation of the SONNX operator-specification skill
-(`.claude/skills/operator-spec/`). Five agents, each with its own system prompt and its own
+(`.claude/skills/operator-spec/`). Eight agents, each with its own system prompt and its own
 view of the work, scheduled by a state machine that decides when the loop may stop. The
 artifacts are files — the document, the implementation, the case module, the harness's JSON
-report — and the mechanical checks are the skill's own programs, run as subprocesses so the
-system cannot drift from the skill it implements.
+report, and, when the Lean stage runs, the formal specification, its executable runner, the
+generated driver and the manifest that binds them, and when the C stage runs, the generated
+kernels and the test program that exercises them — and the mechanical checks are the skill's
+own programs, run as subprocesses so the system cannot drift from the skill it implements.
 
 ```
 ~/Venvs/sonnx/bin/python agents/run.py --op Neg
@@ -13,22 +15,147 @@ system cannot drift from the skill it implements.
 
 ## The agents
 
-| agent | reads | writes | answers |
-|---|---|---|---|
-| **writer** — the specification | the guidelines, the skeleton, an accepted spec for shape, the ONNX definition, the restriction files, the findings against the previous draft | `ops/<op>.md` (CRLF, the guidelines' form) | what is the operator |
-| **compliance verifier** | the document, the guidelines, the review checklist, the linter's output, the types the operator admits and the per-family verdict computed from them, the restriction files | a JSON verdict | does the document say what the guidelines require |
-| **blind implementer** | **the document alone** | `iter-NNN-impl.py` + its `DECISION:` points | what does the document actually say |
-| **test agent** | the document, the implementation, the harness contract, an accepted case module, the restriction files | `cases.py` + the harness report | does the implementation comply with the document, and with ONNX Runtime |
-| **adjudicator** | the failing report, the document, the implementation and its decisions, the case module | a JSON verdict: `spec`, `code`, `test` or `stop` | where is the fault |
+| agent | node | reads | writes | answers |
+|---|---|---|---|---|
+| **writer** — the specification | `write_spec` | the guidelines, the skeleton, an accepted spec for shape, the ONNX definition, the restriction files, the findings against the previous draft | `ops/<op>/<op>.md` (CRLF, the guidelines' form) | what is the operator |
+| **compliance verifier** | `check_spec` | the document, the guidelines, the review checklist, the linter's output, the types the operator admits and the per-family verdict computed from them, the restriction files | a JSON verdict | does the document say what the guidelines require |
+| **Lean formalizer** (optional) | `formalize_lean` | the shared `Sonnx` Lean library, the accepted document and its canonical requirement/example inventory, then compiler and trace findings on repairs | a Lean 4 module, source-trace manifest and compiler report | what is the corresponding formal specification, and what remains partial |
+| **Lean conformance** (optional) | `conform_lean` | the shared `Sonnx` Lean library, the accepted document, the compiled formal specification, the corpus profile and the protocol | `lean/LeanConformance.lean`, `lean_conformance.py`, the frozen corpus, the report and the freshness manifest | does the executable implementation reproduce the corpus under ONNX Runtime |
+| **C tester** (optional) | `test_c` | the accepted document, the restriction files, the formal specification and the generated header and source | `c/c_tests.c` + `c/c-report.json` | does the C generated from the formal specification compute what the document says |
+| **blind implementer** | `implement` | **the document alone** | `iter-NNN-impl.py` + its `DECISION:` points | what does the document actually say |
+| **test agent** | `test` | the document, the implementation, the harness contract, an accepted case module, the restriction files | `cases.py` + the harness report | does the implementation comply with the document, and with ONNX Runtime |
+| **adjudicator** | `diagnose` | the failing report, the document, the implementation and its decisions, the case module | a JSON verdict: `spec`, `code`, `test` or `stop` | where is the fault |
 
-The first two are the skill's stages 0–2 (draft, review, amend); the last three are stage 3
-(verify) with its classification step; the run record is stage 4.
+The first two are the skill's stages 0–2 (draft, review, amend); the two Lean agents are the
+optional formalization and conformance work (stage 2a), and the C stage renders and tests C
+from what the formalizer declared; the last three are stage 3 (verify) with its
+classification step; the run record is stage 4.
+
+### What each agent does, and what it is not allowed to do
+
+- **Writer.** The only agent that changes the document. It drafts or amends
+  `ops/<op>/<op>.md` from the guidelines, the accepted shape of an earlier document, the ONNX
+  definition and the findings against its last draft. It never sees the implementation, the
+  case module or the harness report. Its answer is refused and asked for again — inside the
+  same node, without spending a round — when it stops in the middle (the skill's linter's own
+  red-span test), when its Contents announces a section it does not deliver, when a
+  restriction row is dropped, invented, reordered or reworded, or when it announces a type
+  family the operator's schema does not admit. The run writes into the operator's folder, so
+  a scratch run refuses to start on an existing document unless `--force` is given (see
+  `existing_document_problem`); `--start-from spec` reads and amends it instead.
+- **Compliance verifier.** Runs only after the mechanical linter, and a document has to pass
+  both. It is given the document, the guidelines, the checklist, the linter's output, the
+  operator's admitted types and the per-family verdict computed from the schema — never asked
+  to recall ONNX itself. It answers one JSON verdict: blocking findings, minor findings, or
+  `ok`. Its deliberation is off by default (`--verdict-thinking off`), because a whole-document
+  review that thinks spends the whole output budget without answering. A verifier that returns
+  no readable verdict stops the run (`verifier-failed`); it never counts as a defect of the
+  document.
+- **Lean formalizer.** Optional (`--lean`, `--lean-only`). Turns the accepted document into
+  `FormalSpec.lean`, which imports the shared `Sonnx` library (`lean/Sonnx/`) instead of
+  restating the tensor, broadcasting, integer or floating-point model. It carries one exact
+  `@trace` marker per defining requirement and example. The model writes the module;
+  deterministic code supplies the source spans and excerpts from the document, adds the source
+  MD5 and the shared-library digest, rejects proof escapes and imports outside the library, and
+  compiles with Lake. Coverage is reported as `specified`, `proved`, `example_only`, `partial`
+  or `deferred`; an artifact whose requirements are not all `specified` or `proved` is
+  `lean-partial`, never a complete formalization claim.
+- **Lean conformance.** Optional, and only for a trace-complete artifact. The model writes the
+  executable Lean runner, which also imports `Sonnx`; it answers protocol
+  `sonnx-conformance/1`; the corpus freeze and profile, the Python driver and the freshness
+  manifest are written deterministically. The driver compares Lean's answers with ONNX Runtime
+  over the corpus's `cases()` and its replayed `sweeps()`. This is evidence over the corpus,
+  not a proof of the generated predicates, and a partial artifact gets no runner at all.
+- **C tester.** Optional (`--c`, with `--lean` or `--lean-only`). Writes one standalone C
+  program against the generated header and source — from the document's boundaries and the
+  formal specification's examples and relations, never by calling the kernel to obtain its
+  own expectation — and the pipeline, not the agent, compiles it (`cc -std=c11 -Wall -Wextra
+  -Werror -O2`) and runs it. It prints one `ok <case>` or `FAIL <case>: expected …, got …`
+  line per compared case and exits 0 only with no failure. An answer that does not compile,
+  prints nothing comparable, or compares fewer than twelve cases is asked for again
+  (`--max-c-retries`), and a FAIL is terminal: the C stage never re-runs the tester on a
+  failure, because a retry would let it weaken its expectations until the kernel passed.
+- **Blind implementer.** The only reader that sees the document and nothing else: no ONNX
+  definition, no harness, no cases, no restrictions, no findings, not even the operator's own
+  restriction rows except as the document carries them. It writes one Python module with a
+  `DECISION:` point for every place the document left a choice. Its answer is parsed before it
+  is written: empty, non-Python and modules without `def <entry>` are asked for again, a
+  truncated answer with twice the response budget, and an answer that is still unusable stops
+  the run (`impl-unusable`) instead of blaming the document.
+- **Test agent.** Writes the operator's validation corpus (`cases.py`) and keeps it honest. The
+  harness that runs it is a subprocess, not the model. Inside its node it repairs a module that
+  raises against the traceback, requires a `COVERAGE` dictionary over the document's Contents,
+  and refuses a case set that compared nothing (all cases open is not a pass). On an
+  adjudicated failure it is asked for a revised case set, against the adjudicator's
+  instruction and the failing report, with its own budget (`--max-case-rounds`).
+- **Adjudicator.** Called only when the harness reports a real failure. It reads the failing
+  report, the document, the implementation and its `DECISION:` points, and the case module,
+  and answers one of four verdicts — the document (`spec`), the code (`code`), the test
+  (`test`) or `stop` — with a reason and an instruction. The instruction is the whole of what
+  the tester sees, because the tester never sees the reason. Its verdicts are the only route
+  by which the loop may correct the implementation; the bias remains that a failing reading is
+  evidence about the specification.
 
 The restriction files are discovered from the operator's name — `ops/global_restrictions.md`
 and `ops/<entry>_restrictions.md`, with `ops/<Op>_restrictions.md` accepted as the ONNX-case
 spelling — and there is no flag for them (see *The restriction files* below). The
 implementer is the one agent that never sees them: the operator's rows reach it only inside
 the document it is given.
+
+## The pipeline steps
+
+The graph is a small state machine. Every step below is one node; the "who acts" column says
+which part is a model call and which is deterministic code. No step chooses its successor: the
+routing rules at the bottom of this section do, from the state the step wrote.
+
+| # | node | who acts | what the step does | continues to |
+|---|---|---|---|---|
+| 1 | `write_spec` | writer — one model call, retried on a refused answer | drafts the document, or amends the accepted one against the findings | `check_spec` |
+| 2 | `check_spec` | `lint_spec.py` (subprocess), then the compliance verifier — one model call | reads the document mechanically and against the guidelines; writes `lint` and `review` into the state | `write_spec` on a blocking finding; `formalize_lean` under `--lean`, else `implement`; a finish node on a guard |
+| 3 | `formalize_lean` | Lean formalizer — one model call, retried on compiler or trace findings; deterministic tooling | produces `FormalSpec.lean`, extracts and checks its trace, compiles it with Lake | `conform_lean` when trace-complete; `lean-partial` or `lean-failed` otherwise |
+| 4 | `conform_lean` | Lean conformance — the runner is a model call, everything else deterministic | ensures and profiles the corpus, has the model write the runner and compiles and smoke-tests it, writes the driver and the freshness manifest, then runs the conformance report | `generate_c` under `--c`; `implement` (or `formalized` under `--lean-only`) otherwise; `lean-conformance-failed` or `lean-conformance-error` on a stop |
+| 5 | `generate_c` | deterministic | compiles the formal specification with a generated `#eval` trailer, which renders the CGen descriptor into `sonnx_kernels.h` and `sonnx_kernels.c` | `test_c` when the descriptor is supported and rendered; `implement`/`formalized` when it is `unsupported`; `c-failed` on an error |
+| 6 | `test_c` | C tester — one model call per attempt; `cc` is a subprocess | writes `c_tests.c`, compiles it with the generated source, runs it, and reads the PASS/FAIL lines | `implement` (or `formalized` under `--lean-only`) when it passes; `c-failed` on a FAIL or on exhausted attempts |
+| 7 | `implement` | blind implementer — one model call | writes `iter-NNN-impl.py` from the document alone | `test`; `impl-unusable` if the answer cannot be a module |
+| 8 | `test` | test agent — model calls inside the node; the harness is a subprocess | writes or repairs `cases.py`, runs the harness, and repairs a broken module or an uncovered section | `record_failure` |
+| 9 | `record_failure` | deterministic | fingerprints the document, implementation and case set of this round, so a round that changed nothing can be recognised | the pass/failure routing below |
+| 10 | `diagnose` | adjudicator — one model call | reads the failing report, document, implementation and case module, and attributes the fault | `write_spec`, `implement`, `test`, or a finish node |
+| 11 | `finish_*` | deterministic | writes the run record (`run-<timestamp>.json`) with the outcome, every agent's verdict, coverage and the last report; a later `--publish` copies the artifacts | end |
+
+A step is reached only through its predecessor's guard, and the guards are the loop's whole
+policy:
+
+- **After `check_spec`.** A blocking finding goes back to the writer, unless the verifier
+  returned no verdict (`verifier-failed`), the spec-round budget is spent
+  (`unresolved-review`), the document did not change (`stalled`), or the same findings have
+  already caused an amendment (`unresolved-review`). A document that passes the linter and
+  the verifier is the only document any later stage ever sees.
+- **After `formalize_lean` / `conform_lean`.** A complete artifact continues to the
+  conformance run; a partial one ends the run (`lean-partial`); a mismatch is
+  `lean-conformance-failed` and a runner that cannot be produced or run is
+  `lean-conformance-error`. Under `--lean-only` a passing conformance ends `formalized`
+  instead of continuing to `implement`.
+- **After `generate_c` / `test_c`.** An artifact the formalizer did not give a descriptor
+  for, or one whose descriptor names an operation CGen does not render (anything but Add,
+  Sub and Mul), is recorded `unsupported` and the run continues as it would have without
+  `--c` — a C generator that cannot render an operator is not a defect of the document. A
+  descriptor that cannot be compiled or rendered, and any FAIL line from the test program,
+  ends the run as `c-failed`; a test program that never becomes compilable or comparable is
+  asked for again and then ends `c-failed`.
+- **After `implement`.** A module that could not be validated stops as `impl-unusable`.
+- **After `test` / `record_failure`.** A pass ends `converged`. A failure goes to the
+  adjudicator unless the iteration cap is reached (`iteration-cap`), the identical failure
+  survived a round that changed nothing (`unchanged`), the tester's revisions are spent
+  (`cases-stuck`), the case module is unusable (`cases-unusable`), or a section has no case
+  after its repairs (`uncovered-section`).
+- **After `diagnose`.** A `spec` verdict sends the writer an amendment (`repeated-amendment`
+  if it is the same amendment twice), `code` re-runs the implementer, `test` re-runs the
+  tester, and `stop` ends the run (`adjudicated-stop`). `code` and `test` also stop at the
+  iteration cap.
+
+`--start-from spec` and `--lean-only` enter at `check_spec`; every other run starts at
+`write_spec`. `--lean-only` ends after `conform_lean` (or after the C stage, with `--c`),
+without the implementer, tester, adjudicator or the Python/ONNX Runtime loop.
 
 ## The graph
 
@@ -38,16 +165,200 @@ the document it is given.
                     └──────┬───────┘                       └──────────────┘
                            │ complies
                            ▼
-                      implement ──▶ test ──▶ passes ──▶ finish (converged)
-                                      │
-                                      └── fails ──▶ diagnose ──┬── spec ──▶ write_spec
-                                                              ├── code ──▶ implement
-                                                              ├── test ──▶ test
-                                                              └── stop ──▶ finish
+                      implement ──▶ test ──▶ record_failure ──▶ passes ──▶ finish (converged)
+                                                    │
+                                                    └── fails ──▶ diagnose ──┬── spec ──▶ write_spec
+                                                                             ├── code ──▶ implement
+                                                                             ├── test ──▶ test
+                                                                             └── stop ──▶ finish
 ```
 
-Every arrow is one model call. `check_spec` runs `assets/lint_spec.py` **and** the
-verifier; a document that reaches the implementer has passed both.
+With `--lean`, `formalize_lean` and `conform_lean` sit between "complies" and `implement`;
+with `--c` as well, `generate_c` and `test_c` follow the conformance run:
+
+```
+   check_spec ──▶ formalize_lean ──▶ conform_lean ──▶ implement
+                       │                  │
+                       │ trace incomplete │ mismatch, or no usable runner, driver or report
+                       ▼                  ▼
+               finish (lean-partial)   finish (lean-conformance-failed |
+                       │                       lean-conformance-error)
+                       │ no valid artifact
+                       └──▶ finish (lean-failed)
+
+   conform_lean ──▶ generate_c ──▶ test_c ──▶ implement
+                         │             │
+                         │ unsupported │ FAIL, or no usable C test program
+                         ▼             ▼
+               continue without C   finish (c-failed)
+```
+
+Without `--lean` both Lean nodes are absent and the graph is the one the earlier runs used;
+without `--c` the C nodes are absent and the Lean stage ends as it did before.
+`--lean-only` checks compliance, formalizes, conforms — and, with `--c`, generates and tests
+the C — and ends without the implementer, tester, adjudicator or ONNX Runtime loop.
+
+Every model step in the main loop is one call. `check_spec` runs `assets/lint_spec.py`
+**and** the verifier; a document that reaches the implementer has passed both.
+`formalize_lean` is one model call (retried on compiler or trace findings), and `conform_lean`
+is one model call only for the executable runner — the driver, corpus profile and manifest are
+written deterministically. `record_failure` is bookkeeping, with no model call at all.
+
+## Optional Lean 4 formalization
+
+The default graph above is unchanged. `--lean` inserts `formalize_lean` and `conform_lean`
+after a successful compliance check and before `implement`; an amended document is formalized
+again. `--lean-only` starts from the document on disk, checks compliance, formalizes and
+conforms, and stops without invoking the blind implementer, tester, adjudicator, or the
+Python/ONNX Runtime loop:
+
+```sh
+~/Venvs/sonnx/bin/python agents/run.py --op Abs --start-from spec \
+  --spec ops/abs.md --lean-only --no-fetch
+```
+
+The formalizer returns Lean with one exact `-- @trace` marker per defining requirement and
+example. The module imports the shared `Sonnx` library — the tensor model, broadcasting,
+indices, the integer and floating-point families and the elementwise operators, under
+`lean/Sonnx/` — and may import only it and Lean core; a redefinition of a shared declaration is
+rejected. The library is built before the formalizer is asked, and a library that does not
+build ends the stage as `lean-failed` without a model call. Deterministic code extracts the
+source's own spans and excerpts, adds the source MD5 and the shared-library digest, checks
+missing/duplicate/unknown tags and proof escapes, appends `#check` for named declarations,
+and runs `lake env lean`. The model never invents line numbers. Coverage is `specified`,
+`proved`, `example_only`, `partial`, or `deferred`; a compiling artifact whose requirements are
+not all `specified` or `proved` ends `lean-partial`, not `formalized` or `converged`. Retry
+diagnostics, rejected answers and logs remain under the run's `lean/` directory. The digest is
+what keeps an artifact honest: it is re-checked after the compile, and an edit to the library
+makes every artifact generated against it stale.
+
+A trace-complete artifact is then passed to `conform_lean`, which **generates** both the
+executable Lean runner and its Python driver. A partial artifact skips the stage
+(`skipped-partial`) and generates nothing: there is no complete semantics to run.
+
+The stage, in order:
+
+1. **Corpus.** A fresh `cases.py` in the run directory is reused; otherwise an accepted
+   corpus in the operator's folder (a different file, and written for the same document) is
+   copied; otherwise the tester agent is asked for one, through the same validation and retry
+   path the Python loop uses. The corpus is
+   frozen as `lean/cases.py`, profiled (arities, dtypes, attributes, outputs) as
+   `lean/conformance-corpus.json`, and later rewrites of the loop's `cases.py` do not change
+   an earlier run's evidence. The conformance runs the corpus's `cases()` **and** replays its
+   `sweeps()` against a recording implementation, so the Lean runner is exercised on the same
+   inputs the Python verification used — including the per-dtype bulk arrays. A sweep that
+   raises is reported under `sweeps.errors` but does not by itself fail the conformance run.
+2. **Executable runner.** The model writes one Lean module defining `def main : IO Unit`.
+   It is checked for proof escapes and `main`, compiled with `lake env lean`, then
+   smoke-tested through `lake env lean --run` on a valid request per arity, an unsupported
+   kind and a malformed line. Rejected answers are kept as `lean/conformance-attempt-*.lean`.
+   `lake env lean --run` elaborates the module first and prints the compiler's own
+   diagnostics — a deprecation warning, say — to standard output before the runner's
+   responses; those lines carry no tab and every protocol response does, so they are
+   discarded before the protocol is read. Seen on 2026-11-15: a runner that used
+   `String.trim` produced a six-line deprecation warning on every invocation, the smoke
+   test read the six lines as six malformed responses, and three good runners were rejected
+   as `runner-unusable`.
+3. **Driver.** The pipeline writes `lean_conformance.py`, a configuration file over the
+   shared `sonnx_agents.lean_conformance` runtime (protocol, corpus iteration, ONNX Runtime
+   reference values, comparison). The driver is not model-written: its only
+   operator-specific content is its `CONFIG`. It finds the shared runtime by walking up
+   from its own location, then from `$SONNX_REPO`, then from the working directory, so the
+   same file runs in the operator's folder, in a `--run-dir` directory, or from anywhere.
+4. **Manifest and run.** `lean/conformance.manifest.json` records the protocol, the spec
+   MD5, the shared library's digest, and the SHA-256 of the formal spec, runner, driver and
+   corpus. The driver runs the
+   corpus through ONNX Runtime and through Lean and writes `lean/LeanConformance.json`,
+   whose `summary` counts `total`, `compared`, `passed`, `failed`, `unsupported` and `open`
+   across both sources, with `by_category` splitting `cases` from `sweeps` and a `sweeps`
+   block recording `declared`, the number of replayed `inputs`, and any `errors`.
+   Freshness is checked before every run: an edited or stale artifact is `error`, never
+   silently replaced. `--lean-conformance-compare bits|ulp|relative` decides how float
+   outputs are compared (bits by default, with any two NaNs equal).
+
+The protocol is `sonnx-conformance/1`, one tab-separated line per case, with floats and
+integers as raw bit patterns and exact rationals as `num/den`. A kind Lean core cannot
+represent — float16, a Boolean tensor — is reported `UNSUPPORTED` and counted, never
+silently dropped. The outcomes, in order of where they stop, are `lean-failed` (the formalizer
+produced no valid artifact), `lean-partial` (compiling but not trace-complete, conformance
+status `skipped-partial`, nothing generated), `formalized` (`--lean-only`, conformance passed)
+or a continuation to `implement`, `lean-conformance-failed` (a real mismatch, with the driver's
+report as the evidence) and `lean-conformance-error` (the runner, driver or report could not be
+produced or run). `--no-lean-conformance` disables the stage, and
+`--no-lean-conformance-generate` (or `--lean-conformance-script`) runs an existing driver
+instead. This checks the executable implementation over the corpus; it is not a proof of
+the generated predicates.
+
+`--check-lean --lean-artifact <file>` repeats freshness, trace, compiler and conformance
+validation without a model call. `--publish` publishes only a complete, freshly revalidated
+and conformance-checked artifact set: `FormalSpec.lean` and its trace manifest, and the
+generated runner, driver, frozen corpus and conformance manifest, all under
+`ops/<op>/` in the same relative layout. A default run already writes them there, so
+publication validates in place; with an explicit `--run-dir` it copies, validates after the
+copy, rolls back on failure, and refuses stale or partial artifacts and hand-edited targets,
+including with `--force`. Only artifacts the pipeline generated for the current document are
+published; a target whose manifest is stale or whose digests no longer match is refused.
+
+## Optional C generation from the formal specification
+
+`--c` adds two nodes after the conformance run, and it requires `--lean` or `--lean-only`:
+the C is rendered from the Lean artifact, not from the document a second time. The generated
+module declares the operator's element step in a machine-readable descriptor, at the top
+level of the module (outside every namespace) and after every other declaration:
+
+```lean
+def sonnxCGenOp : CGen.Elementwise := ⟨"sub", .sub⟩
+```
+
+The formalizer is allowed `import CGen` for exactly this declaration, and the contract is
+stated in its prompt: the name is the operator's lowercase entry, the second field the
+matching `CGen.BinOp`. The declaration is optional — an operator for which the formalizer has
+no such descriptor is reported `unsupported` and the run continues — and it is refused if it
+is namespaced, declared twice, or declared without the import. It is implementation-oriented
+content inside a formal artifact, which is why deterministic code checks its shape before
+anything is compiled from it.
+
+The C stage, in order:
+
+1. **Render.** `generate_c` copies `FormalSpec.lean` to `c/CGenEmit.lean` and appends a
+   generated `#eval` trailer that prints `SONNX-CGEN name=… binop=…` and writes
+   `c/sonnx_kernels.h` (prototypes) and `c/sonnx_kernels.c` (definitions) through
+   `CGen.headerFileFor` and `CGen.sourceFileFor`. It compiles that copy with `lake env lean`,
+   so the files are the descriptor's own rendering — not the model's. The accepted artifact is
+   never modified. A name that is not the operator's entry, a binop outside `add`/`sub`/`mul`,
+   or a compilation that fails is `unsupported` or `error` as described above; `Div` and `Mod`
+   are excluded because CGen's signed-integer element step computes in the unsigned type,
+   which is the specified wrap for the first three and a different operation for division.
+2. **Test.** The C tester is given the document, the restriction files, the formal
+   specification and both generated files, and answers one standalone C program: it includes
+   `"sonnx_kernels.h"`, defines `int main(void)`, and prints one `ok <case>` or
+   `FAIL <case>: expected …, got …` line per compared case. The expected values come from the
+   document's boundaries and the specification's examples and relations and must be computed
+   independently — an expectation read out of the kernel is not a check. The program must
+   cover at least twelve cases across the four families the document carries — `f32`, `f64`,
+   and at least one signed and one unsigned integer width — with exact expectations (binary
+   fractions and wrapped integers, no tolerance hiding a boundary).
+3. **Compile and run.** The pipeline compiles `cc -std=c11 -Wall -Wextra -Werror -O2` the
+   generated source and the test program in the run's `c/` directory, runs the binary under
+   `--c-timeout`, and reads its output. A compile error, a program that prints no comparison,
+   fewer than twelve PASS lines, or a nonzero exit with no FAIL line is a test program that
+   cannot be used: the tester is asked again (`--max-c-retries`), and the run stops `c-failed`
+   when it never produces one.
+4. **The verdict.** A run with twelve or more PASS lines, no FAIL line and exit code 0 is
+   `cgen_status="passed"`; the accepted attempt is copied to `c/c_tests.c`, and
+   `c/c-report.json` records the protocol (`sonnx-c/1`), the SHA-256 of the specification,
+   header, source and test program, the compiler command, the check counts, the failing lines
+   and the program's output. **A FAIL line is final**: it ends the run `c-failed` with the
+   report as evidence, and the tester is not asked again — a retry would let it weaken an
+   expectation until the kernel passed, which would turn the test into a restatement of the
+   code. `--publish` places the header, source, accepted test program and report in
+   `ops/<op>/c/` when the stage passed (a default run already wrote them there).
+
+The C the stage tests is the C the descriptor renders, so the stage's question is whether the
+descriptor is a faithful reading of the formal specification's element step — and the
+tester's program is what says so, in the document's own terms. It is a test, not a proof: it
+says nothing about an input the program does not construct, and the kernel's flat-array,
+caller-broadcasts contract is the caller's to honour.
 
 ## What the loop guarantees, and what it cannot
 
@@ -248,7 +559,8 @@ verifier; a document that reaches the implementer has passed both.
   repaired the same way: the parser's way of saying that the text stopped — an unterminated
   string or comment, a bracket never closed, an unexpected end of file — is read as a
   truncation rather than as prose, the answer is asked for again with a note to return the
-  *complete* module and `2 × --max-tokens`, and the module is not written until it parses.
+  *complete* module and twice the response budget (`max_tokens`, 16 000 by default), and the
+  module is not written until it parses.
   Prose mistaken for a module is asked for again too, but with the same room, since the
   problem there is not the budget. Seen on 2026-10-04: both answers of the implementer for
   **Atan** were truncated (317 and 1857 bytes, "unterminated triple-quoted string literal"),
@@ -257,10 +569,10 @@ verifier; a document that reaches the implementer has passed both.
   declare — `cases()` and `COVERAGE` — can both be there in text that cannot be parsed, and
   text that cannot be parsed is a module that cannot be imported: writing it over the case set
   that is on disk discards the one whose failures were just sent back. The answer is therefore
-  parsed, an answer that *stops in the middle* is asked for again with `2 × --max-tokens` like
-  the implementer's, an answer that is not Python is asked for again with the same room, and a
-  tester that never answers with a module stops the run with `cases-unusable` **before**
-  anything is written. Found on 2026-10-04: the second case set of **Atan** was written over
+  parsed, an answer that *stops in the middle* is asked for again with twice the response
+  budget like the implementer's, an answer that is not Python is asked for again with the same
+  room, and a tester that never answers with a module stops the run with `cases-unusable`
+  **before** anything is written. Found on 2026-10-04: the second case set of **Atan** was written over
   the first while only the two names had been looked for, and the interpreter then died on the
   import with `SyntaxError: invalid character '｜' (U+FF5C)` on its last line. The refused
   answer is kept beside the artifact (`cases-rejected-N.txt`), so a bad answer can be told from
@@ -317,7 +629,7 @@ verifier; a document that reaches the implementer has passed both.
   directory the run publishes is read afterwards: a record that names a report nobody can open
   is not evidence of anything. Seen on 2026-10-04: the **Atan** record lists
   `iter-001-report-4.json` for the round killed at 600 s, that file was never written, and the
-  published `verification/atan/loop/` holds reports 3 and 5 with the round between them missing
+  published `ops/atan/loop/` holds reports 3 and 5 with the round between them missing
   — the round whose timeout is the reason the case set was rewritten.
 - **A harness run that does not finish is a case module that cannot be run.** The case module
   decides how long a run takes, so a sweep that never ends, an exact-arithmetic computation
@@ -375,10 +687,10 @@ verifier; a document that reaches the implementer has passed both.
   **Asin** reached for `mpmath` in its sweeps, and the run spent its repair rounds on
   `ModuleNotFoundError: No module named 'mpmath'` while the document and the implementation
   were both sound. High precision in this repository is `decimal` and `fractions.Fraction`,
-  as `verification/sin/sin_oracle.py` does it.
+  as `ops/sin/sin_oracle.py` does it.
 - **A case set measures compliance, not accuracy — and its own reference may be the wrong
   one.** A document that says `round(arcsin(x))` with `roundTiesToEven` states a correctly
-  rounded value, and refers a departure from it to `other/accuracy.md`; no library on this
+  rounded value, and refers a departure from it to `docs/accuracy.md`; no library on this
   platform is correctly rounded for the inverse trigonometrics, so a case set that fails an
   implementation for a departure of one unit in the last place fails every implementation
   anyone can write. The accepted case set of **Sin** is the shape: departures are measured in
@@ -451,16 +763,16 @@ verifier; a document that reaches the implementer has passed both.
   float costs, so an exhaustive sweep belongs to `float16` (65536 values) and the wider types
   get boundaries and a sample of a few hundred, and a model belongs to a batch rather than to
   an element.
-- **A run publishes the reports it wrote, not the ones in the directory.** The run directory
-  is shared by every attempt at an operator — a second attempt runs in the same
-  `agents/runs/<Op>/`, and so does a run resumed after a stop — and the report names repeat
-  from one attempt to the next, so `iter-001-report-2.json` of the attempt before is
+- **A run publishes the reports it wrote, not the ones in the directory.** The operator's
+  folder is shared by every attempt at it — a second attempt runs in the same
+  `ops/<op>/`, and so does a run resumed after a stop — and the report names repeat in
+  `loop/` from one attempt to the next, so `iter-001-report-2.json` of the attempt before is
   indistinguishable from this run's by its name alone. Measured on 2026-10-05: `MaxPool`
   attempt 6 began in a directory holding ten reports of attempt 4, and its `--publish` would
-  have copied them into `verification/maxpool/loop/` as this run's own evidence, because
-  publishing swept the directory. The run now records the report and implementation paths it
-  wrote, `publish` copies exactly those, and a record written before the field existed is
-  still read the old way, so an old run stays publishable.
+  have copied them as this run's own evidence, because publishing swept the directory. The
+  run now records the report and implementation paths it wrote, `publish` copies exactly
+  those, and a record written before the field existed is still read the old way, so an old
+  run stays publishable.
 - **Infinity and NaN are not real numbers.** A sweep over the *special values* of a type must
   decide them by the rule the document states for them and never reach the exact arithmetic
   with them: `Decimal(float("inf")) - Decimal(float("inf"))` raises `InvalidOperation`, and a
@@ -503,9 +815,10 @@ response with no text at all is retried once with twice the budget.
 | flag | what it does |
 |---|---|
 | `--op <Op>` | the ONNX operator type (required) |
-| `--spec <path>` | where the document goes (default `ops/<op>.md`; if that file exists it is **not** overwritten unless `--force`) |
-| `--run-dir <path>` | where the run's artifacts go (default `agents/runs/<Op>/`) |
-| `--start-from spec` | skip the writer and start from the file on disk |
+| `--opset N` | the opset the schema and document are read at (default 14) |
+| `--spec <path>` | where the document goes (default `ops/<op>/<op>.md`; a scratch run refuses to replace an existing one unless `--force`) |
+| `--run-dir <path>` | where the run's artifacts go (default `ops/<op>/`, the operator's own folder) |
+| `--start-from spec` | skip the writer and start from the file on disk (it may amend it) |
 | `--max-iterations N` | implement → test rounds, the skill's cap (default 5) |
 | `--max-spec-rounds N` | writer → verifier rounds (default 3) |
 | `--max-case-repairs N` | times the test agent may repair a case module that raises (default 3) |
@@ -514,33 +827,58 @@ response with no text at all is retried once with twice the budget.
 | `--max-module-retries N` | times the blind implementer or the test agent may answer again when its answer is not a usable module (default 2) |
 | `--max-writer-retries N` | times the writer may answer again when its answer is cut off (default 2) |
 | `--max-review-retries N` | times the verifier may answer again when its verdict is unreadable (default 1) |
-| `--max-review-tokens N` | output budget of one compliance review (default 64 000) |
+| `--max-review-tokens N` | output budget of one compliance review or Lean formalization (default 64 000) |
 | `--thinking auto\|off` | may the writer, the implementer and the tester deliberate (default `auto`) |
 | `--verdict-thinking auto\|off` | may the verifier and the adjudicator deliberate (default `off`) |
+| `--lean` | formalize and run conformance before the normal Python loop |
+| `--lean-only` | formalize and conform, without the Python/ONNX Runtime stages |
+| `--c` | render C from the Lean descriptor and test it (requires `--lean` or `--lean-only`) |
+| `--cc <path>` | the C compiler (default `cc`) |
+| `--max-c-retries N` | test programs the C tester may answer after the first, when one cannot be compiled or run (default 2) |
+| `--c-timeout N` | seconds one compiled C test program may run (default 120) |
+| `--max-lean-retries N` | repairs after the first Lean formalizer answer (default 2) |
+| `--lean-timeout N` | seconds for one Lean compiler invocation (default 300) |
+| `--lake <path>` | the Lake executable (default: discovered from `PATH`/elan) |
+| `--no-lean-conformance` | do not generate or run the Lean-vs-corpus stage |
+| `--no-lean-conformance-generate` | run an existing or configured driver instead of generating one |
+| `--lean-conformance-script <path>` | an existing driver to run instead of generating one |
+| `--max-conformance-retries N` | repairs after the first executable-runner answer (default 2) |
+| `--lean-conformance-timeout N` | seconds for one Lean conformance run (default 1800) |
+| `--lean-conformance-compare bits\|ulp\|relative` | how float outputs are compared (default `bits`, NaN equal to NaN) |
+| `--lean-conformance-ulp N` / `--lean-conformance-relative X` | the tolerance for the matching mode |
+| `--check-lean` | revalidate an existing Lean artifact and re-run conformance, with no model call |
+| `--lean-artifact <file>` | the artifact `--check-lean` checks (default: the run's `FormalSpec.lean`) |
 | `--onnx-doc <file>` / `--no-fetch` | the ONNX definition from a file, or not at all (see below) |
-| `--publish` | on convergence, copy the artifacts into `ops/` and `verification/<op>/` |
-| `--publish-only` | publish the converged run recorded in `--json-state`, with no model call: the document the caller read the verdict for is the document that gets published |
+| `--publish` | on a successful outcome (`converged`, or `formalized` under `--lean-only`), validate the run and place its artifacts in `ops/<op>/`; a default run already wrote them there, so this validates in place, while a `--run-dir` run is copied in (the Lean set and the C set are revalidated first) |
+| `--publish-only` | publish the finished run recorded in `--json-state`, with no model call: the document the caller read the verdict for is the document that gets published |
 | `--json-state <file>` | the final state, for inspection — it carries the outcome, so `--publish-only` can check it |
 
-`verification/` is not touched until `--publish` (or `--publish-only`), and a specification
-that is already there cannot be destroyed by accident: when `ops/<op>.md` exists the run
-keeps its working document in `agents/runs/<Op>/<op>.md` and leaves the published file alone
-(the caller asks for it back with `--spec` or `--force`), and `--publish-only` refuses to
-publish a run whose outcome is not `converged`.
+A **fresh scratch run** does not replace an operator's existing document silently: when
+there is no `--spec` and no `--run-dir` and `ops/<op>/<op>.md` exists, the CLI refuses with exit
+2 and names the two routes — `--start-from spec` reads the document (and may amend it, as
+the guidelines allow), `--force` replaces it. An explicit `--spec` or `--run-dir` is the
+caller naming the file and is left alone. `--lean-only` reads the document without writing
+it, so it starts on an existing one.
 
-An operator with **no** document yet is the other case, and it drafts straight to
-`ops/<op>.md`: that file is the run's working document from the first round, rewritten by
-every round, and it is only on `--publish` that the converged document replaces it. So a run
-that stops leaves its last draft there — the **MaxPool** run of 2026-10-04 did, and it is
-archived with its log in `agents/runs/MaxPool/attempt-5/`. Read a document in `ops/` as
-published only if the run whose record you can open converged.
+A run therefore drafts straight into the operator's folder, and a run that stops leaves its
+last draft there — the **MaxPool** run of 2026-10-04 did, and it is archived with its log in
+`ops/maxpool/attempt-5/`. Read a document in `ops/` as published only if the run whose
+record you can open converged or was formalized. `--run-dir` is the way to keep a
+deliberately separate working tree.
 
-Publishing **Neg** copies the document to `ops/neg.md`, the case module to
-`verification/neg/cases.py`, and the implementation and its harness report to
-`verification/neg/loop/`. It does not write `verification/<op>/loop/README.md`: that page
-classifies the blind reader's `DECISION:` points and records a detector check, which is work
-about the run that no copy can do. The run record (`run-<timestamp>.json`) is the raw material
-for it.
+With a default run the folder already holds the document, `cases.py`, `loop/`, `lean/` and
+`c/`; `--publish` revalidates the Lean artifact and conformance and lists them without
+copying. Publishing a **Neg** run that used `--run-dir` copies the document to
+`ops/neg/neg.md`, the case module to `ops/neg/cases.py`, and the implementation and its
+harness report to `ops/neg/loop/`. When the Lean stage ran, it also copies
+`FormalSpec.lean` and its trace manifest to `ops/neg/lean/`, with the generated runner,
+driver, frozen corpus and conformance manifest in the same relative layout, after
+revalidating every digest and re-running conformance. When the C stage passed, it places
+`sonnx_kernels.h`, `sonnx_kernels.c`, `c_tests.c` and `c-report.json` in `ops/<op>/c/`; a
+run whose C stage stopped `unsupported` publishes nothing for it, and a `c-failed` run is
+not published at all. It does not write a `loop/README.md`: that page classifies the blind
+reader's `DECISION:` points and records a detector check, which is work about the run that
+no copy can do. The run record (`run-<timestamp>.json`) is the raw material for it.
 
 ### The ONNX definition the writer is given
 
@@ -561,7 +899,7 @@ Two files in `ops/` state what an operator is *not* defined to do, and they are 
 inputs rather than run artifacts: the run reads them where they are and never writes them.
 
 - `ops/global_restrictions.md` — the restrictions that apply to every operator. A
-  document's `## Restrictions` block **links** it (`[General restrictions](./global_restrictions.md)
+  document's `## Restrictions` block **links** it (`[General restrictions](../global_restrictions.md)
   are applicable.`) and never copies it; its rows use a `[G<n>]` tag so they are visibly not
   a document's `[R<n>]` rows.
 - `ops/<entry>_restrictions.md` — the restrictions of one operator, as a table and nothing
@@ -580,29 +918,61 @@ the family sections, as they do in the published documents; they are not `E_` ta
 linter ignores them. The three-column shape (`Restriction | Statement | Origin`) is the
 guidelines'; a restriction that applies to one family only names that family in its
 Statement rather than adding a column. Known limitation: `--publish` does not check the
-published document against the operator's file, so reconcile the two before publishing —
-`ops/maxpool.md` and the run directory's MaxPool document already disagree on `R4` — and a
+published document against the operator's file, so reconcile the two before publishing; a
 publish-time check is a later change.
 
-## The run directory
+## The operator directory
 
 ```
-agents/runs/<Op>/
-    <Op>.md              the document, as the writer left it (unless --spec says otherwise)
+ops/<op>/
+    <op>.md              the document, as the writer left it (unless --spec says otherwise)
     cases.py             the test agent's case module
     cases.meta.json      the md5 of the document it was written for
-    iter-001-impl.py     the blind implementation of iteration 1
-    iter-001-report.json the harness's report for its first run
-    iter-001-report-N.json  its second and later runs, which keep their own reports
-    *-rejected-N.txt     an answer that was refused, kept for the reader of the run
+    *-rejected-N.txt     a case answer that was refused, kept for the reader of the run
     onnx-<Op>.txt        the ONNX definition the writer was given, as fetched
     run-<timestamp>.json the record: every agent's verdict, the coverage, the last report
+    lean_conformance.py  the generated driver (a configuration over the shared runtime)
+    impl_from_spec.py, test_vs_ort.py, results.md, ...
+                         hand-written verification evidence, where the operator has it
+    <op>-working.md      a run document that differs from the published one, when migration
+                         found both (its Lean/C evidence names this file)
+    attempt-N/           archived earlier attempt trees, kept as found
+    loop/
+        iter-001-impl.py     the blind implementation of iteration 1
+        iter-001-report.json the harness's report for its first run
+        iter-001-report-N.json  its second and later runs, which keep their own reports
+        iter-001-impl-rejected-N.txt  a refused implementation answer
+        README.md            the hand-written loop narrative, where the operator has one
+    lean/
+        FormalSpec.lean         the generated formal specification
+        FormalSpec.trace.json   its trace coverage and source digest
+        attempt-NNN.lean/.log   the formalizer's answers and the compiler's output
+        LeanConformance.lean    the generated executable runner
+        conformance-attempt-NNN.lean/.log  the runner's answers and compile logs
+        LeanConformanceSmoke.json  the smoke test's probes and findings
+        cases.py                the corpus frozen for this conformance run
+        cases.meta.json         the md5 of the document the frozen corpus was written for
+        conformance-corpus.json its profile
+        conformance.manifest.json the SHA-256 of every artifact above
+        LeanConformance.json    the driver's report
+    c/
+        CGenEmit.lean           the formal specification with the generated render trailer
+        sonnx_kernels.h         the generated prototypes
+        sonnx_kernels.c         the generated definitions
+        c_tests-attempt-NNN.c   the C tester's answers
+        c_tests.c               the accepted test program
+        c_tests                 the compiled test program
+        c-report.json           the protocol, the hashes, the checks, the failing lines
 ```
 
 Every attempt at the operator runs here, so the directory holds what the attempt before it
-left behind as well, and the names repeat. The record — not the directory — is what says
-which files are this run's: it carries the report and implementation paths the run wrote, and
-`--publish` copies those.
+left behind as well, and the names repeat in `loop/`. The record — not the directory — is
+what says which files are this run's: it carries the report and implementation paths the run
+wrote, and `--publish` copies those (or validates them in place when the run is the folder).
+
+The records migrated from the old layout are evidence of the runs that wrote them and keep
+the absolute paths of that layout; they are not live indices, and `--publish-only` on such a
+record will not find the artifacts it names. The artifacts themselves are in the folder.
 
 ## The scheduler, tested offline
 
@@ -612,7 +982,7 @@ which files are this run's: it carries the report and implementation paths the r
 
 Every agent is replaced by a canned answer and the two harness programs by canned verdicts,
 so the test exercises exactly the part a model must not decide: which node runs after
-which, and which guard stops the loop. Thirty-seven scenarios: convergence, an unresolved review
+which, and which guard stops the loop. Fifty-five scenarios: convergence, an unresolved review
 finding, an amendment that changes nothing, the two correction routes, the unchanged-document
 guard, a review whose blocking finding withdraws itself (the reviewer is told what the
 contradiction is and asked again, the finding never reaches the writer, and a reviewer that keeps
@@ -671,10 +1041,66 @@ given either file, the sentinel in the writer's, verifier's and tester's message
 absent from the implementer's; and the operator's restriction file appearing while the
 writer is answering — the request was built before the file existed, the retry is refused
 until it carries the file's rows, and a request rebuilt for the attempt is what makes the
-retry carry them). A last section asserts
+retry carry them), and a run that writes into the operator's own folder (the default run
+directory and document, the scratch guard and the three routes around it, and a publication
+of a run already in place that copies nothing onto itself). A last section asserts
 the family
 verdicts the verifier is handed, computed from the operator's schema: **Neg** has no `uint`
 family, **Add** has one, **Sin** has neither `int` nor `uint`, and **MaxPool**'s `int` family is
 `int8` alone — its `tensor(int64)` constraint is the type of the `Indices` output, not a data
 type; and a `COVERAGE` dictionary
 the case module computes for itself is read as the module leaves it.
+
+The C stage has its own seven scenarios, all with the renderer and the compiler faked, since
+`test_c_stage.py` is what exercises the real tools: a descriptor and a passing test program
+give `converged`, with the C tester asked before the implementer (and `formalized` under
+`--lean-only`); a FAIL line stops the run `c-failed` with no implementer at all; a test
+program that never becomes usable is asked for again up to `--max-c-retries` and then stops
+`c-failed`; a formalizer answer without a descriptor is recorded `unsupported` and the run
+continues to convergence; a renderer that fails stops `c-failed`; and `--c` without `--lean`
+is a command-line error, with the C flags parsed through to the settings.
+
+The Lean stages have their own groups. Five scenarios cover the graph: a complete artifact
+generates a corpus, a runner and a driver, conformance passes, and the run ends `formalized`
+under `--lean-only`; a runner that never compiles or never answers the protocol stops the run
+as `lean-conformance-error`; a partial artifact calls no generator and ends `lean-partial`
+with the conformance status `skipped-partial`; a shared library that does not build ends the
+run `lean-failed` before the formalizer is asked; and a library that stops building after
+formalization is `lean-conformance-error` with the status `library-unusable`, no runner
+generated. The real library build runs once at the start of the suite; the graph scenarios
+replace it with a fake, since building the library is `test_lean.py`'s job. Three further
+suites exercise the parts those scenarios fake, and a fourth covers the C generator and the
+C stage on the real tools:
+
+```
+~/Venvs/sonnx/bin/python agents/tests/test_lean.py
+~/Venvs/sonnx/bin/python agents/tests/test_lean_conformance.py
+~/Venvs/sonnx/bin/python agents/tests/test_c_stage.py
+~/Venvs/sonnx/bin/python agents/tests/test_cgen.py
+```
+
+`test_lean.py` covers the shared library and trace extraction: the library builds and its
+public API resolves, the import contract and the shared-name guard, the library digest (stable,
+sensitive to an edit, and stale when the module's `@library-digest` no longer matches), trace
+extraction, the freshness manifest and the driver-selection
+precedence (configured, generated-in-run-dir, published, legacy hand-written, stale).
+`test_lean_conformance.py` covers the `sonnx-conformance/1` encoding and decoding, bit/NaN
+comparison, corpus profiling and freezing, manifest staleness after an edited artifact, a
+changed document or a changed (or unrecorded) shared library, the generated driver's report,
+the driver's bootstrap outside the repository,
+the runner's compile-and-smoke repair loop, the compiler's own diagnostics on standard output
+not being read as protocol responses (in the driver and in the smoke test), and publication's
+relative layout and overwrite guard.
+`test_c_stage.py` covers the C stage on the real tools: `extract_c` on fenced and bare
+answers, the textual guard (no `main`, no header include, no integer kernel, an empty
+answer), `_emit_c_files` rendering a mini descriptor with `lake env lean`, `generate_c` for a
+supported, a division, an absent and a broken descriptor, and the compile-and-run protocol —
+a correct program passes with its checks counted, a wrong expectation fails with the line
+kept, and a program that does not compile or compares nothing is unusable.
+`test_cgen.py` covers the C generator in `lean/CGen/` (not part of the specification pipeline):
+the library and its two drivers build, the printer probes pass, the emitted translation unit is
+deterministic and carries the advertised signatures, and it compiles cleanly under
+`-Wall -Wextra -Werror` and computes the specified wrap-around results; the split
+`sonnx_kernels.h`/`.c` rendering, its quoted include, its prototypes without bodies and its
+definitions without prototypes are checked in the same way, and the split pair is compiled,
+linked and run.

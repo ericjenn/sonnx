@@ -1,0 +1,641 @@
+{
+  "generated_by": "sonnx-lean-pipeline",
+  "source": "ops/sub/sub.md",
+  "source_md5": "7a65bd1dc1764a81e266a011e54a56c3",
+  "requirements": [
+    {
+      "key": "E_SUB_REAL_FUNC_0010",
+      "source": "ops/sub/sub.md",
+      "start": 33,
+      "end": 56,
+      "anchor": "E_SUB_REAL_FUNC_0010",
+      "excerpt": "<a id=\"E_SUB_REAL_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_SUB_REAL_FUNC_0010]</br></span>\n\nOperator **Sub** subtracts tensor $B$ from tensor $A$ element-wise and stores the result in tensor $C$. Each element of $C$ is the difference of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\tilde{A}[i] - \\tilde{B}[i]\n$$\n\nwhere\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$,\n- $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$.\n\nThe subtraction is exact: $C[i]$ is the difference in $\\mathbb{R}$ of the two elements, with no approximation.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the difference of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
+    },
+    {
+      "key": "E_SUB_REAL_CONSTR_A_0010",
+      "source": "ops/sub/sub.md",
+      "start": 130,
+      "end": 132,
+      "anchor": "E_SUB_REAL_CONSTR_A_0010",
+      "excerpt": "<a id=\"E_SUB_REAL_CONSTR_A_0010\"></a>\n- `[E_SUB_REAL_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting."
+    },
+    {
+      "key": "E_SUB_REAL_CONSTR_B_0010",
+      "source": "ops/sub/sub.md",
+      "start": 140,
+      "end": 141,
+      "anchor": null,
+      "excerpt": "- `[E_SUB_REAL_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_REAL_CONSTR_A_0010</span></b>](#E_SUB_REAL_CONSTR_A_0010) on tensor $A$."
+    },
+    {
+      "key": "E_SUB_REAL_CONSTR_C_0010",
+      "source": "ops/sub/sub.md",
+      "start": 151,
+      "end": 152,
+      "anchor": null,
+      "excerpt": "- `[E_SUB_REAL_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape."
+    },
+    {
+      "key": "E_SUB_FLOAT_FUNC_0010",
+      "source": "ops/sub/sub.md",
+      "start": 179,
+      "end": 223,
+      "anchor": "E_SUB_FLOAT_FUNC_0010",
+      "excerpt": "<a id=\"E_SUB_FLOAT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_SUB_FLOAT_FUNC_0010]</br></span>\n\nOperator **Sub** subtracts tensor $B$ from tensor $A$ element-wise according to IEEE 754 floating-point semantics and stores the result in tensor $C$. Each element of $C$ is the difference of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\tilde{A}[i] -_{(\\text{f})} \\tilde{B}[i] =\n\\begin{cases}\n\\text{NaN} & \\text{if } \\tilde{A}[i] \\text{ or } \\tilde{B}[i] \\text{ is NaN, or if they are both } +\\infty \\text{ or both } -\\infty \\\\\n\\text{sign}\\left(\\tilde{A}[i] - \\tilde{B}[i]\\right) \\cdot \\infty & \\text{if at least one operand is infinite, the two not being infinities of the same sign} \\\\\n-0 & \\text{if both operands are finite, their exact difference is null, } \\tilde{A}[i] \\text{ is } -0 \\text{ and } \\tilde{B}[i] \\text{ is } +0 \\\\\n+0 & \\text{if both operands are finite and their exact difference is null, the previous case excepted} \\\\\nx & \\text{if both operands are finite and their exact difference } x \\text{ is representable in the type of } A \\text{ and } B \\\\\n\\text{round}(x) & \\text{if both operands are finite and } x \\text{ is not representable in the type of } A \\text{ and } B\n\\end{cases}\n$$\n\nwhere\n- $-_{(\\text{f})}$ is the subtraction of the floating-point type of $A$, $B$ and $C$, i.e. $-_{(\\text{f16})}$, $-_{(\\text{f32})}$ or $-_{(\\text{f64})}$ according to that type,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $x$ is the exact difference of the two finite operands, i.e. their difference in $\\mathbb{R}$, which is a real number and carries no sign of zero,\n- $\\text{sign}(y) \\cdot \\infty$ is $+\\infty$ if $y \\gt 0$ and $-\\infty$ if $y \\lt 0$, where $y = \\tilde{A}[i] - \\tilde{B}[i]$ is the difference of the two operands taken in $\\overline{\\mathbb{R}} = \\mathbb{R} \\cup \\{-\\infty, +\\infty\\}$: that difference is infinite and never null in this case,\n- $\\text{round}(x)$ is the value of $x$ rounded to the nearest value of the type of $A$ and $B$ using the roundTiesToEven attribute of IEEE 754, the exponent range of the type being unbounded: a magnitude whose nearest value exceeds the largest finite value of the type of $A$ and $B$ gives an infinity of the sign of $x$.\n\nIn the first case, an operand that is NaN is propagated, and the subtraction of two infinities of the same sign is the invalid operation defined in IEEE 754 section 7.2; the result is NaN in both cases. The NaN of this case is a quiet NaN; its sign and its payload are not specified, whether the NaN comes from an operand or from the invalid operation, so that every quiet NaN of the type of $A$ and $B$ is a conforming result.\n\nIn the second case the difference is infinite and the result is that infinity, exactly and without rounding: $+\\infty$ for $\\tilde{A}[i] = +\\infty$ with a finite $\\tilde{B}[i]$, for a finite $\\tilde{A}[i]$ with $\\tilde{B}[i] = -\\infty$, and for $\\tilde{A}[i] = +\\infty$ with $\\tilde{B}[i] = -\\infty$; $-\\infty$ for the three opposite combinations.\n\nIn the last case the exact difference is not representable in the type of $A$ and $B$: the result is that difference rounded as defined above, and its sign is the sign of the exact difference. The rounding gives either the largest finite value of the type of that sign, when the exact difference lies below the midpoint between that value and the next power of two of the type, or an infinity of that sign.\n\nWhen the exact difference is null, the result is $+0$, except when $\\tilde{A}[i]$ is $-0$ and $\\tilde{B}[i]$ is $+0$, in which case it is $-0$: the differences $+0 - (+0)$, $+0 - (-0)$ and $(-0)-(-0)$ give $+0$. A non-null exact difference that would round to a null value gives a zero whose sign is the sign of the exact difference, i.e. $-0$ only when the exact difference is negative; the values of the type of $A$ and $B$ are all multiples of its smallest subnormal value, so the exact difference of two of them is a multiple of that value as well, and this case does not arise for two finite operands of the type.\n\n**Subnormal results.** A non-null exact difference whose magnitude is below the smallest normal value of the type of $A$ and $B$ is a multiple of its smallest subnormal value, hence a subnormal value of the type; the case that gives $x$ gives it exactly, with no rounding.\n\n**Values of the operands.** The operands may be any of the values of the type, including the special numbers $\\pm 0$, $\\pm\\text{inf}$ and NaN. The cases above give the result for every combination of them.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the difference of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
+    },
+    {
+      "key": "E_SUB_FLOAT_CONSTR_A_0010",
+      "source": "ops/sub/sub.md",
+      "start": 291,
+      "end": 293,
+      "anchor": "E_SUB_FLOAT_CONSTR_A_0010",
+      "excerpt": "<a id=\"E_SUB_FLOAT_CONSTR_A_0010\"></a>\n- `[E_SUB_FLOAT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting."
+    },
+    {
+      "key": "E_SUB_FLOAT_CONSTR_A_0020",
+      "source": "ops/sub/sub.md",
+      "start": 294,
+      "end": 296,
+      "anchor": "E_SUB_FLOAT_CONSTR_A_0020",
+      "excerpt": "<a id=\"E_SUB_FLOAT_CONSTR_A_0020\"></a>\n- `[E_SUB_FLOAT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$, and $C$ have the same type."
+    },
+    {
+      "key": "E_SUB_FLOAT_CONSTR_B_0010",
+      "source": "ops/sub/sub.md",
+      "start": 304,
+      "end": 305,
+      "anchor": null,
+      "excerpt": "- `[E_SUB_FLOAT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_FLOAT_CONSTR_A_0010</span></b>](#E_SUB_FLOAT_CONSTR_A_0010) on tensor $A$."
+    },
+    {
+      "key": "E_SUB_FLOAT_CONSTR_B_0020",
+      "source": "ops/sub/sub.md",
+      "start": 306,
+      "end": 307,
+      "anchor": null,
+      "excerpt": "- `[E_SUB_FLOAT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_FLOAT_CONSTR_A_0020</span></b>](#E_SUB_FLOAT_CONSTR_A_0020) on tensor $A$."
+    },
+    {
+      "key": "E_SUB_FLOAT_CONSTR_C_0010",
+      "source": "ops/sub/sub.md",
+      "start": 317,
+      "end": 318,
+      "anchor": null,
+      "excerpt": "- `[E_SUB_FLOAT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape."
+    },
+    {
+      "key": "E_SUB_FLOAT_CONSTR_C_0020",
+      "source": "ops/sub/sub.md",
+      "start": 319,
+      "end": 320,
+      "anchor": null,
+      "excerpt": "- `[E_SUB_FLOAT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_FLOAT_CONSTR_A_0020</span></b>](#E_SUB_FLOAT_CONSTR_A_0020) on tensor $A$."
+    },
+    {
+      "key": "E_SUB_INT_FUNC_0010",
+      "source": "ops/sub/sub.md",
+      "start": 347,
+      "end": 378,
+      "anchor": "E_SUB_INT_FUNC_0010",
+      "excerpt": "<a id=\"E_SUB_INT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_SUB_INT_FUNC_0010]</br></span>\n\nOperator **Sub** subtracts tensor $B$ from tensor $A$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the difference of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below. Tensors $A$, $B$ and $C$ have the same signed $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] =\n\\begin{cases}\n\\tilde{A}[i] - \\tilde{B}[i] & \\text{if the difference lies in } [-2^{n-1},\\, 2^{n-1}-1] \\\\\n\\tilde{A}[i] - \\tilde{B}[i] + 2^n & \\text{if the difference is lower than } -2^{n-1} \\\\\n\\tilde{A}[i] - \\tilde{B}[i] - 2^n & \\text{if the difference is greater than } 2^{n-1}-1\n\\end{cases}\n$$\n\nwhere\n- $\\tilde{A}[i] - \\tilde{B}[i]$ is the exact difference of the two elements, the difference in $\\mathbb{Z}$ of the two integers, before the reduction modulo $2^n$,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $n$ is the number of bits of the type of $A$ and $B$.\n\nThe result is thus the exact difference modulo $2^n$, read as a signed value. The values of an $n$-bit signed type lie in $[-2^{n-1}, 2^{n-1}-1]$, so that their exact difference lies in $[-2^n+1, 2^n-1]$ and one of the three cases above always applies, the reduction being applied at most once.\n\n**The sign of the result.** The range of the type is not symmetric about zero, so that the result of the subtraction of two values of opposite signs can leave the range and take the sign of the subtrahend: for `int8`, $127-(-1)$ gives $-128$ and $-128-1$ gives $127$. Tensors $A$, $B$ and $C$ have the same type and no wider type is used, so that the value of $C$ is that value of the type, sign included.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the difference of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
+    },
+    {
+      "key": "E_SUB_INT_CONSTR_A_0010",
+      "source": "ops/sub/sub.md",
+      "start": 432,
+      "end": 434,
+      "anchor": "E_SUB_INT_CONSTR_A_0010",
+      "excerpt": "<a id=\"E_SUB_INT_CONSTR_A_0010\"></a>\n- `[E_SUB_INT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting."
+    },
+    {
+      "key": "E_SUB_INT_CONSTR_A_0020",
+      "source": "ops/sub/sub.md",
+      "start": 435,
+      "end": 437,
+      "anchor": "E_SUB_INT_CONSTR_A_0020",
+      "excerpt": "<a id=\"E_SUB_INT_CONSTR_A_0020\"></a>\n- `[E_SUB_INT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$, and $C$ have the same type."
+    },
+    {
+      "key": "E_SUB_INT_CONSTR_B_0010",
+      "source": "ops/sub/sub.md",
+      "start": 445,
+      "end": 446,
+      "anchor": null,
+      "excerpt": "- `[E_SUB_INT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_INT_CONSTR_A_0010</span></b>](#E_SUB_INT_CONSTR_A_0010) on tensor $A$."
+    },
+    {
+      "key": "E_SUB_INT_CONSTR_B_0020",
+      "source": "ops/sub/sub.md",
+      "start": 447,
+      "end": 448,
+      "anchor": null,
+      "excerpt": "- `[E_SUB_INT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_INT_CONSTR_A_0020</span></b>](#E_SUB_INT_CONSTR_A_0020) on tensor $A$."
+    },
+    {
+      "key": "E_SUB_INT_CONSTR_C_0010",
+      "source": "ops/sub/sub.md",
+      "start": 458,
+      "end": 459,
+      "anchor": null,
+      "excerpt": "- `[E_SUB_INT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape."
+    },
+    {
+      "key": "E_SUB_INT_CONSTR_C_0020",
+      "source": "ops/sub/sub.md",
+      "start": 460,
+      "end": 461,
+      "anchor": null,
+      "excerpt": "- `[E_SUB_INT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_INT_CONSTR_A_0020</span></b>](#E_SUB_INT_CONSTR_A_0020) on tensor $A$."
+    },
+    {
+      "key": "E_SUB_UINT_FUNC_0010",
+      "source": "ops/sub/sub.md",
+      "start": 488,
+      "end": 518,
+      "anchor": "E_SUB_UINT_FUNC_0010",
+      "excerpt": "<a id=\"E_SUB_UINT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_SUB_UINT_FUNC_0010]</br></span>\n\nOperator **Sub** subtracts tensor $B$ from tensor $A$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the difference of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below. Tensors $A$, $B$ and $C$ have the same unsigned $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] =\n\\begin{cases}\n\\tilde{A}[i] - \\tilde{B}[i] & \\text{if the difference is at least } 0 \\\\\n\\tilde{A}[i] - \\tilde{B}[i] + 2^n & \\text{if the difference is lower than } 0\n\\end{cases}\n$$\n\nwhere\n- $\\tilde{A}[i] - \\tilde{B}[i]$ is the exact difference of the two elements, the difference in $\\mathbb{Z}$ of the two integers, before the reduction modulo $2^n$,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $n$ is the number of bits of the type of $A$ and $B$.\n\nThe values of an $n$-bit unsigned type are non-negative and at most $2^n-1$, so that their exact difference lies in $[-(2^n-1), 2^n-1]$: the second case applies exactly when $\\tilde{A}[i] \\lt \\tilde{B}[i]$, and the reduction is applied at most once.\n\n**The result may be larger than the minuend.** The difference of two non-negative integers is at most the minuend, whereas the result here is reduced modulo $2^n$: for `uint8`, $0-1$ gives $255$, a value larger than both operands, and $4-7$ gives $253$. The subtraction is not monotonic on the unsigned types, and the result is not the value of a signed difference.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the difference of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
+    },
+    {
+      "key": "E_SUB_UINT_CONSTR_A_0010",
+      "source": "ops/sub/sub.md",
+      "start": 558,
+      "end": 560,
+      "anchor": "E_SUB_UINT_CONSTR_A_0010",
+      "excerpt": "<a id=\"E_SUB_UINT_CONSTR_A_0010\"></a>\n- `[E_SUB_UINT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting."
+    },
+    {
+      "key": "E_SUB_UINT_CONSTR_A_0020",
+      "source": "ops/sub/sub.md",
+      "start": 561,
+      "end": 563,
+      "anchor": "E_SUB_UINT_CONSTR_A_0020",
+      "excerpt": "<a id=\"E_SUB_UINT_CONSTR_A_0020\"></a>\n- `[E_SUB_UINT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$, and $C$ have the same type."
+    },
+    {
+      "key": "E_SUB_UINT_CONSTR_B_0010",
+      "source": "ops/sub/sub.md",
+      "start": 571,
+      "end": 572,
+      "anchor": null,
+      "excerpt": "- `[E_SUB_UINT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_UINT_CONSTR_A_0010</span></b>](#E_SUB_UINT_CONSTR_A_0010) on tensor $A$."
+    },
+    {
+      "key": "E_SUB_UINT_CONSTR_B_0020",
+      "source": "ops/sub/sub.md",
+      "start": 573,
+      "end": 574,
+      "anchor": null,
+      "excerpt": "- `[E_SUB_UINT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_UINT_CONSTR_A_0020</span></b>](#E_SUB_UINT_CONSTR_A_0020) on tensor $A$."
+    },
+    {
+      "key": "E_SUB_UINT_CONSTR_C_0010",
+      "source": "ops/sub/sub.md",
+      "start": 584,
+      "end": 585,
+      "anchor": null,
+      "excerpt": "- `[E_SUB_UINT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape."
+    },
+    {
+      "key": "E_SUB_UINT_CONSTR_C_0020",
+      "source": "ops/sub/sub.md",
+      "start": 586,
+      "end": 587,
+      "anchor": null,
+      "excerpt": "- `[E_SUB_UINT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_UINT_CONSTR_A_0020</span></b>](#E_SUB_UINT_CONSTR_A_0020) on tensor $A$."
+    }
+  ],
+  "examples": [
+    {
+      "key": "real:example:1",
+      "source": "ops/sub/sub.md",
+      "start": 60,
+      "end": 72,
+      "anchor": null,
+      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 6.1 & 9.5 & 35.7 \\end{bmatrix}\n$$\n\n$$\nB = \\begin{bmatrix} 3 & 3.3 & 5.1 \\end{bmatrix}\n$$\n\n$$\nC = A - B = \\begin{bmatrix} 6.1-3 & 9.5-3.3 & 35.7-5.1 \\end{bmatrix} = \\begin{bmatrix} 3.1 & 6.2 & 30.6 \\end{bmatrix}\n$$"
+    },
+    {
+      "key": "real:example:2",
+      "source": "ops/sub/sub.md",
+      "start": 74,
+      "end": 98,
+      "anchor": null,
+      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix}\n  3.7 & 4.4 \\\\\n  16.2 & 0.5 \\\\\n  25.3 & 24.8\n\\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 1 & 2 \\end{bmatrix}\n$$\n\n$$\nC = A - B = \\begin{bmatrix}\n  3.7-1 & 4.4-2 \\\\\n  16.2-1 & 0.5-2 \\\\\n  25.3-1 & 24.8-2\n\\end{bmatrix} = \\begin{bmatrix}\n  2.7 & 2.4 \\\\\n  15.2 & -1.5 \\\\\n  24.3 & 22.8\n\\end{bmatrix}\n$$\n\nTensor $B$ has rank $1$ and tensor $A$ has rank $2$; $B$ is broadcast to the shape of $A$, so that each column of $A$ is decreased by the corresponding element of $B$."
+    },
+    {
+      "key": "real:example:3",
+      "source": "ops/sub/sub.md",
+      "start": 100,
+      "end": 112,
+      "anchor": null,
+      "excerpt": "### Example 3\n\n$$\nA = \\begin{bmatrix} 5 & 3.25 \\\\ 4 & 1.75 \\end{bmatrix}\n\\quad\nB = 2.5\n$$\n\n$$\nC = A - B = \\begin{bmatrix} 2.5 & 0.75 \\\\ 1.5 & -0.75 \\end{bmatrix}\n$$\n\nTensor $B$ is a rank-0 tensor; it is broadcast to the shape of $A$."
+    },
+    {
+      "key": "float:example:1",
+      "source": "ops/sub/sub.md",
+      "start": 227,
+      "end": 239,
+      "anchor": null,
+      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 3.0 & 4.5 \\\\ 16.0 & 1.0 \\\\ 25.5 & 24.25 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3.0 & 2.0 \\\\ 4.0 & 0.0 \\\\ 5.0 & 4.0 \\end{bmatrix}\n$$\n\n$$\nC = A -_{(\\text{f})} B = \\begin{bmatrix} 0.0 & 2.5 \\\\ 12.0 & 1.0 \\\\ 20.5 & 20.25 \\end{bmatrix}\n$$\n\nThe difference of two numbers of a `float` type is not always exact; in this example every difference is representable and $C$ is the exact result."
+    },
+    {
+      "key": "float:example:2",
+      "source": "ops/sub/sub.md",
+      "start": 241,
+      "end": 253,
+      "anchor": null,
+      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix} 1.0 & \\text{+inf} & \\text{-0} & \\text{+0} \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 1.0 & \\text{+inf} & \\text{+0} & \\text{-0} \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 0.0 & \\text{NaN} & \\text{-0} & \\text{+0} \\end{bmatrix}\n$$\n\nThe subtraction of the two infinities is the invalid operation of IEEE 754 section 7.2 and yields NaN. The difference of $-0$ and $+0$ is $-0$, the only pair of null operands whose null difference is $-0$; the difference of $+0$ and $-0$ is $+0$."
+    },
+    {
+      "key": "float:example:3",
+      "source": "ops/sub/sub.md",
+      "start": 255,
+      "end": 267,
+      "anchor": null,
+      "excerpt": "### Example 3\n\n$$\nA = \\begin{bmatrix} 0.3 & 1.0 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 0.1 & 1.0 \\end{bmatrix}\n$$\n\n$$\nC \\approx \\begin{bmatrix} 0.19999999999999998 & 0.0 \\end{bmatrix}\n$$\n\nThe exact difference of the two `double` values $0.3$ and $0.1$ is not representable in `double`; the first element of $C$ is that difference rounded to the nearest `double`. The second element is the null difference of two equal values, which is $+0$."
+    },
+    {
+      "key": "int:example:1",
+      "source": "ops/sub/sub.md",
+      "start": 382,
+      "end": 394,
+      "anchor": null,
+      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 6 & 5 & -35 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3 & 3 & 3 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 3 & 2 & -38 \\end{bmatrix}\n$$\n\nEvery difference lies in the range of `int8` and is given by the first case of the definition."
+    },
+    {
+      "key": "int:example:2",
+      "source": "ops/sub/sub.md",
+      "start": 396,
+      "end": 410,
+      "anchor": null,
+      "excerpt": "### Example 2\n\nFor the `int8` type:\n\n$$\nA = \\begin{bmatrix} 127 & -128 & 0 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} -1 & 1 & 1 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} -128 & 127 & -1 \\end{bmatrix}\n$$\n\nThe difference $127-(-1)=128$ is greater than the maximum value $2^7-1=127$ of `int8`, so the third case of the definition applies and the result is $128-2^8=-128$. The difference $-128-1=-129$ is lower than the minimum value $-2^7=-128$, so the second case applies and the result is $-129+2^8=127$. The difference $0-1=-1$ lies in the range of the type and is given by the first case."
+    },
+    {
+      "key": "uint:example:1",
+      "source": "ops/sub/sub.md",
+      "start": 522,
+      "end": 536,
+      "anchor": null,
+      "excerpt": "### Example 1\n\nFor the `uint8` type:\n\n$$\nA = \\begin{bmatrix} 0 & 255 & 4 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 1 & 1 & 7 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 255 & 254 & 253 \\end{bmatrix}\n$$\n\nThe differences $0-1=-1$ and $4-7=-3$ are lower than $0$, so the second case of the definition applies and the results are $-1+2^8=255$ and $-3+2^8=253$; the first of them is larger than both operands. The difference $255-1=254$ is at least $0$ and is given by the first case."
+    }
+  ],
+  "ok": true,
+  "complete": true,
+  "findings": [],
+  "coverage": {
+    "E_SUB_REAL_FUNC_0010": "specified",
+    "E_SUB_REAL_CONSTR_A_0010": "specified",
+    "E_SUB_REAL_CONSTR_B_0010": "specified",
+    "E_SUB_REAL_CONSTR_C_0010": "specified",
+    "E_SUB_FLOAT_FUNC_0010": "specified",
+    "E_SUB_FLOAT_CONSTR_A_0010": "specified",
+    "E_SUB_FLOAT_CONSTR_A_0020": "specified",
+    "E_SUB_FLOAT_CONSTR_B_0010": "specified",
+    "E_SUB_FLOAT_CONSTR_B_0020": "specified",
+    "E_SUB_FLOAT_CONSTR_C_0010": "specified",
+    "E_SUB_FLOAT_CONSTR_C_0020": "specified",
+    "E_SUB_INT_FUNC_0010": "specified",
+    "E_SUB_INT_CONSTR_A_0010": "specified",
+    "E_SUB_INT_CONSTR_A_0020": "specified",
+    "E_SUB_INT_CONSTR_B_0010": "specified",
+    "E_SUB_INT_CONSTR_B_0020": "specified",
+    "E_SUB_INT_CONSTR_C_0010": "specified",
+    "E_SUB_INT_CONSTR_C_0020": "specified",
+    "E_SUB_UINT_FUNC_0010": "specified",
+    "E_SUB_UINT_CONSTR_A_0010": "specified",
+    "E_SUB_UINT_CONSTR_A_0020": "specified",
+    "E_SUB_UINT_CONSTR_B_0010": "specified",
+    "E_SUB_UINT_CONSTR_B_0020": "specified",
+    "E_SUB_UINT_CONSTR_C_0010": "specified",
+    "E_SUB_UINT_CONSTR_C_0020": "specified",
+    "real:example:1": "example_only",
+    "real:example:2": "example_only",
+    "real:example:3": "example_only",
+    "float:example:1": "example_only",
+    "float:example:2": "example_only",
+    "float:example:3": "example_only",
+    "int:example:1": "example_only",
+    "int:example:2": "example_only",
+    "uint:example:1": "example_only"
+  },
+  "entries": [
+    {
+      "key": "E_SUB_REAL_FUNC_0010",
+      "status": "specified",
+      "declaration": "Generated.Sub.realSub",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L33-L56",
+      "excerpt": "<a id=\"E_SUB_REAL_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_SUB_REAL_FUNC_0010]</br></span>\n\nOperator **Sub** subtracts tensor $B$ from tensor $A$ element-wise and stores the result in tensor $C$. Each element of $C$ is the difference of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\tilde{A}[i] - \\tilde{B}[i]\n$$\n\nwhere\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$,\n- $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$.\n\nThe subtraction is exact: $C[i]$ is the difference in $\\mathbb{R}$ of the two elements, with no approximation.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the difference of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
+      "line": 45
+    },
+    {
+      "key": "E_SUB_REAL_CONSTR_A_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L130-L132",
+      "excerpt": "<a id=\"E_SUB_REAL_CONSTR_A_0010\"></a>\n- `[E_SUB_REAL_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting.",
+      "line": 81
+    },
+    {
+      "key": "E_SUB_REAL_CONSTR_B_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L140-L141",
+      "excerpt": "- `[E_SUB_REAL_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_REAL_CONSTR_A_0010</span></b>](#E_SUB_REAL_CONSTR_A_0010) on tensor $A$.",
+      "line": 93
+    },
+    {
+      "key": "E_SUB_REAL_CONSTR_C_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastShapeIs",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L151-L152",
+      "excerpt": "- `[E_SUB_REAL_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape.",
+      "line": 103
+    },
+    {
+      "key": "real:example:1",
+      "status": "example_only",
+      "declaration": "Generated.Sub.realExample1",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L60-L72",
+      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 6.1 & 9.5 & 35.7 \\end{bmatrix}\n$$\n\n$$\nB = \\begin{bmatrix} 3 & 3.3 & 5.1 \\end{bmatrix}\n$$\n\n$$\nC = A - B = \\begin{bmatrix} 6.1-3 & 9.5-3.3 & 35.7-5.1 \\end{bmatrix} = \\begin{bmatrix} 3.1 & 6.2 & 30.6 \\end{bmatrix}\n$$",
+      "line": 123
+    },
+    {
+      "key": "real:example:2",
+      "status": "example_only",
+      "declaration": "Generated.Sub.realExample2",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L74-L98",
+      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix}\n  3.7 & 4.4 \\\\\n  16.2 & 0.5 \\\\\n  25.3 & 24.8\n\\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 1 & 2 \\end{bmatrix}\n$$\n\n$$\nC = A - B = \\begin{bmatrix}\n  3.7-1 & 4.4-2 \\\\\n  16.2-1 & 0.5-2 \\\\\n  25.3-1 & 24.8-2\n\\end{bmatrix} = \\begin{bmatrix}\n  2.7 & 2.4 \\\\\n  15.2 & -1.5 \\\\\n  24.3 & 22.8\n\\end{bmatrix}\n$$\n\nTensor $B$ has rank $1$ and tensor $A$ has rank $2$; $B$ is broadcast to the shape of $A$, so that each column of $A$ is decreased by the corresponding element of $B$.",
+      "line": 160
+    },
+    {
+      "key": "real:example:3",
+      "status": "example_only",
+      "declaration": "Generated.Sub.realExample3",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L100-L112",
+      "excerpt": "### Example 3\n\n$$\nA = \\begin{bmatrix} 5 & 3.25 \\\\ 4 & 1.75 \\end{bmatrix}\n\\quad\nB = 2.5\n$$\n\n$$\nC = A - B = \\begin{bmatrix} 2.5 & 0.75 \\\\ 1.5 & -0.75 \\end{bmatrix}\n$$\n\nTensor $B$ is a rank-0 tensor; it is broadcast to the shape of $A$.",
+      "line": 207
+    },
+    {
+      "key": "E_SUB_FLOAT_FUNC_0010",
+      "status": "specified",
+      "declaration": "Generated.Sub.floatSub",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L179-L223",
+      "excerpt": "<a id=\"E_SUB_FLOAT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_SUB_FLOAT_FUNC_0010]</br></span>\n\nOperator **Sub** subtracts tensor $B$ from tensor $A$ element-wise according to IEEE 754 floating-point semantics and stores the result in tensor $C$. Each element of $C$ is the difference of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\tilde{A}[i] -_{(\\text{f})} \\tilde{B}[i] =\n\\begin{cases}\n\\text{NaN} & \\text{if } \\tilde{A}[i] \\text{ or } \\tilde{B}[i] \\text{ is NaN, or if they are both } +\\infty \\text{ or both } -\\infty \\\\\n\\text{sign}\\left(\\tilde{A}[i] - \\tilde{B}[i]\\right) \\cdot \\infty & \\text{if at least one operand is infinite, the two not being infinities of the same sign} \\\\\n-0 & \\text{if both operands are finite, their exact difference is null, } \\tilde{A}[i] \\text{ is } -0 \\text{ and } \\tilde{B}[i] \\text{ is } +0 \\\\\n+0 & \\text{if both operands are finite and their exact difference is null, the previous case excepted} \\\\\nx & \\text{if both operands are finite and their exact difference } x \\text{ is representable in the type of } A \\text{ and } B \\\\\n\\text{round}(x) & \\text{if both operands are finite and } x \\text{ is not representable in the type of } A \\text{ and } B\n\\end{cases}\n$$\n\nwhere\n- $-_{(\\text{f})}$ is the subtraction of the floating-point type of $A$, $B$ and $C$, i.e. $-_{(\\text{f16})}$, $-_{(\\text{f32})}$ or $-_{(\\text{f64})}$ according to that type,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $x$ is the exact difference of the two finite operands, i.e. their difference in $\\mathbb{R}$, which is a real number and carries no sign of zero,\n- $\\text{sign}(y) \\cdot \\infty$ is $+\\infty$ if $y \\gt 0$ and $-\\infty$ if $y \\lt 0$, where $y = \\tilde{A}[i] - \\tilde{B}[i]$ is the difference of the two operands taken in $\\overline{\\mathbb{R}} = \\mathbb{R} \\cup \\{-\\infty, +\\infty\\}$: that difference is infinite and never null in this case,\n- $\\text{round}(x)$ is the value of $x$ rounded to the nearest value of the type of $A$ and $B$ using the roundTiesToEven attribute of IEEE 754, the exponent range of the type being unbounded: a magnitude whose nearest value exceeds the largest finite value of the type of $A$ and $B$ gives an infinity of the sign of $x$.\n\nIn the first case, an operand that is NaN is propagated, and the subtraction of two infinities of the same sign is the invalid operation defined in IEEE 754 section 7.2; the result is NaN in both cases. The NaN of this case is a quiet NaN; its sign and its payload are not specified, whether the NaN comes from an operand or from the invalid operation, so that every quiet NaN of the type of $A$ and $B$ is a conforming result.\n\nIn the second case the difference is infinite and the result is that infinity, exactly and without rounding: $+\\infty$ for $\\tilde{A}[i] = +\\infty$ with a finite $\\tilde{B}[i]$, for a finite $\\tilde{A}[i]$ with $\\tilde{B}[i] = -\\infty$, and for $\\tilde{A}[i] = +\\infty$ with $\\tilde{B}[i] = -\\infty$; $-\\infty$ for the three opposite combinations.\n\nIn the last case the exact difference is not representable in the type of $A$ and $B$: the result is that difference rounded as defined above, and its sign is the sign of the exact difference. The rounding gives either the largest finite value of the type of that sign, when the exact difference lies below the midpoint between that value and the next power of two of the type, or an infinity of that sign.\n\nWhen the exact difference is null, the result is $+0$, except when $\\tilde{A}[i]$ is $-0$ and $\\tilde{B}[i]$ is $+0$, in which case it is $-0$: the differences $+0 - (+0)$, $+0 - (-0)$ and $(-0)-(-0)$ give $+0$. A non-null exact difference that would round to a null value gives a zero whose sign is the sign of the exact difference, i.e. $-0$ only when the exact difference is negative; the values of the type of $A$ and $B$ are all multiples of its smallest subnormal value, so the exact difference of two of them is a multiple of that value as well, and this case does not arise for two finite operands of the type.\n\n**Subnormal results.** A non-null exact difference whose magnitude is below the smallest normal value of the type of $A$ and $B$ is a multiple of its smallest subnormal value, hence a subnormal value of the type; the case that gives $x$ gives it exactly, with no rounding.\n\n**Values of the operands.** The operands may be any of the values of the type, including the special numbers $\\pm 0$, $\\pm\\text{inf}$ and NaN. The cases above give the result for every combination of them.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the difference of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
+      "line": 262
+    },
+    {
+      "key": "E_SUB_FLOAT_CONSTR_A_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L291-L293",
+      "excerpt": "<a id=\"E_SUB_FLOAT_CONSTR_A_0010\"></a>\n- `[E_SUB_FLOAT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting.",
+      "line": 319
+    },
+    {
+      "key": "E_SUB_FLOAT_CONSTR_A_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L294-L296",
+      "excerpt": "<a id=\"E_SUB_FLOAT_CONSTR_A_0020\"></a>\n- `[E_SUB_FLOAT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$, and $C$ have the same type.",
+      "line": 331
+    },
+    {
+      "key": "E_SUB_FLOAT_CONSTR_B_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L304-L305",
+      "excerpt": "- `[E_SUB_FLOAT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_FLOAT_CONSTR_A_0010</span></b>](#E_SUB_FLOAT_CONSTR_A_0010) on tensor $A$.",
+      "line": 343
+    },
+    {
+      "key": "E_SUB_FLOAT_CONSTR_B_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L306-L307",
+      "excerpt": "- `[E_SUB_FLOAT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_FLOAT_CONSTR_A_0020</span></b>](#E_SUB_FLOAT_CONSTR_A_0020) on tensor $A$.",
+      "line": 353
+    },
+    {
+      "key": "E_SUB_FLOAT_CONSTR_C_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastShapeIs",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L317-L318",
+      "excerpt": "- `[E_SUB_FLOAT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape.",
+      "line": 363
+    },
+    {
+      "key": "E_SUB_FLOAT_CONSTR_C_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L319-L320",
+      "excerpt": "- `[E_SUB_FLOAT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_FLOAT_CONSTR_A_0020</span></b>](#E_SUB_FLOAT_CONSTR_A_0020) on tensor $A$.",
+      "line": 373
+    },
+    {
+      "key": "float:example:1",
+      "status": "example_only",
+      "declaration": "Generated.Sub.floatExample1",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L227-L239",
+      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 3.0 & 4.5 \\\\ 16.0 & 1.0 \\\\ 25.5 & 24.25 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3.0 & 2.0 \\\\ 4.0 & 0.0 \\\\ 5.0 & 4.0 \\end{bmatrix}\n$$\n\n$$\nC = A -_{(\\text{f})} B = \\begin{bmatrix} 0.0 & 2.5 \\\\ 12.0 & 1.0 \\\\ 20.5 & 20.25 \\end{bmatrix}\n$$\n\nThe difference of two numbers of a `float` type is not always exact; in this example every difference is representable and $C$ is the exact result.",
+      "line": 405
+    },
+    {
+      "key": "float:example:2",
+      "status": "example_only",
+      "declaration": "Generated.Sub.floatExample2",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L241-L253",
+      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix} 1.0 & \\text{+inf} & \\text{-0} & \\text{+0} \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 1.0 & \\text{+inf} & \\text{+0} & \\text{-0} \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 0.0 & \\text{NaN} & \\text{-0} & \\text{+0} \\end{bmatrix}\n$$\n\nThe subtraction of the two infinities is the invalid operation of IEEE 754 section 7.2 and yields NaN. The difference of $-0$ and $+0$ is $-0$, the only pair of null operands whose null difference is $-0$; the difference of $+0$ and $-0$ is $+0$.",
+      "line": 443
+    },
+    {
+      "key": "float:example:3",
+      "status": "example_only",
+      "declaration": "Generated.Sub.floatExample3",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L255-L267",
+      "excerpt": "### Example 3\n\n$$\nA = \\begin{bmatrix} 0.3 & 1.0 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 0.1 & 1.0 \\end{bmatrix}\n$$\n\n$$\nC \\approx \\begin{bmatrix} 0.19999999999999998 & 0.0 \\end{bmatrix}\n$$\n\nThe exact difference of the two `double` values $0.3$ and $0.1$ is not representable in `double`; the first element of $C$ is that difference rounded to the nearest `double`. The second element is the null difference of two equal values, which is $+0$.",
+      "line": 475
+    },
+    {
+      "key": "E_SUB_INT_FUNC_0010",
+      "status": "specified",
+      "declaration": "Generated.Sub.intSubSpec",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L347-L378",
+      "excerpt": "<a id=\"E_SUB_INT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_SUB_INT_FUNC_0010]</br></span>\n\nOperator **Sub** subtracts tensor $B$ from tensor $A$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the difference of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below. Tensors $A$, $B$ and $C$ have the same signed $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] =\n\\begin{cases}\n\\tilde{A}[i] - \\tilde{B}[i] & \\text{if the difference lies in } [-2^{n-1},\\, 2^{n-1}-1] \\\\\n\\tilde{A}[i] - \\tilde{B}[i] + 2^n & \\text{if the difference is lower than } -2^{n-1} \\\\\n\\tilde{A}[i] - \\tilde{B}[i] - 2^n & \\text{if the difference is greater than } 2^{n-1}-1\n\\end{cases}\n$$\n\nwhere\n- $\\tilde{A}[i] - \\tilde{B}[i]$ is the exact difference of the two elements, the difference in $\\mathbb{Z}$ of the two integers, before the reduction modulo $2^n$,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $n$ is the number of bits of the type of $A$ and $B$.\n\nThe result is thus the exact difference modulo $2^n$, read as a signed value. The values of an $n$-bit signed type lie in $[-2^{n-1}, 2^{n-1}-1]$, so that their exact difference lies in $[-2^n+1, 2^n-1]$ and one of the three cases above always applies, the reduction being applied at most once.\n\n**The sign of the result.** The range of the type is not symmetric about zero, so that the result of the subtraction of two values of opposite signs can leave the range and take the sign of the subtrahend: for `int8`, $127-(-1)$ gives $-128$ and $-128-1$ gives $127$. Tensors $A$, $B$ and $C$ have the same type and no wider type is used, so that the value of $C$ is that value of the type, sign included.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the difference of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
+      "line": 509
+    },
+    {
+      "key": "E_SUB_INT_CONSTR_A_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L432-L434",
+      "excerpt": "<a id=\"E_SUB_INT_CONSTR_A_0010\"></a>\n- `[E_SUB_INT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting.",
+      "line": 555
+    },
+    {
+      "key": "E_SUB_INT_CONSTR_A_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L435-L437",
+      "excerpt": "<a id=\"E_SUB_INT_CONSTR_A_0020\"></a>\n- `[E_SUB_INT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$, and $C$ have the same type.",
+      "line": 567
+    },
+    {
+      "key": "E_SUB_INT_CONSTR_B_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L445-L446",
+      "excerpt": "- `[E_SUB_INT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_INT_CONSTR_A_0010</span></b>](#E_SUB_INT_CONSTR_A_0010) on tensor $A$.",
+      "line": 579
+    },
+    {
+      "key": "E_SUB_INT_CONSTR_B_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L447-L448",
+      "excerpt": "- `[E_SUB_INT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_INT_CONSTR_A_0020</span></b>](#E_SUB_INT_CONSTR_A_0020) on tensor $A$.",
+      "line": 589
+    },
+    {
+      "key": "E_SUB_INT_CONSTR_C_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastShapeIs",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L458-L459",
+      "excerpt": "- `[E_SUB_INT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape.",
+      "line": 599
+    },
+    {
+      "key": "E_SUB_INT_CONSTR_C_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L460-L461",
+      "excerpt": "- `[E_SUB_INT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_INT_CONSTR_A_0020</span></b>](#E_SUB_INT_CONSTR_A_0020) on tensor $A$.",
+      "line": 609
+    },
+    {
+      "key": "int:example:1",
+      "status": "example_only",
+      "declaration": "Generated.Sub.intExample1",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L382-L394",
+      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 6 & 5 & -35 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3 & 3 & 3 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 3 & 2 & -38 \\end{bmatrix}\n$$\n\nEvery difference lies in the range of `int8` and is given by the first case of the definition.",
+      "line": 629
+    },
+    {
+      "key": "int:example:2",
+      "status": "example_only",
+      "declaration": "Generated.Sub.intExample2",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L396-L410",
+      "excerpt": "### Example 2\n\nFor the `int8` type:\n\n$$\nA = \\begin{bmatrix} 127 & -128 & 0 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} -1 & 1 & 1 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} -128 & 127 & -1 \\end{bmatrix}\n$$\n\nThe difference $127-(-1)=128$ is greater than the maximum value $2^7-1=127$ of `int8`, so the third case of the definition applies and the result is $128-2^8=-128$. The difference $-128-1=-129$ is lower than the minimum value $-2^7=-128$, so the second case applies and the result is $-129+2^8=127$. The difference $0-1=-1$ lies in the range of the type and is given by the first case.",
+      "line": 662
+    },
+    {
+      "key": "E_SUB_UINT_FUNC_0010",
+      "status": "specified",
+      "declaration": "Generated.Sub.uintSubSpec",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L488-L518",
+      "excerpt": "<a id=\"E_SUB_UINT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_SUB_UINT_FUNC_0010]</br></span>\n\nOperator **Sub** subtracts tensor $B$ from tensor $A$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the difference of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below. Tensors $A$, $B$ and $C$ have the same unsigned $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] =\n\\begin{cases}\n\\tilde{A}[i] - \\tilde{B}[i] & \\text{if the difference is at least } 0 \\\\\n\\tilde{A}[i] - \\tilde{B}[i] + 2^n & \\text{if the difference is lower than } 0\n\\end{cases}\n$$\n\nwhere\n- $\\tilde{A}[i] - \\tilde{B}[i]$ is the exact difference of the two elements, the difference in $\\mathbb{Z}$ of the two integers, before the reduction modulo $2^n$,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $n$ is the number of bits of the type of $A$ and $B$.\n\nThe values of an $n$-bit unsigned type are non-negative and at most $2^n-1$, so that their exact difference lies in $[-(2^n-1), 2^n-1]$: the second case applies exactly when $\\tilde{A}[i] \\lt \\tilde{B}[i]$, and the reduction is applied at most once.\n\n**The result may be larger than the minuend.** The difference of two non-negative integers is at most the minuend, whereas the result here is reduced modulo $2^n$: for `uint8`, $0-1$ gives $255$, a value larger than both operands, and $4-7$ gives $253$. The subtraction is not monotonic on the unsigned types, and the result is not the value of a signed difference.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the difference of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
+      "line": 696
+    },
+    {
+      "key": "E_SUB_UINT_CONSTR_A_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L558-L560",
+      "excerpt": "<a id=\"E_SUB_UINT_CONSTR_A_0010\"></a>\n- `[E_SUB_UINT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting.",
+      "line": 741
+    },
+    {
+      "key": "E_SUB_UINT_CONSTR_A_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L561-L563",
+      "excerpt": "<a id=\"E_SUB_UINT_CONSTR_A_0020\"></a>\n- `[E_SUB_UINT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$, and $C$ have the same type.",
+      "line": 753
+    },
+    {
+      "key": "E_SUB_UINT_CONSTR_B_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L571-L572",
+      "excerpt": "- `[E_SUB_UINT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_UINT_CONSTR_A_0010</span></b>](#E_SUB_UINT_CONSTR_A_0010) on tensor $A$.",
+      "line": 765
+    },
+    {
+      "key": "E_SUB_UINT_CONSTR_B_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L573-L574",
+      "excerpt": "- `[E_SUB_UINT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_UINT_CONSTR_A_0020</span></b>](#E_SUB_UINT_CONSTR_A_0020) on tensor $A$.",
+      "line": 775
+    },
+    {
+      "key": "E_SUB_UINT_CONSTR_C_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastShapeIs",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L584-L585",
+      "excerpt": "- `[E_SUB_UINT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape.",
+      "line": 785
+    },
+    {
+      "key": "E_SUB_UINT_CONSTR_C_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L586-L587",
+      "excerpt": "- `[E_SUB_UINT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_SUB_UINT_CONSTR_A_0020</span></b>](#E_SUB_UINT_CONSTR_A_0020) on tensor $A$.",
+      "line": 795
+    },
+    {
+      "key": "uint:example:1",
+      "status": "example_only",
+      "declaration": "Generated.Sub.uintExample1",
+      "limitation": "",
+      "source": "ops/sub/sub.md:L522-L536",
+      "excerpt": "### Example 1\n\nFor the `uint8` type:\n\n$$\nA = \\begin{bmatrix} 0 & 255 & 4 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 1 & 1 & 7 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 255 & 254 & 253 \\end{bmatrix}\n$$\n\nThe differences $0-1=-1$ and $4-7=-3$ are lower than $0$, so the second case of the definition applies and the results are $-1+2^8=255$ and $-3+2^8=253$; the first of them is larger than both operands. The difference $255-1=254$ is at least $0$ and is given by the first case.",
+      "line": 815
+    }
+  ],
+  "artifact_sha256": "c98032d53eab3e4cc39c7f5251e5a9834b5167a92028dd7eccceed7af72b729d",
+  "library_sha256": "3162109b4c926c2fa5dd5f8bd2eb2d90fb17a0480eccc0216a4ea9bd2b43ffab",
+  "compiler": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": "Generated.Sub.floatExample1 : Prop\nGenerated.Sub.floatExample2 : Prop\nGenerated.Sub.floatExample3 : Prop\nGenerated.Sub.floatSub : Sonnx.FloatFormat \u2192\n  Sonnx.Tensor Sonnx.FVal \u2192 Sonnx.Tensor Sonnx.FVal \u2192 Sonnx.Tensor Sonnx.FVal \u2192 Prop\nGenerated.Sub.intExample1 : Prop\nGenerated.Sub.intExample2 : Prop\nGenerated.Sub.intSubSpec : Nat \u2192 Sonnx.Tensor Int \u2192 Sonnx.Tensor Int \u2192 Sonnx.Tensor Int \u2192 Prop\nGenerated.Sub.realExample1 : Prop\nGenerated.Sub.realExample2 : Prop\nGenerated.Sub.realExample3 : Prop\nGenerated.Sub.realSub : Sonnx.Tensor Rat \u2192 Sonnx.Tensor Rat \u2192 Option (Sonnx.Tensor Rat)\nGenerated.Sub.uintExample1 : Prop\nGenerated.Sub.uintSubSpec : Nat \u2192 Sonnx.Tensor Int \u2192 Sonnx.Tensor Int \u2192 Sonnx.Tensor Int \u2192 Prop\n@Sonnx.BroadcastCompatible : {\u03b1 : Type} \u2192 Sonnx.Tensor \u03b1 \u2192 Sonnx.Tensor \u03b1 \u2192 Prop\n@Sonnx.BroadcastShapeIs : {\u03b1 : Type} \u2192 Sonnx.Tensor \u03b1 \u2192 Sonnx.Tensor \u03b1 \u2192 Sonnx.Tensor \u03b1 \u2192 Prop\n@Sonnx.TypeConsistent : {\u03b1 : Type} \u2192 \u03b1 \u2192 \u03b1 \u2192 \u03b1 \u2192 Prop",
+    "command": [
+      "/home/eric/.elan/bin/lake",
+      "env",
+      "lean",
+      "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/lean/attempt-003.lean"
+    ]
+  }
+}

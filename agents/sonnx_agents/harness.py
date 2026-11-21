@@ -153,7 +153,7 @@ def _write_report(report_path: Path, report: dict) -> None:
     A run that timed out or died has no report of its own, so the path the history names would
     otherwise point at a file that is not there: measured on 2026-10-04, the **Atan** record
     lists `iter-001-report-4.json` for a round that was killed at 600 s, and the published
-    `verification/atan/loop/` holds only the reports of the rounds that wrote one.  What is
+    `ops/atan/loop/` holds only the reports of the rounds that wrote one.  What is
     written says what happened, so the evidence of the missing round is the report itself.
     """
     try:

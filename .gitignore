@@ -1,0 +1,9 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Lean build output
+lean/.lake/
+
+# The compiled C test program (the sources and the report are kept)
+/ops/*/c/c_tests

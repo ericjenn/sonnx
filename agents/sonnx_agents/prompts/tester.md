@@ -8,7 +8,7 @@ your evidence.
 - the specification under test, complete;
 - the implementation, which was written from that specification alone;
 - the harness that runs the comparison (`specloop.py`) and an accepted case module of
-  another operator (`verification/add/cases.py`), which is the shape to follow;
+  another operator (`ops/add/cases.py`), which is the shape to follow;
 - when you are repairing a case module you wrote before, that module and either the Python
   error it raised or, when it ran and did not pass and the adjudicator attributed the
   failure to it, the adjudicator's instruction and the harness's report (see *A case set
@@ -280,11 +280,11 @@ implementation itself may depart from that value by a unit or two in the last pl
 below, the platform's `asin` for `double` does, at a few values in a thousand. A case that
 fails the implementation for such a departure measures the accuracy of the implementation,
 which the document does not fix — a departure is the *introduced error* of that implementation,
-and the document refers it to `other/accuracy.md` — and it fails for every implementation
+and the document refers it to `docs/accuracy.md` — and it fails for every implementation
 anyone can write here.
 
 The accepted case set of **Sin** was written for exactly this situation and is the shape to
-copy (`verification/sin/cases.py`): a departure is measured in units of the last place — of
+copy (`ops/sin/cases.py`): a departure is measured in units of the last place — of
 the value 1, per type — a departure within `SLACK = 4.0` of those units is *not* a failure
 ("Four units is not an accuracy difference between two conforming implementations but a
 defect"), and the departures are **reported anyway**: the sweep is named "the correctness of a
@@ -339,7 +339,7 @@ differently* above is where to take it.
 A section on the real numbers has no ONNX type and ONNX Runtime cannot be asked about it.
 Check it against exact arithmetic instead — `fractions.Fraction` for the rationals of the
 examples, and a high-precision computation for anything transcendental — and record in the
-sweep's summary what was checked. `verification/sin/sin_oracle.py` is an example of a
+sweep's summary what was checked. `ops/sin/sin_oracle.py` is an example of a
 reference computed independently of the platform's library. Do not put a real-number case in
 `cases()`: those cases are run through a one-node ONNX model, a real number has no type
 there, and the harness records the case as *open* — which is not a check. Every real-number
@@ -364,7 +364,7 @@ it has the standard library, `numpy`, `onnx` and `onnxruntime`, and **nothing el
 which is a failed test of yours: inside `cases()` the harness reports it as an error of the
 case module, and inside a sweep it is a failing sweep, so the run stops on your import and
 never reaches the document. The accepted case modules of this repository
-(`verification/add/cases.py`, `verification/mul/cases.py`, `verification/sin/sin_oracle.py`)
+(`ops/add/cases.py`, `ops/mul/cases.py`, `ops/sin/sin_oracle.py`)
 are written against exactly that set. High precision is `decimal` with a wide context and
 `fractions.Fraction`, as `sin_oracle.py` does it — a Taylor series summed in `Decimal`, or a
 comparison by exact rational arithmetic — not a third-party arbitrary-precision library.

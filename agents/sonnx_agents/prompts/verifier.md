@@ -100,8 +100,8 @@ form the guidelines require?**
   it. Report a defect there only under rule 2.
 - **A case the document decides outside the formula.** The formula, the definitions in its
   `where` list and the prose that follows it are one statement, and a case is decided when
-  any of them fixes the value. `ops/add.md` and `ops/sin.md` are accepted documents written
-  in these shapes, so none of them is a finding:
+  any of them fixes the value. `ops/add/add.md` and `ops/sin/sin.md` are accepted documents
+  written in these shapes, so none of them is a finding:
   - **a symbol the `where` list defines, where that definition decides the case.**
     `\text{nearest}(x)` — "the value of $x$ rounded to the nearest value of the type of $A$
     using the roundTiesToEven attribute of IEEE 754" — is a total function of the real
@@ -126,7 +126,7 @@ form the guidelines require?**
   the same rule and the two may drift apart", which is the guidelines' own reason for
   making the error-condition table refer to a tag instead of repeating it. The same holds
   the other way round: **prose that repeats a case the formula already decides is not a
-  finding either.** `ops/sin.md` decides the NaN and the infinity cases in its formula and
+  finding either.** `ops/sin/sin.md` decides the NaN and the infinity cases in its formula and
   then gives them again under *Values of the operand*; a paragraph may restate a rule for
   the reader's benefit without becoming a second rule. The guidelines' remark about
   restatement is made of the error-condition table, which must *carry a tag* rather than a

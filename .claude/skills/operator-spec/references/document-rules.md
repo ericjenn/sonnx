@@ -1,7 +1,7 @@
 # What the guidelines require
 
-Distilled from `informal_corrected.md` (the normative document) and `informal_spec_template.md`.
-Line numbers are those of `informal_corrected.md` as of 2026-10-04. When this file and the guidelines
+Distilled from `docs/informal_corrected.md` (the normative document) and `docs/informal_spec_template.md`.
+Line numbers are those of `docs/informal_corrected.md` as of 2026-10-04. When this file and the guidelines
 disagree, the guidelines win — fix this file.
 
 ## Modality (l.108)
@@ -85,7 +85,7 @@ constraint on inputs, outputs or attributes:
 
   Everything inside it specifies; everything outside it does not.
 
-## Structure (l.220, and `informal_spec_template.md`)
+## Structure (l.220, and `docs/informal_spec_template.md`)
 
 The headings of the specification document:
 

@@ -1,0 +1,62 @@
+{
+  "spec": "/run/media/eric/Work1/Work/gits/sonnx/ops/add/add.md",
+  "op": "Add",
+  "opset": 14,
+  "impl": "/run/media/eric/Work1/Work/gits/sonnx/ops/add/loop/iter-001-impl.py",
+  "entry": "add",
+  "generated": "2026-11-21T11:41:19Z",
+  "cases": {
+    "total": 222,
+    "passed": 222,
+    "mismatched": [],
+    "open": [],
+    "nan_payload": [
+      {
+        "case": "float16: NaN operand, quiet, payload 1"
+      },
+      {
+        "case": "float16: NaN operand, quiet, payload 1, sign set"
+      },
+      {
+        "case": "float16: NaN operand, signalling"
+      }
+    ]
+  },
+  "sweeps": [
+    {
+      "sweep": "the document's worked examples",
+      "summary": "5 examples, as documented vs ORT vs implementation",
+      "failures": [
+        {
+          "who": "float Example 3",
+          "detail": "documented [0.30000000000000004, 3.0, -0.0], ORT [0.30000000000000004, 3.0, 0.0]"
+        },
+        {
+          "who": "float Example 3",
+          "detail": "documented [0.30000000000000004, 3.0, -0.0], implementation [0.30000000000000004, 3.0, 0.0]"
+        }
+      ]
+    },
+    {
+      "sweep": "int domain (document vs ORT vs implementation)",
+      "summary": "8 types: int8 exhaustive (65536 pairs), int16 249 pairs, int32 249 pairs, int64 249 pairs, uint8 exhaustive (65536 pairs), uint16 225 pairs, uint32 225 pairs, uint64 225 pairs",
+      "failures": []
+    },
+    {
+      "sweep": "the float formula against exact arithmetic (Fraction)",
+      "summary": "1800 operand pairs: float16: 600 operand pairs, float32: 600 operand pairs, float64: 600 operand pairs; the float16 departures that are the same sum rounded through float32 are recorded, not required (0 recorded)",
+      "failures": []
+    },
+    {
+      "sweep": "the real section (exact rational arithmetic, no ONNX Runtime)",
+      "summary": "5 cases checked against Fraction arithmetic",
+      "failures": []
+    },
+    {
+      "sweep": "the document's types against the ONNX schema",
+      "summary": "11 declared types, every one admitted by the schema of Add-14; the schema also admits tensor(bfloat16), which the document does not specify (recorded, not required)",
+      "failures": []
+    }
+  ],
+  "ok": false
+}

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check a SONNX operator specification against the mechanical rules of the guidelines.
 
-Usage:  lint_spec.py ops/add.md [--op ADD]
+Usage:  lint_spec.py ops/add/add.md [--op ADD]
 
 This checks only what a program can decide. It never says a specification is
 correct: the semantic checks (is the case analysis right, is a case missing)

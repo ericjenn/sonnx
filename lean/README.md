@@ -1,80 +1,173 @@
-# The Mul operator in Lean 4
+# The Lean 4 build root
 
-A Lean 4 formalization of the SONNX profile specification of operator
-**Mul** (`../ops/mul.md`): the specification is turned into Lean types and
-definitions, the operator is implemented as executable Lean code, and its
-behaviour — the elementwise formulas and constraint lists
-`E_MUL_*_FUNC_0010`, `E_MUL_*_CONSTR_A_0010`, `E_MUL_*_CONSTR_C_0010` — is
-proved.
+This directory is the Lake package the SONNX pipeline uses to type-check and execute the Lean
+modules it generates. It holds two libraries: `Sonnx`, the one shared Lean library every
+generated module imports, and `CGen`, a C code generator that renders operator kernels from a
+Lean description. No operator-specific Lean code lives here; neither library depends on the
+other.
 
-Pure Lean core, no external libraries. Built and checked with Lean
-4.33.1 / Lake 5.0.0:
+| file | purpose |
+|---|---|
+| `lakefile.lean` | the package definition; the `Sonnx` library is its default target, `CGen` its second target |
+| `lean-toolchain` | the pinned Lean toolchain |
+| `lake-manifest.json` | the dependency manifest (no dependencies) |
+| `Sonnx.lean` | the library root: imports every module below |
+| `Sonnx/Prelude.lean` | list lemmas; `TypeConsistent` |
+| `Sonnx/Tensor.lean` | `Tensor` (shape and flat data), `size`, `validIdxB`, `offset`, `Tensor.read`, `wellFormed` |
+| `Sonnx/Broadcast.lean` | `padTo`, `bcastDim`, `bcastShape`, `bcastIdx`, `Broadcasts`, `BroadcastCompatible`, `BroadcastShapeIs` |
+| `Sonnx/Index.lean` | `indices` over a shape, and its offset lemma |
+| `Sonnx/Int.lean` | `CongM`, `intModulus`/`intMin`/`intMax`, the signed and unsigned ranges, `uintWrap`/`sintWrap` with range, congruence and uniqueness, `UIntN`/`SIntN` as bit patterns |
+| `Sonnx/Float.lean` | `FloatKind`, `FloatFormat`, `FVal`, representability and `RoundNearestEven`, `Overflows`, `RoundToFormat` |
+| `Sonnx/Elementwise.lean` | `binary` (the functional form) and `PointwiseBinaryRel`/`ElementwiseBinaryRel` (the relational form) |
+| `CGen.lean` | the generator root: imports the three modules below (not the drivers, which define `main`) |
+| `CGen/Ast.lean` | the C11 datatypes: `CType`, `UnOp`/`BinOp`, `Expr`, `Stmt`, `Param`, `Fun`, `Decl`, `CFile` |
+| `CGen/Print.lean` | the precedence-aware printer: `renderExpr`, `renderType`/`declType`, `renderStmt`, `renderFun`, `renderFile` |
+| `CGen/Kernel.lean` | `Elementwise`, `rhs`, `kernel`, `funsFor`/`funs`, `operatorsFileFor`/`operatorsFile`, `headerName`, `headerFileFor`, `sourceFileFor`, `binOpName` |
+| `CGen/Emit.lean` | the emit driver: writes `operatorsFile` to a path or to stdout |
+| `CGen/Probe.lean` | the printer probes; exits nonzero on a mismatch |
+
+Build the libraries first; `lake build Sonnx` and `lake build CGen` write
+`.lake/build/lib/lean/{Sonnx,CGen}/*.olean` onto the `LEAN_PATH` that `lake env` exports, so
+`lake env lean` can then `import Sonnx`:
 
 ```sh
-cd lean && lake build
-# to type-check a single file:
-lake env lean MulOp/MulCore.lean
+cd lean
+lake build Sonnx
+printf 'import Sonnx\n#check @Sonnx.Tensor\n#check @Sonnx.binary\n' \
+  | lake env lean --stdin
 ```
 
-## Files
+The pipeline's `lean.build_library()` runs `lake build Sonnx CGen` together, because a generated
+module may import `CGen` for its descriptor, and an olean that does not exist fails the compile
+that carries it.
 
-| file | contents |
-|---|---|
-| `MulOp/Tensor.lean` | the tensor model: shapes, indices (`validIdxB`), row-major `offset`, `Tensor`, `Tensor.read` |
-| `MulOp/Broadcast.lean` | Numpy-style multidirectional broadcasting: `padTo`, `bcastDim`, `bcastShape`, the `Broadcasts` predicate, index translation `bcastIdx` and its validity |
-| `MulOp/MulCore.lean` | the operator `mul : Tensor α → Tensor α → Option (Tensor α)`, generic over the element type, with its shape and elementwise theorems |
-| `MulOp/IntTypes.lean` | the `n`-bit integer type families (`UIntN`, `SIntN`) and the integer formulas |
-| `MulOp/FloatTypes.lean` | the IEEE 754 binary64 family (Lean's `Float`) and the case table |
-| `MulOp/RealTypes.lean` | the exact-real family (modeled by `Rat`) and its examples |
-| `MulOp/Examples.lean` | the tensor-level examples of the specification, for all four families |
-| `MulOp.lean` | root module |
+## The import contract
 
-## Where each clause of the specification lives
+A generated module starts with `import Sonnx` (or the one library module it needs,
+`Sonnx.Float`, say) and may otherwise import only Lean core (`Init`, `Std`, `Lean`) and, for
+the C descriptor, `CGen`. It never
+imports another operator's generated module, Mathlib, Batteries or Lake, and never redeclares a
+name the library exports. The pipeline enforces this mechanically for both the formal
+specification and the generated conformance runner: `agents/sonnx_agents/lean.py` rejects a
+disallowed import and a redefinition of a shared top-level name, and the formalizer prompt
+carries the rule and the API table.
 
-| clause of `../ops/mul.md` | Lean |
-|---|---|
-| definition of the broadcast of two shapes / incompatibility | `Broadcast.bcastShape`, `Broadcast.bcastDim` |
-| `E_MUL_*_CONSTR_A_0010` — fail when shapes are not broadcast-compatible | `MulCore.mul_none`; exercised concretely in `Examples.incompatible_none` |
-| shape part of `E_MUL_*_CONSTR_C_0010` — result shape and well-formedness | `MulCore.mul_shape_wf` (with `MulCore.mulData_wf`, `Broadcast.bcastShape_length`, `Broadcast.bcastShape_broadcasts`) |
-| `E_MUL_*_FUNC_0010` — `C[i] = Ã[i] · B̃[i]` at every index | `MulCore.mulData_read_correct`, for a generic element type `α` with a `Mul` instance; the index `i` of the broadcast shape is translated into an operand index by `Broadcast.bcastIdx`, proved valid by `Broadcast.validIdxB_bcastIdx` |
-| `E_MUL_REAL_FUNC_0010` — exact products in `ℝ` | instantiated at `α = Rat`: `RealTypes.example_1_*`, `Examples.real_example_1/2` |
-| `E_MUL_FLOAT_FUNC_0010` — IEEE 754 case table | `FloatTypes`: `mul_nan_*` (NaN operands), `mul_zero_inf` (zero · infinity), `mul_exact`/`mul_rounds` (exact product / roundTiesToEven), `mul_overflow*` (±∞ on overflow), `mul_subnormal`/`mul_underflow_zero` (underflow), `mul_zero_sign_*` (the signs of the zeros); the tensor example `float_example_2` |
-| `E_MUL_UINT_FUNC_0010` — unsigned `n`-bit products | `IntTypes.UIntN.mul_def` (the result is the exact product reduced modulo `2^n`) and `UIntN.mul_congruent` (congruent to the exact product: the reduction applied as many times as needed); examples `IntTypes` and `Examples.uint8_example` |
-| `E_MUL_INT_FUNC_0010` — signed `n`-bit products | `IntTypes.SIntN.mul_spec`: the product's value is in the canonical range `[-2^(n-1), 2^(n-1))`, congruent modulo `2^n` to `a.toInt * b.toInt`, and is the **only** integer of that range satisfying the congruence (the "values of the type are `2^n` distinct integers no two of which are congruent" observation, proved as `IntTypes.congruent_range_unique`); `Examples.int8_example` |
-| values as `2^n` distinct integers, reduction several times | `IntTypes.CongM` (congruence), `CongM.mul`, `CongM.add_congruent`, `congruent_range_unique` |
+The library is what makes the tensor formalization operator-independent: a generated module
+defines only its own relations, example tensors and claims. Trace markers for the document's
+constraints usually name a shared declaration (`Sonnx.TypeConsistent`, `Sonnx.BroadcastCompatible`,
+`Sonnx.BroadcastShapeIs`), while the operator's function and example markers name its own
+declarations.
 
-## Modeling choices
+## The library digest
 
-* **Exact reals** (`real`): modeled by `Rat ⊂ ℝ` — the multiplication is the
-  exact quotient product, no rounding, no special values, hence faithful for
-  rational operands (all values of the specification's real examples are
-  rational). `E_MUL_REAL_FUNC_0010` is then literally
-  `MulCore.mulData_read_correct` at `α = Rat`.
-* **IEEE 754 floats** (`float`): Lean's `Float` is exactly the IEEE 754
-  binary64 `double`: its `Mul` instance multiplies with rounding mode
-  roundTiesToEven and IEEE error handling (invalid operations → quiet `NaN`);
-  there is no separate `Double` type. The case table of
-  `E_MUL_FLOAT_FUNC_0010` is verified by evaluating the operator's compiled
-  code (`native_decide`) on the values the specification documents — the same
-  IEEE paths a runtime evaluates. `NaN` payloads being unspecified, the
-  `NaN` results are identified by `Float.isNaN` and the signed zeros by
-  `Float.toBits`, not by equality.
-* **Integer families** (`int`/`uint`): a value of `UIntN n`/`SIntN n` is a
-  bit pattern `val : Nat`, `0 ≤ val < 2^n`, and the multiplication is the
-  exact product reduced modulo `2^n` — the same operation for both types,
-  like `BitVec n` in the Lean standard library. The signed type adds the
-  two's-complement reading `SIntN.toInt`, proved to be the unique integer of
-  the canonical range congruent to the pattern. The ONNX types `uint8`,
-  `int8`, `uint16`, `int16`, `uint32`, `int32`, `uint64`, `int64` are the
-  instances `n = 8, 16, 32, 64`, as the specification says.
-* **Broadcasting**: right-aligned, Numpy-style; a rank-0 operand broadcasts
-  to any shape, and a dimension of size zero broadcasts only against size-1
-  dimensions, where it keeps size zero. Where an operand has no element
-  under an index of the product (rank-0 and zero-sized-dimension cases), the
-  element read falls back to the `Inhabited` default — the formula
-  `E_MUL_*_FUNC_0010` is stated for well-formed tensors with non-zero shapes,
-  where the fallback never fires (`MulCore.mulData_read_correct`).
-* **Error handling**: `mul` returns `Option`; `none` is the failure of
-  `E_MUL_*_CONSTR_A_0010`. There are no other errors for the real family
-  (`E_MUL_REAL_FUNC_0010`), and the float/integer error conditions of the
-  specification are the nominal, correct results of their arithmetic models.
+`Sonnx` is part of the artifact's identity. `lean.library_digest()` is a SHA-256 over
+`lakefile.lean`, `lean-toolchain`, `Sonnx.lean` and `Sonnx/*.lean` in sorted relative-path order.
+It is written into every generated module as `@library-digest`, into the trace report and the
+conformance manifest as `library_sha256`, and is re-read at every freshness check. Editing the
+library therefore makes every artifact generated against the previous library stale, by design:
+regenerate rather than reuse. The pipeline also builds the library before the formalizer is
+asked and before the conformance runner is generated, and fails the stage (`lean-failed`, or
+`lean-conformance-error` with status `library-unusable`) rather than compiling against a library
+that does not build.
+
+## The C generator — `CGen`
+
+`CGen` renders C11 source from a Lean description of an operator. `CGen.Ast` is an abstract
+syntax for the fragment a kernel needs, `CGen.Print` is a precedence-aware pretty-printer for
+it, and `CGen.Kernel` builds the kernels:
+
+```sh
+cd lean
+lake build CGen
+lake env lean --run CGen/Probe.lean          # the printer probes
+lake env lean --run CGen/Emit.lean out.c     # writes the translation unit
+```
+
+With no path the driver prints the translation unit to standard output; the parent directory of
+a path must exist. `lake build CGen` also builds the two driver modules, which the root module
+does not import because both define `main`.
+
+`operatorsFile` generates, for every operator (`add`, `sub`, `mul`) and every element type, a
+prototype and a kernel of the form
+
+```c
+void sonnx_sub_i8(const int8_t *a, const int8_t *b, int8_t *c, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    c[i] = (int8_t)((uint8_t)a[i] - (uint8_t)b[i]);
+  }
+}
+```
+
+The element types are `float32`, `float64` (`f32`, `f64`) and the signed and unsigned fixed-width
+integers from 8 to 64 bits (`i8`…`i64`, `u8`…`u64`); `float16` is omitted because C has no
+standard type for it. The kernels assume contiguous row-major arrays of one length `n`: the
+broadcast shape and the strides are the caller's business. Integer kernels wrap modulo
+`2 ^ bits` — a signed result is computed in the unsigned type of the same width and converted
+back — matching `Sonnx.uintWrap` and `Sonnx.sintWrap`; the banner of the generated file states
+the whole contract.
+
+`operatorsFileFor ops dtypes` takes the operator table and the element types, so a caller can
+render a subset; `operatorsFile` is the library's own table. The split forms render the same
+kernels as a header and a source file: `headerFileFor` writes `sonnx_kernels.h` (the standard
+includes, the banner and the 30 prototypes, no bodies) and `sourceFileFor` writes
+`sonnx_kernels.c` (the banner, the quoted `#include "sonnx_kernels.h"` and the 30 definitions,
+no repeated standard includes). `headerName` is that quoted name, and `renderIncludes` leaves an
+entry that is already delimited (`"…"` or `<…>`) unchanged, so the source's include is
+reproduced as written. `binOpName` renders an operator as the string a reader sees (`add`,
+`sub`, `mul`) rather than as a Lean constructor.
+
+The pipeline renders the split pair from a **descriptor** the formalizer writes into the
+generated module:
+
+```lean
+def sonnxCGenOp : CGen.Elementwise := ⟨"sub", .sub⟩
+```
+
+It is a top-level `def` outside every namespace, named exactly `sonnxCGenOp`, whose `name` is the
+operator's lowercase entry and whose second field is the matching `CGen.BinOp`. The C stage
+copies the formal specification, appends an `#eval` trailer that prints the descriptor and writes
+`headerFileFor [sonnxCGenOp] dtypes` and `sourceFileFor [sonnxCGenOp] dtypes` where Lean can see
+them, and compiles the copy with `lake env lean`. Only `add`, `sub` and `mul` are rendered:
+`CGen`'s signed-integer element step computes in the unsigned type, which is the specified wrap
+for those three but not signed division, so `Div` and `Mod` descriptors are refused. A module
+without the descriptor — any operator that is not elementwise binary — is reported `unsupported`
+by the C stage, which is not a failure of the run.
+
+`CGen` is not covered by the library digest (which hashes `lakefile.lean` and the `Sonnx` tree
+only). A change to a `CGen` source file therefore does not invalidate a generated Lean artifact;
+it changes only the C rendered from it.
+
+## Generated artifacts
+
+Generated artifacts live in the operator's own folder under `ops/`, not here:
+
+```
+ops/<op>/lean/FormalSpec.lean        the generated formal specification
+ops/<op>/lean/FormalSpec.trace.json  its trace coverage and source/library digests
+ops/<op>/lean/LeanConformance.lean   the generated executable runner
+ops/<op>/lean/conformance.manifest.json
+ops/<op>/c/CGenEmit.lean             the specification with the generated render trailer
+ops/<op>/c/sonnx_kernels.h           the rendered prototypes
+ops/<op>/c/sonnx_kernels.c           the rendered definitions
+ops/<op>/c/c_tests.c                 the accepted C test program
+ops/<op>/c/c-report.json             its checks, hashes and failing lines
+```
+
+A run with an explicit `--run-dir` keeps them there until `--publish` validates the Lean
+artifact and conformance and copies the set into `ops/<op>/lean/`. The pipeline invokes:
+
+```sh
+cd lean
+lake env lean /absolute/path/FormalSpec.lean
+lake env lean --run /absolute/path/LeanConformance.lean
+```
+
+## Lineage
+
+The library is the generic layer of the hand-written Mul formalization (`lean/MulOp/` at git
+HEAD), which was deleted on 2026-11-15 along with the hand-written executable runners
+`Conformance.lean` and `AbsConformance.lean`; the deleted modules were re-namespaced into
+`Sonnx` and the floating-point model was taken from the archived Sub formalization. The
+operator-specific parts of `MulOp` — the Mul relation, its examples and its `Mul` instances on
+the integer types — were left behind. Every operator, Mul included, is now formalized and
+executed only by the generated pipeline, against this library.

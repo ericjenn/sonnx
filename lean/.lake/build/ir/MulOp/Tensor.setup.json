@@ -1,7 +1,0 @@
-{"plugins": [],
- "package": "mul_op",
- "options": {},
- "name": "MulOp.Tensor",
- "isModule": false,
- "importArts": {},
- "dynlibs": []}

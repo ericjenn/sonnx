@@ -38,7 +38,7 @@ Run this before showing a draft, and again after every amendment. The mechanical
       value it has.
 - [ ] A case may be decided by the formula, by a definition in its `where` list, or by the
       paragraph that follows it — the three are one statement — and **prose that repeats a case
-      the formula already decides is not a defect**. `ops/sin.md` states the NaN and infinity
+      the formula already decides is not a defect**. `ops/sin/sin.md` states the NaN and infinity
       cases in its formula and again under *Values of the operand*. The remark that "a
       restatement is a second formulation of the same rule and the two may drift apart" is made
       of the **error-condition table**, which is to carry a tag and not a copy of the statement
@@ -73,7 +73,7 @@ Run this before showing a draft, and again after every amendment. The mechanical
 ## Per restrictions
 
 - [ ] Every family section's `## Restrictions` block opens with
-      `[General restrictions](./global_restrictions.md) are applicable.`
+      `[General restrictions](../global_restrictions.md) are applicable.`
 - [ ] The rows of the operator's restriction file (`ops/<op>_restrictions.md`) are carried into
       **every** family section verbatim and in the file's order — none dropped, none invented, none
       reordered, none reworded. The same rows appear in each section: a restriction is the
@@ -115,7 +115,7 @@ Run this before showing a draft, and again after every amendment. The mechanical
 3. **A specification written in terms of the type of $C$.** The type of $C$ is the type of the
    arguments; writing the case analysis on $C$ hides the whole question.
 4. **A non-specifying announcement inside the Function section.** It is not part of the
-   specification; it was removed from `ops/add.md` and must not be reintroduced.
+   specification; it was removed from `ops/add/add.md` and must not be reintroduced.
 5. **Checkability clauses.** The guidelines no longer contain a "Checking the specification"
    section; a specification does not state that it is checkable, nor how.
 6. **A worked result in a ```` ```math ```` fence.** Not rendered by Obsidian.
@@ -125,21 +125,21 @@ Run this before showing a draft, and again after every amendment. The mechanical
 Report these rather than silently choosing a side.
 
 1. **The guidelines' own example contradicts the guidelines.** The `Div` Contents example at
-   `informal_corrected.md` l.249 (reproduced in `informal_spec_template.md` l.27) merges the eight
+   `docs/informal_corrected.md` l.249 (reproduced in `docs/informal_spec_template.md` l.27) merges the eight
    `int` and `uint` types into one section, while l.255 requires separate sections for types whose
-   semantics differ and l.205 defines `int` and `uint` as two families. `ops/add.md` follows l.255.
-2. **"Definition of operator **Op** signature:"** (`informal_corrected.md` l.266,
-   `informal_spec_template.md` l.50) is an announcement, not specifying information, and it is
+   semantics differ and l.205 defines `int` and `uint` as two families. `ops/add/add.md` follows l.255.
+2. **"Definition of operator **Op** signature:"** (`docs/informal_corrected.md` l.266,
+   `docs/informal_spec_template.md` l.50) is an announcement, not specifying information, and it is
    stated with `shall`-free imperative mood in a place where the guidelines require the present
-   indicative anyway. It was removed from `ops/add.md`.
+   indicative anyway. It was removed from `ops/add/add.md`.
 
 ## The specs in `ops/` as of 2026-10-03
 
 | spec | state |
 |---|---|
-| `ops/add.md` | through the whole loop; four family sections, clean under the linter |
-| `ops/sub.md` | predates the loop: merged `int`/`uint`, bare `-` in float, the announcement of mistake 4, V1–V4 callouts |
-| `ops/div.md` | predates the loop: merged `int`/`uint`, bare `/` in float, `where` lines without backticks and without justification, no `Revision` line |
+| `ops/add/add.md` | through the whole loop; four family sections, clean under the linter |
+| `ops/sub/sub.md` | predates the loop: merged `int`/`uint`, bare `-` in float, the announcement of mistake 4, V1–V4 callouts |
+| `ops/div/div.md` | predates the loop: merged `int`/`uint`, bare `/` in float, `where` lines without backticks and without justification, no `Revision` line |
 
 Bringing `sub` and `div` up to the current shape is the same loop as for a new operator, and each
 amendment goes through the user first.

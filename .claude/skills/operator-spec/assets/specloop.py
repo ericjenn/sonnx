@@ -4,8 +4,8 @@ written from a specification, with ONNX Runtime.
 
 Usage:
 
-    specloop.py --spec ops/add.md --op Add --cases verification/add/cases.py \
-                --impl verification/add/loop/iter-001-impl.py
+    specloop.py --spec ops/add/add.md --op Add --cases ops/add/cases.py \
+                --impl ops/add/loop/iter-001-impl.py
 
 The implementation and the cases are ordinary Python modules:
 

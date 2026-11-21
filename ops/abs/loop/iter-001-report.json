@@ -1,0 +1,112 @@
+{
+  "spec": "/run/media/eric/Work1/Work/gits/sonnx/ops/abs.md",
+  "op": "Abs",
+  "opset": 14,
+  "impl": "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Abs/iter-001-impl.py",
+  "entry": "abs",
+  "generated": "2026-11-08T15:45:36Z",
+  "cases": {
+    "total": 106,
+    "passed": 98,
+    "mismatched": [
+      {
+        "case": "int8: a rank-0 tensor holding the minimum value",
+        "elements_differing": -1,
+        "ort_shape": [],
+        "impl_shape": [
+          1
+        ]
+      },
+      {
+        "case": "int8: a rank-0 tensor",
+        "elements_differing": -1,
+        "ort_shape": [],
+        "impl_shape": [
+          1
+        ]
+      },
+      {
+        "case": "int16: a rank-0 tensor holding the minimum value",
+        "elements_differing": -1,
+        "ort_shape": [],
+        "impl_shape": [
+          1
+        ]
+      },
+      {
+        "case": "int16: a rank-0 tensor",
+        "elements_differing": -1,
+        "ort_shape": [],
+        "impl_shape": [
+          1
+        ]
+      },
+      {
+        "case": "int32: a rank-0 tensor holding the minimum value",
+        "elements_differing": -1,
+        "ort_shape": [],
+        "impl_shape": [
+          1
+        ]
+      },
+      {
+        "case": "int32: a rank-0 tensor",
+        "elements_differing": -1,
+        "ort_shape": [],
+        "impl_shape": [
+          1
+        ]
+      },
+      {
+        "case": "int64: a rank-0 tensor holding the minimum value",
+        "elements_differing": -1,
+        "ort_shape": [],
+        "impl_shape": [
+          1
+        ]
+      },
+      {
+        "case": "int64: a rank-0 tensor",
+        "elements_differing": -1,
+        "ort_shape": [],
+        "impl_shape": [
+          1
+        ]
+      }
+    ],
+    "open": [],
+    "nan_payload": [
+      {
+        "case": "float16: a quiet NaN, a signalling NaN and a NaN with the sign set"
+      }
+    ]
+  },
+  "sweeps": [
+    {
+      "sweep": "the document's type families against the ONNX schema's",
+      "summary": "document: 11 types, schema: 12 over T; admitted by the schema and not specified here: tensor(bfloat16)",
+      "failures": []
+    },
+    {
+      "sweep": "the document's worked examples",
+      "summary": "4 examples (float 2, int 1, uint 1), as documented vs ONNX Runtime vs the implementation; the real section's example is checked in the real sweep, which has no ONNX type",
+      "failures": []
+    },
+    {
+      "sweep": "the float rule (the sign bit cleared) over the types' values",
+      "summary": "3 types: float16: all 65536 bit patterns, float32: the special patterns + 400 random patterns, float64: the special patterns + 400 random patterns",
+      "failures": []
+    },
+    {
+      "sweep": "the integer case analyses over the types' values",
+      "summary": "8 types: int8: all 256 values, int16: all 65536 values, int32: the boundary values + 400 random values, int64: the boundary values + 400 random values, uint8: all 256 values, uint16: all 65536 values, uint32: the boundary values + 400 random values, uint64: the boundary values + 400 random values",
+      "failures": []
+    },
+    {
+      "sweep": "the real section (exact rationals, no ONNX Runtime)",
+      "summary": "3 examples: real Example 1 (exact rationals, and float64 where representable); real, dyadic values of both signs (exact rationals, and float64 where representable); real, the exact magnitude of a negative rational (exact rationals only; not representable in float64)",
+      "failures": []
+    }
+  ],
+  "ok": false
+}

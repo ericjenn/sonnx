@@ -1,0 +1,369 @@
+{
+  "case_count_sampled": 222,
+  "arities": [
+    2
+  ],
+  "dtypes": [
+    "float16",
+    "float32",
+    "float64",
+    "int16",
+    "int32",
+    "int64",
+    "int8",
+    "uint16",
+    "uint32",
+    "uint64",
+    "uint8"
+  ],
+  "attr_keys": [],
+  "outputs": [
+    "out"
+  ],
+  "output_types": {},
+  "has_sweeps": true,
+  "op": "Add",
+  "opset": 14,
+  "samples": [
+    {
+      "label": "float16: signed zeros",
+      "arity": 2,
+      "shapes": [
+        [
+          4
+        ],
+        [
+          4
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: infinities",
+      "arity": 2,
+      "shapes": [
+        [
+          6
+        ],
+        [
+          6
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: nan",
+      "arity": 2,
+      "shapes": [
+        [
+          4
+        ],
+        [
+          4
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: exact sum",
+      "arity": 2,
+      "shapes": [
+        [
+          4
+        ],
+        [
+          4
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: largest finite operand",
+      "arity": 2,
+      "shapes": [
+        [
+          3
+        ],
+        [
+          3
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: overflow to inf",
+      "arity": 2,
+      "shapes": [
+        [
+          2
+        ],
+        [
+          2
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: cancellation to zero",
+      "arity": 2,
+      "shapes": [
+        [
+          2
+        ],
+        [
+          2
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: below the overflow threshold",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: at the overflow threshold (tie)",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: above the overflow threshold",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: smallest normal and subnormal result",
+      "arity": 2,
+      "shapes": [
+        [
+          5
+        ],
+        [
+          5
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: subnormal underflow to zero",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: exactly one ulp from 1.0",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: rounding tie (halfway)",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: not representable (rounded sum)",
+      "arity": 2,
+      "shapes": [
+        [
+          2
+        ],
+        [
+          2
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: NaN operand, quiet, payload 1",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: NaN operand, quiet, payload 1, sign set",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: NaN operand, signalling",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: invalid operation, inf + (-inf)",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: invalid operation, -inf + inf",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    }
+  ]
+}

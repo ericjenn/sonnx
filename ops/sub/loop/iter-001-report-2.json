@@ -1,0 +1,53 @@
+{
+  "spec": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/sub.md",
+  "op": "Sub",
+  "opset": 14,
+  "impl": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/loop/iter-001-impl.py",
+  "entry": "sub",
+  "generated": "2026-11-21T10:36:19Z",
+  "cases": {
+    "total": 45,
+    "passed": 45,
+    "mismatched": [],
+    "open": [],
+    "nan_payload": []
+  },
+  "sweeps": [
+    {
+      "sweep": "the document's worked examples",
+      "summary": "6 examples, as documented vs the document's rule vs ORT vs the implementation",
+      "failures": []
+    },
+    {
+      "sweep": "broadcasting families (same shape, dim 1, smaller rank, rank-0, zero-sized)",
+      "summary": "48 shape pairs checked; the runtime refused 0 of them",
+      "failures": []
+    },
+    {
+      "sweep": "int domain (document vs ORT vs implementation)",
+      "summary": "8 types: int8 exhaustive (65536 pairs), int16 249 pairs, int32 249 pairs, int64 249 pairs, uint8 exhaustive (65536 pairs), uint16 216 pairs, uint32 216 pairs, uint64 216 pairs",
+      "failures": []
+    },
+    {
+      "sweep": "float special values",
+      "summary": "signed zeros, infinities, NaN, subnormals, extremes, overflow thresholds; float16 256 pairs, float32 256 pairs, float64 256 pairs",
+      "failures": []
+    },
+    {
+      "sweep": "float random sample",
+      "summary": "500 random values of each type, exponents over half the range: float16 500, float32 500, float64 500",
+      "failures": []
+    },
+    {
+      "sweep": "real section (exact rationals, no ONNX Runtime)",
+      "summary": "5 cases, exact Fraction differences and the documented values",
+      "failures": []
+    },
+    {
+      "sweep": "the document's type families vs the ONNX schema",
+      "summary": "11 declared types, every one admitted by the schema of Sub-14; the schema also admits tensor(bfloat16), which the document does not specify (recorded, not required)",
+      "failures": []
+    }
+  ],
+  "ok": true
+}

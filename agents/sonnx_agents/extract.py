@@ -107,6 +107,50 @@ def extract_python(text: str, want: tuple[str, ...] = ()) -> str:
     return text.strip() + "\n"
 
 
+def extract_lean(text: str) -> str:
+    """A Lean module, preferring a fenced block with the formalizer's markers.
+
+    A preamble or a small example block is not the module. When no block has a
+    trace marker, the longest Lean-looking block is retained so the validator
+    can report precisely what is missing. Raw modules begin at their first
+    import, namespace, declaration, comment, or trace marker.
+    """
+    text = strip_preamble(text)
+    blocks = [match.group(1).strip() for match in _ANY_FENCE.finditer(text)]
+    if blocks:
+        marked = [block for block in blocks if "-- @trace" in block]
+        return (max(marked or blocks, key=len)).rstrip() + "\n"
+    lines = text.splitlines()
+    start = re.compile(r"^\s*(?:/--|/-!|--\s*@trace|import\s|namespace\s|"
+                       r"(?:theorem|lemma|def|abbrev|structure|inductive|instance)\s)")
+    for index, line in enumerate(lines):
+        if start.match(line):
+            return "\n".join(lines[index:]).strip() + "\n"
+    return text.strip() + "\n"
+
+
+def extract_c(text: str) -> str:
+    """A C test program: the fenced block that holds `main`, else the first C text.
+
+    The C tester is asked for one program, but a model that explains itself may put a
+    fragment — a helper, a case — in a first block.  A block with `int main` is the
+    program; without one, the longest block is the best reading and the caller's guard
+    says what is missing.  Raw answers begin at their first preprocessor line, comment,
+    helper declaration or `main`.
+    """
+    text = strip_preamble(text)
+    blocks = [match.group(1).strip() for match in _ANY_FENCE.finditer(text)]
+    if blocks:
+        programs = [block for block in blocks if re.search(r"\bint\s+main\s*\(", block)]
+        return (max(programs or blocks, key=len)).rstrip() + "\n"
+    lines = text.splitlines()
+    start = re.compile(r"^\s*(?:#include|/\*|//|int\s+main\s*\(|static\s)")
+    for index, line in enumerate(lines):
+        if start.match(line):
+            return "\n".join(lines[index:]).strip() + "\n"
+    return text.strip() + "\n"
+
+
 def _balanced_objects(text: str):
     """Every top-level {...} in the text, by brace counting (strings are not parsed)."""
     depth = 0

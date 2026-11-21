@@ -1,0 +1,369 @@
+{
+  "case_count_sampled": 76,
+  "arities": [
+    2
+  ],
+  "dtypes": [
+    "float16",
+    "float32",
+    "float64",
+    "int16",
+    "int32",
+    "int64",
+    "int8",
+    "uint16",
+    "uint32",
+    "uint64",
+    "uint8"
+  ],
+  "attr_keys": [],
+  "outputs": [
+    "out"
+  ],
+  "output_types": {},
+  "has_sweeps": true,
+  "op": "Sub",
+  "opset": 14,
+  "samples": [
+    {
+      "label": "float Example 2: +inf - +inf = NaN, -0 - +0 = -0, +0 - -0 = +0",
+      "arity": 2,
+      "shapes": [
+        [
+          4
+        ],
+        [
+          4
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: +0 - +0 = +0",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: +0 - -0 = +0",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: -0 - -0 = +0",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: -0 - +0 = -0",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: +inf - finite = +inf",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: finite - -inf = +inf",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: +inf - -inf = +inf",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: -inf - finite = -inf",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: finite - +inf = -inf",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: -inf - +inf = -inf",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: +inf - +inf = NaN",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: -inf - -inf = NaN",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: NaN - 1 = NaN",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: 1 - NaN = NaN",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: smallest subnormal - 0 = smallest subnormal",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: 0 - smallest subnormal = -smallest subnormal",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: 2*smallest subnormal - smallest subnormal = smallest subnormal",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: max - (-max) = +inf (overflow)",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float: -max - max = -inf (overflow)",
+      "arity": 2,
+      "shapes": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    }
+  ]
+}

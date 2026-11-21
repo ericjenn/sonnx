@@ -1,0 +1,46 @@
+{
+  "ok": true,
+  "findings": [],
+  "checks": [
+    {
+      "probe": "valid arity 1",
+      "ok": true,
+      "status": "OK"
+    },
+    {
+      "probe": "unsupported kind",
+      "ok": true,
+      "status": "UNSUPPORTED"
+    },
+    {
+      "probe": "malformed line",
+      "ok": true,
+      "status": "MALFORMED"
+    },
+    {
+      "probe": "survives malformed input",
+      "ok": true,
+      "status": "OK"
+    }
+  ],
+  "lean": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": "/run/media/eric/Work1/Work/gits/sonnx/ops/neg/lean/conformance-attempt-001.lean:194:34: warning: Variable name `shape` is not explicitly referenced.\n\nHint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:\n  [apply] _shape\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n1\tOK\t1\tf32|2|2147483648,2147483648\n2\tUNSUPPORTED\t0\tunsupported kind f16\nthis is not a request\tMALFORMED\t0\tmissing fields\n3\tOK\t1\tf32|2|2147483648,2147483648\n",
+    "stderr": "",
+    "command": [
+      "/home/eric/.elan/bin/lake",
+      "env",
+      "lean",
+      "--run",
+      "/run/media/eric/Work1/Work/gits/sonnx/ops/neg/lean/conformance-attempt-001.lean"
+    ],
+    "seconds": 0.42
+  },
+  "probes": [
+    "valid arity 1",
+    "unsupported kind",
+    "malformed line",
+    "survives malformed input"
+  ]
+}

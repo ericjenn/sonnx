@@ -1,17 +1,17 @@
 ---
 name: operator-spec
-description: Write, review, amend or verify a SONNX operator specification (ops/<op>.md): the iterative loop from a first draft, through the user's review amendments, to verification of the specification against ONNX Runtime, driven automatically until a fresh blind implementation passes. Use when the user asks to specify an operator, to split or rework a specification by type family, to check a specification against the guidelines in informal_corrected.md, to fix wording such as an operator's indexed notation, to verify a specification by implementing it and comparing with onnxruntime, or to run that loop until it converges.
+description: Write, review, amend or verify a SONNX operator specification (ops/<op>/<op>.md): the iterative loop from a first draft, through the user's review amendments, to verification of the specification against ONNX Runtime, driven automatically until a fresh blind implementation passes. Use when the user asks to specify an operator, to split or rework a specification by type family, to check a specification against the guidelines in docs/informal_corrected.md, to fix wording such as an operator's indexed notation, to verify a specification by implementing it and comparing with onnxruntime, or to run that loop until it converges.
 ---
 
 # Specifying an operator
 
-A specification in `ops/<op>.md` is not written once. It is drafted, reviewed, amended,
+A specification in `ops/<op>/<op>.md` is not written once. It is drafted, reviewed, amended,
 sometimes verified, and every amendment leaves a trace. This skill is that loop.
 
 The loop:
 
-0. **Read the guidelines** — `informal_corrected.md` is the normative document; `informal_spec_template.md`
-   is its skeleton; an already accepted spec (`ops/add.md`) is the shape reference.
+0. **Read the guidelines** — `docs/informal_corrected.md` is the normative document; `docs/informal_spec_template.md`
+   is its skeleton; an already accepted spec (`ops/add/add.md`) is the shape reference.
 1. **Draft** — one section per type family, each with its own tags and its own case analysis.
 2. **Review and amend** — the user reads and pushes back. Act on the instruction, then report the
    interpretation and its consequences.
@@ -25,16 +25,16 @@ Details: `references/document-rules.md` (what the guidelines require),
 
 ## 0. Read before writing
 
-- `informal_corrected.md` — "Specification guidelines" (from l.82) is normative. The sections that
+- `docs/informal_corrected.md` — "Specification guidelines" (from l.82) is normative. The sections that
   decide the shape of a specification are *Basic operations* (l.110), *Tags* (l.151), *Types* (l.194)
   and *Structure and contents* (l.220).
-- `informal_spec_template.md` — the required skeleton.
-- `ops/add.md` — the reference implementation of that skeleton, and the only spec that has been
+- `docs/informal_spec_template.md` — the required skeleton.
+- `ops/add/add.md` — the reference implementation of that skeleton, and the only spec that has been
   through the whole loop. Follow its shape unless the guidelines say otherwise.
 - If the operator exists in ONNX, read the ONNX definition for the opset the spec is based on
   (opset 14 for the specs in `ops/`). The `Based on ONNX documentation` line must point at it.
 
-**The guidelines outrank every precedent.** Where `ops/add.md` and `informal_corrected.md` disagree,
+**The guidelines outrank every precedent.** Where `ops/add/add.md` and `docs/informal_corrected.md` disagree,
 the guidelines win and the older spec is the one to fix. Two known divergences are recorded in
 `references/checklist.md`.
 
@@ -106,6 +106,47 @@ old phrase is the cheapest way to find the stragglers.
 
 Then run `assets/lint_spec.py` on the result and fix what it reports (see below).
 
+## 2a. Generate Lean 4 — only on request
+
+The multi-agent pipeline can formalize an accepted document without changing the document itself:
+
+```
+~/Venvs/sonnx/bin/python agents/run.py --op <Op> --start-from spec \
+    --spec ops/<op>/<op>.md --lean-only --no-fetch
+```
+
+The formalizer runs only after compliance. It emits exact trace markers for every requirement
+and example; deterministic tooling supplies source spans, excerpts, the raw-specification MD5
+and the shared library's digest, then compiles the module with Lake. The module imports the
+shared `Sonnx` library (`lean/Sonnx/`) — the tensor model, broadcasting, indices, the integer
+and floating-point families and the elementwise operators — so it defines only the operator's
+own relations, example tensors and claims. Trace markers for the document's constraint
+requirements usually name a shared declaration (`Sonnx.TypeConsistent`,
+`Sonnx.BroadcastCompatible`, `Sonnx.BroadcastShapeIs`). An edit to the library changes its
+digest and makes every artifact generated against the previous one stale, so regenerate rather
+than reuse. `--lean` continues into the ordinary Python verification loop;
+`--lean-only` skips it. A requirement not fully `specified` or `proved` produces `lean-partial`,
+never a complete formalization claim.
+
+A trace-complete artifact is also **executed** against the operator's validation corpus. The
+pipeline generates the executable Lean runner (`lean/LeanConformance.lean`, which also imports
+`Sonnx`) and its Python driver (`lean_conformance.py`) from the accepted document and the
+corpus profile, freezes the corpus as `lean/cases.py`, and writes
+`lean/conformance.manifest.json` binding all of them — and the shared library's digest — by
+SHA-256. It runs the corpus's `cases()` and replays its `sweeps()` against a recording
+implementation, so the same inputs the Python verification used reach Lean; `by_category`
+separates `cases` from `sweeps`, and a sweep that raises is recorded under `sweeps.errors`
+without by itself failing the run. The runner answers protocol `sonnx-conformance/1`: raw-bit
+floats and integers, exact
+rationals, and `UNSUPPORTED` for a kind Lean core cannot represent (float16). A mismatch ends
+the run as `lean-conformance-failed`; a runner or driver that cannot be produced or run is
+`lean-conformance-error`; a partial artifact generates nothing and stays `skipped-partial`.
+`--no-lean-conformance` disables the stage and `--no-lean-conformance-generate` runs an
+existing driver. Use `--check-lean --lean-artifact <file>` for a model-free freshness, trace,
+compiler and conformance recheck. Generation writes the operator's folder; publication
+validates in place there, and for a run confined to `--run-dir` it copies the set in and
+never overwrites a hand-edited target.
+
 ## 3. Verify — only on request
 
 The user may ask for the specification to be checked by implementing the operator from it and
@@ -120,17 +161,17 @@ driver — do not hand the loop to a script, since two of its three steps are ag
 iteration is:
 
 1. **Blind implementation.** Spawn a *fresh* agent with the text of
-   `assets/blind_task.md`, `<SPEC>` = `ops/<op>.md`, `<OUT>` =
-   `verification/<op>/loop/iter-<NNN>-impl.py`, `<ENTRY>` = the lowercase operator name. Fresh
+   `assets/blind_task.md`, `<SPEC>` = `ops/<op>/<op>.md`, `<OUT>` =
+   `ops/<op>/loop/iter-<NNN>-impl.py`, `<ENTRY>` = the lowercase operator name. Fresh
    means fresh: no context, no hint of ONNX Runtime, the tests or this skill. Keep its list of
    `DECISION:` points — each one that is semantic rather than an interface choice is a finding.
 2. **Test.** Run
 
    ```
    ~/Venvs/onnxcheck/bin/python .claude/skills/operator-spec/assets/specloop.py \
-       --spec ops/<op>.md --op <Op> --cases verification/<op>/cases.py \
-       --impl verification/<op>/loop/iter-<NNN>-impl.py \
-       --json verification/<op>/loop/iter-<NNN>-report.json
+       --spec ops/<op>/<op>.md --op <Op> --cases ops/<op>/cases.py \
+       --impl ops/<op>/loop/iter-<NNN>-impl.py \
+       --json ops/<op>/loop/iter-<NNN>-report.json
    ```
 
    `specloop.py` exits 0 when nothing mismatched; read the JSON, not the exit status alone. An
@@ -139,7 +180,7 @@ iteration is:
    types in `OUTPUT_TYPES`, and every output is compared by position.
 3. **Amend.** For each finding, decide *incorrect* (the specification says what the reference does
    not do) or *incomplete* (it leaves undecided what the reference decides), and make the minimal
-   amendment to `ops/<op>.md`. Record it as in stage 4. Do **not** touch the implementation to make
+   amendment to `ops/<op>/<op>.md`. Record it as in stage 4. Do **not** touch the implementation to make
    a test pass: the implementation is a reading of the specification, and a reading that fails is
    evidence about the specification.
 
@@ -168,8 +209,8 @@ passes because step 1 was not re-executed after an amendment proves nothing.
 reader of it agrees with ONNX Runtime 1.30 on the cases covered. Say so when reporting, and give the
 coverage: which types, over which domains, and which cases of the document were exercised.
 
-The operator's cases live in `verification/<op>/cases.py` and are written by the driver, not by the
-blind agent. `verification/add/` is the worked example; copy its shape. A new section in the
+The operator's cases live in `ops/<op>/cases.py` and are written by the driver, not by the
+blind agent. `ops/add/` is the worked example; copy its shape. A new section in the
 document means new cases before the next run.
 
 ## 4. Record
@@ -181,7 +222,7 @@ The specs in `ops/` carry amendments as callouts so the reader can see what chan
 > <what changed and why>
 ```
 
-`note`, `warning` and `question` are the three in use (`ops/sub.md` V1–V4). The note form is used by
+`note`, `warning` and `question` are the three in use (`ops/sub/sub.md` V1–V4). The note form is used by
 the specs' revision record; it is not described in the guidelines, so do not introduce it into a
 spec that does not already use it without saying so.
 
@@ -191,7 +232,7 @@ than silently following either side. Two are currently open (`references/checkli
 ## The tools
 
 ```
-python3 .claude/skills/operator-spec/assets/lint_spec.py ops/<op>.md --op <OP>
+python3 .claude/skills/operator-spec/assets/lint_spec.py ops/<op>/<op>.md --op <OP>
 ```
 
 decides only what a program can decide about the document: forbidden constructs, red-span balance,
@@ -202,7 +243,7 @@ nothing more than that the mechanical rules hold — the semantic review is `ref
 
 ```
 ~/Venvs/onnxcheck/bin/python .claude/skills/operator-spec/assets/specloop.py \
-    --spec ops/<op>.md --op <Op> --cases verification/<op>/cases.py --impl <implementation>
+    --spec ops/<op>/<op>.md --op <Op> --cases ops/<op>/cases.py --impl <implementation>
 ```
 
 is one iteration of the verification loop: it runs the cases through a one-node ONNX Runtime model
@@ -210,12 +251,22 @@ and through an implementation of the specification, and reports the mismatches a
 implementation comes from `assets/blind_task.md` given to a fresh agent. Both are described in
 `references/verification.md`.
 
+```
+python3 .claude/skills/operator-spec/assets/check_lean.py \
+    ops/<op>/<op>.md <generated-or-annotated-module.lean>
+```
+
+checks defining source spans (including unanchored list clauses), exact requirement/example
+coverage, source freshness and Lean compilation. Its JSON separates `ok` (valid trace and code)
+from `complete` (every requirement is specified or proved); neither is a semantic review by itself.
+
 ## Files
 
 | path | role |
 |---|---|
-| `ops/<op>.md` | the specification |
-| `informal_corrected.md` | the normative guidelines |
-| `verification/<op>/cases.py` | the cases, written by the driver, never by the blind agent |
-| `verification/<op>/loop/iter-<NNN>-*` | each iteration: the blind implementation and its report |
-| `.claude/skills/operator-spec/assets/` | `lint_spec.py`, `specloop.py`, `blind_task.md` |
+| `ops/<op>/<op>.md` | the specification |
+| `docs/informal_corrected.md` | the normative guidelines |
+| `ops/<op>/cases.py` | the cases, written by the driver, never by the blind agent |
+| `ops/<op>/loop/iter-<NNN>-*` | each iteration: the blind implementation and its report |
+| `ops/<op>/lean/` | explicitly published, complete generated Lean and its trace manifest |
+| `.claude/skills/operator-spec/assets/` | `lint_spec.py`, `specloop.py`, `check_lean.py`, `blind_task.md` |

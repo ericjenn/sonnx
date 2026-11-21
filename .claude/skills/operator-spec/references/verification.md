@@ -31,7 +31,7 @@ As of 2026-10-03 that environment holds numpy 2.5.3, onnx 1.23.1, onnxruntime 1.
 
 ## Step 1 — implement from the specification alone
 
-Give another agent **only** the specification file (`ops/<op>.md`), nothing else: not the ONNX
+Give another agent **only** the specification file (`ops/<op>/<op>.md`), nothing else: not the ONNX
 documentation, not the harness, not the tests, not this skill. The prompt is
 `assets/blind_task.md`; fill in the spec path, the output path and the entry-point name, and spawn a
 fresh agent with no other context. It asks the agent to implement the operator and to state, at
@@ -42,7 +42,7 @@ and need not fix (how a dtype maps to a family, what the wrapper does with a 0-d
 **A semantic choice in that list is a finding**: the document left undecided something the
 implementation had to decide, which is exactly defect (2) above.
 
-Write it to `verification/<op>/loop/iter-<NNN>-impl.py` and keep its `DECISION:` comments — they are
+Write it to `ops/<op>/loop/iter-<NNN>-impl.py` and keep its `DECISION:` comments — they are
 the evidence.
 
 ## Step 2 — compare with ONNX Runtime
@@ -51,9 +51,9 @@ the evidence.
 
 ```
 ~/Venvs/onnxcheck/bin/python .claude/skills/operator-spec/assets/specloop.py \
-    --spec ops/<op>.md --op <Op> --cases verification/<op>/cases.py \
-    --impl verification/<op>/loop/iter-<NNN>-impl.py \
-    --json verification/<op>/loop/iter-<NNN>-report.json
+    --spec ops/<op>/<op>.md --op <Op> --cases ops/<op>/cases.py \
+    --impl ops/<op>/loop/iter-<NNN>-impl.py \
+    --json ops/<op>/loop/iter-<NNN>-report.json
 ```
 
 It builds a one-node model of the operator (opset 14, one input per operand, all of the same
@@ -72,7 +72,7 @@ no sweep at all. The exit status alone is not the verdict: a case set whose *eve
 by the runtime compares nothing and also exits 0, so a run is only evidence when the report shows
 cases that passed.
 
-The cases are in `verification/<op>/cases.py`, written by the driver (never by the blind agent), in
+The cases are in `ops/<op>/cases.py`, written by the driver (never by the blind agent), in
 the two-hook form the driver expects:
 
 - `cases()` — a generator of `(label, [array, ...])`, or of `(label, [array, ...], attrs)` for an
@@ -97,7 +97,7 @@ whose every case is open compares nothing.
 
 A good sweep also transcribes the document's case analysis into exact Python arithmetic and compares
 *that* with ONNX Runtime, independently of the implementation: it tests the specification as
-literally read, not a program's reading of it. `verification/add/cases.py` has both, and its
+literally read, not a program's reading of it. `ops/add/cases.py` has both, and its
 `cases()` covers 205 cases across the eight machine types.
 
 The real-number section has no ONNX type, so it is the one part ONNX Runtime cannot be asked about.
@@ -171,7 +171,7 @@ Two things can never be automated away, and they are why the driver is an agent 
 The guards on the loop are in `SKILL.md` (§3, "The automated loop"): stop on an unchanged
 specification with a failing case, on a section without cases, on a repeated amendment, and at the
 iteration cap. Each iteration's `impl.py` and `report.json` stay under
-`verification/<op>/loop/iter-<NNN>-*` as the record.
+`ops/<op>/loop/iter-<NNN>-*` as the record.
 
 ## Step 5 — report
 
@@ -181,4 +181,4 @@ coverage (which types over which domains) so the reader can judge how much of th
 actually exercised. Say plainly that the loop shows a fresh reader of the specification agrees with
 ONNX Runtime 1.30 — and with ONNX's own reference implementation where the two of them agree — on
 the cases covered: not that the specification is correct.
-`verification/add/` is the worked example of all five steps.
+`ops/add/` is the worked example of all five steps.

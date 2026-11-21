@@ -1,0 +1,75 @@
+{
+  "spec": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/sub.md",
+  "op": "Sub",
+  "opset": 14,
+  "impl": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/loop/iter-001-impl.py",
+  "entry": "sub",
+  "generated": "2026-11-21T10:33:53Z",
+  "cases": {
+    "total": 76,
+    "passed": 76,
+    "mismatched": [],
+    "open": [],
+    "nan_payload": []
+  },
+  "sweeps": [
+    {
+      "sweep": "the document's worked examples",
+      "summary": "6 examples, as documented vs the document's rule vs ORT vs the implementation",
+      "failures": []
+    },
+    {
+      "sweep": "int domain (document vs ORT vs implementation)",
+      "summary": "8 types: int8 exhaustive, int16 249 pairs, int32 249 pairs, int64 249 pairs, uint8 exhaustive, uint16 216 pairs, uint32 216 pairs, uint64 216 pairs",
+      "failures": []
+    },
+    {
+      "sweep": "float special values",
+      "summary": "signed zeros, infinities, NaN, subnormals, extremes, overflow thresholds; float16 256 pairs, float32 256 pairs, float64 256 pairs",
+      "failures": []
+    },
+    {
+      "sweep": "float random sample",
+      "summary": "500 random values of each type, exponents over half the range: float16 500, float32 500, float64 500",
+      "failures": []
+    },
+    {
+      "sweep": "broadcasting families (same shape, dim 1, smaller rank, rank-0, zero-sized)",
+      "summary": "45 shape pairs checked; the runtime refused 0 of them",
+      "failures": [
+        {
+          "who": "float32: () - () (the document vs ONNX Runtime)",
+          "detail": "the document gives -1.0, ORT [-1.0]"
+        },
+        {
+          "who": "int32: () - () (the document vs ONNX Runtime)",
+          "detail": "the document gives -1, ORT [-1]"
+        },
+        {
+          "who": "uint8: () - () (the document vs ONNX Runtime)",
+          "detail": "the document gives 255, ORT [255]"
+        }
+      ]
+    },
+    {
+      "sweep": "real section (exact rationals, no ONNX Runtime)",
+      "summary": "3 examples, exact Fraction differences and the documented values",
+      "failures": []
+    },
+    {
+      "sweep": "the document's type families vs the ONNX schema",
+      "summary": "11 declared types, every one admitted by the schema of Sub-14; the schema also admits tensor(bfloat16), tensor(double), tensor(float), which the document does not specify (recorded, not required)",
+      "failures": [
+        {
+          "who": "the document declares tensor(float32)",
+          "detail": "the schema of Sub-14 admits ['tensor(bfloat16)', 'tensor(double)', 'tensor(float)', 'tensor(float16)', 'tensor(int16)', 'tensor(int32)', 'tensor(int64)', 'tensor(int8)', 'tensor(uint16)', 'tensor(uint32)', 'tensor(uint64)', 'tensor(uint8)']"
+        },
+        {
+          "who": "the document declares tensor(float64)",
+          "detail": "the schema of Sub-14 admits ['tensor(bfloat16)', 'tensor(double)', 'tensor(float)', 'tensor(float16)', 'tensor(int16)', 'tensor(int32)', 'tensor(int64)', 'tensor(int8)', 'tensor(uint16)', 'tensor(uint32)', 'tensor(uint64)', 'tensor(uint8)']"
+        }
+      ]
+    }
+  ],
+  "ok": false
+}

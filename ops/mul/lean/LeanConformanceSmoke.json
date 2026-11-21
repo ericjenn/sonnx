@@ -1,0 +1,46 @@
+{
+  "ok": true,
+  "findings": [],
+  "checks": [
+    {
+      "probe": "valid arity 2",
+      "ok": true,
+      "status": "OK"
+    },
+    {
+      "probe": "unsupported kind",
+      "ok": true,
+      "status": "ERR"
+    },
+    {
+      "probe": "malformed line",
+      "ok": true,
+      "status": "MALFORMED"
+    },
+    {
+      "probe": "survives malformed input",
+      "ok": true,
+      "status": "ERR"
+    }
+  ],
+  "lean": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": "1\tOK\t1\tf32|2|0,0\n2\tERR\t0\tunsupported arity\nthis is not a request\tMALFORMED\t0\tmalformed line\n3\tERR\t0\tunsupported arity\n",
+    "stderr": "",
+    "command": [
+      "/home/eric/.elan/bin/lake",
+      "env",
+      "lean",
+      "--run",
+      "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Mul/lean/conformance-attempt-002.lean"
+    ],
+    "seconds": 0.65
+  },
+  "probes": [
+    "valid arity 2",
+    "unsupported kind",
+    "malformed line",
+    "survives malformed input"
+  ]
+}

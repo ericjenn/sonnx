@@ -1,0 +1,46 @@
+{
+  "ok": true,
+  "findings": [],
+  "checks": [
+    {
+      "probe": "valid arity 2",
+      "ok": true,
+      "status": "OK"
+    },
+    {
+      "probe": "unsupported kind",
+      "ok": true,
+      "status": "UNSUPPORTED"
+    },
+    {
+      "probe": "malformed line",
+      "ok": true,
+      "status": "MALFORMED"
+    },
+    {
+      "probe": "survives malformed input",
+      "ok": true,
+      "status": "OK"
+    }
+  ],
+  "lean": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": "/run/media/eric/Work1/Work/gits/sonnx/ops/add/lean/conformance-attempt-002.lean:29:20: warning: `String.mk` has been deprecated: Use `String.ofList` instead\n1\tOK\t1\tf32|2|0,0\n2\tUNSUPPORTED\t0\tfloat16 is not representable\nthis is not a request\tMALFORMED\t0\texpected 5 fields\n3\tOK\t1\tf32|2|0,0\n",
+    "stderr": "",
+    "command": [
+      "/home/eric/.elan/bin/lake",
+      "env",
+      "lean",
+      "--run",
+      "/run/media/eric/Work1/Work/gits/sonnx/ops/add/lean/conformance-attempt-002.lean"
+    ],
+    "seconds": 0.54
+  },
+  "probes": [
+    "valid arity 2",
+    "unsupported kind",
+    "malformed line",
+    "survives malformed input"
+  ]
+}

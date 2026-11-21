@@ -1,6 +1,6 @@
-"""The five agents and the graph that schedules them.
+"""The agents and the graph that schedules them.
 
-    write_spec ──▶ check_spec ──▶ implement ──▶ test ──▶ (pass) finish
+    write_spec ──▶ check_spec ──▶ [Lean] ──▶ [C] ──▶ implement ──▶ test ──▶ (pass) finish
          ▲              │                          │
          │              └── (blocking finding) ────┘
          │                                         ▼
@@ -12,14 +12,20 @@
 Every arrow is a separate model call with its own system prompt, and every artifact is a
 file: the document, the implementation, the case module and the harness's JSON report. The
 nodes decide when the loop stops; the models decide only the content of the artifacts.
+
+The two bracketed stages are optional. `--lean` inserts the Lean formalizer before the
+Python loop; `--c` then has the CGen library render the operator's C from the descriptor the
+formal specification declares, and has the C tester write the program that checks it.
 """
 
 from __future__ import annotations
 
 import ast
+import hashlib
 import itertools
 import json
 import re
+import shutil
 import subprocess
 import time
 from datetime import datetime
@@ -28,6 +34,8 @@ from pathlib import Path
 from langgraph.graph import END, START, StateGraph
 
 from . import extract, harness
+from . import lean as lean_support
+from . import lean_conformance
 from .config import (
     DEFAULT_PYTHON,
     GUIDELINES,
@@ -439,12 +447,12 @@ def _announces_only(spec: str, op: str, opset: int) -> str:
 
 
 # The sentence every `## Restrictions` section opens with, and the one it replaced.  The
-# guidelines fix the first (`informal_corrected.md`, "## Restrictions"); the second pointed
-# at a `common/` directory that does not exist in this repository and is what the published
-# documents carried before the restriction files moved into `ops/`.
-GENERAL_LINK = "[General restrictions](./global_restrictions.md) are applicable."
-OLD_GENERAL_LINK = ("[General restrictions](./../common/general_restrictions.md) "
-                    "are applicable.")
+# guidelines fix the first (`docs/informal_corrected.md`, "## Restrictions"); a document now
+# lives in its operator's folder (`ops/<op>/<op>.md`), one level below the restriction file,
+# so the link is `../`.  The second is the `./` form the documents carried while they sat
+# directly in `ops/`.
+GENERAL_LINK = "[General restrictions](../global_restrictions.md) are applicable."
+OLD_GENERAL_LINK = "[General restrictions](./global_restrictions.md) are applicable."
 
 
 def _carries_restrictions(spec: str, settings: Settings) -> str:
@@ -678,6 +686,14 @@ def write_spec(state: SpecState, settings: Settings) -> dict:
         "spec_round": round_number,
         "lint": {}, "review": {}, "spec_ok": False, "review_failed": False,
         "diagnosis": "", "instruction": "", "verdict": "",
+        "lean_ok": False, "lean_partial": False, "lean_error": "", "lean_source_md5": "",
+        "lean_conformance_ok": True, "lean_conformance_status": "",
+        "lean_conformance_path": "", "lean_conformance_report": {},
+        "lean_conformance_error": "",
+        "lean_conformance_generated": False, "lean_conformance_runner": "",
+        "lean_conformance_driver": "", "lean_conformance_corpus": "",
+        "lean_conformance_manifest": "", "lean_conformance_manifest_data": {},
+        "lean_conformance_corpus_source": "",
         "history": [{"agent": "writer", "round": round_number, "path": str(spec_path),
                      "characters": len(spec)}],
         "trace": ["writer round %d -> %s" % (round_number, spec_path)],
@@ -835,6 +851,460 @@ def _impl_module_problem(module: str, entry: str) -> str | None:
     if entry not in names:
         return "the module defines no `%s`" % entry
     return None
+
+
+def formalize_lean(state: SpecState, settings: Settings) -> dict:
+    """Generate a Lean specification, then mechanically check and compile it."""
+    spec_path = Path(state["spec_path"])
+    started = time.time()
+    library = lean_support.build_library(
+        settings.lake, timeout=max(settings.lean_timeout, 600))
+    if not library["ok"]:
+        message = "the shared Sonnx library does not build: %s" % library["stdout"][-2000:]
+        log(settings, "Lean    library: %s" % message[:500])
+        return {"lean_ok": False, "lean_partial": False, "lean_error": message,
+                "lean_source_md5": "", "lean_artifacts": [],
+                "lean_round": int(state.get("lean_round", 0)) + 1,
+                "history": [{"agent": "lean-library", "error": message,
+                             "seconds": round(time.time() - started, 1)}],
+                "trace": ["Lean: the shared Sonnx library does not build"]}
+    library_sha = lean_support.library_digest()
+    inv = lean_support.inventory(spec_path)
+    # The model needs stable keys, not a second copy of every source excerpt.
+    contract = {"source": inv["source"], "source_md5": inv["source_md5"],
+                "requirements": [{"key": item["key"]} for item in inv["requirements"]],
+                "examples": [{"key": item["key"]} for item in inv["examples"]]}
+    base = ("Operator: **%s**. Write the Lean 4 formal specification of the complete "
+            "document below. Every canonical trace key is mandatory.\n\n"
+            "# Canonical trace contract\n\n```json\n%s\n```\n\n"
+            "# Accepted informal specification\n\n%s"
+            % (settings.op, json.dumps(contract, indent=2), harness.read_spec(spec_path)))
+    system = prompt("lean_formalizer.md")
+    previous = ""
+    findings = ""
+    artifacts: list[str] = []
+    last_report: dict = {}
+    for attempt in range(settings.max_lean_retries + 1):
+        if harness.md5(spec_path) != inv["source_md5"]:
+            return {"lean_ok": False, "lean_partial": False,
+                    "lean_error": "the specification changed before Lean generation",
+                    "lean_source_md5": "", "lean_artifacts": artifacts,
+                    "trace": ["Lean: stale source before generation"]}
+        asked = base
+        if findings:
+            asked += ("\n\n# Repair the previous candidate\n\n%s\n\n"
+                      "# Previous candidate\n\n```lean\n%s\n```" % (findings, previous))
+        answer = _artifact(settings, system, asked, "Lean    attempt %d" % (attempt + 1),
+                           max_tokens=settings.max_review_tokens)
+        raw = extract.extract_lean(answer)
+        candidate = settings.lean_attempt_path(attempt + 1)
+        report = lean_support.prepare_candidate(raw, inv, candidate)
+        if not report["ok"]:
+            kept = _keep_rejected(candidate, attempt + 1, answer,
+                                  "; ".join(report["findings"]))
+            artifacts.append(str(kept))
+        else:
+            artifacts.append(str(candidate))
+            compiler = lean_support.compile_lean(candidate, settings.lake, settings.lean_timeout)
+            report["compiler"] = compiler
+            log_path = candidate.with_suffix(".log")
+            log_path.write_text(compiler["stdout"] + "\n", encoding="utf-8")
+            artifacts.append(str(log_path))
+            if (compiler["ok"] and harness.md5(spec_path) == inv["source_md5"]
+                    and lean_support.library_digest() == library_sha):
+                final = settings.lean_path()
+                shutil.copyfile(candidate, final)
+                artifacts.append(str(final))
+                report["source_md5"] = inv["source_md5"]
+                trace_path = settings.lean_trace_path()
+                lean_support.write_report(trace_path, report, inv)
+                artifacts.append(str(trace_path))
+                # A complete artifact is handed to `conform_lean`, which generates and
+                # runs the executable runner and driver.  A partial one has no complete
+                # semantics to check, so the stage is explicitly skipped.
+                conformance = {"status": "pending" if report["complete"] else "skipped-partial",
+                               "ok": True, "blocking": False, "report": {},
+                               "report_path": "", "error": ""}
+                log(settings, "Lean    %s, %s -> %s"
+                    % ("complete" if report["complete"] else "partial",
+                       "compiled", final))
+                return {"lean_path": str(final), "lean_trace_path": str(trace_path),
+                        "lean_source_md5": inv["source_md5"], "lean_ok": report["complete"],
+                        "lean_partial": not report["complete"], "lean_error": "",
+                        "lean_round": int(state.get("lean_round", 0)) + 1,
+                        "lean_coverage": report["coverage"], "lean_report": report,
+                        "lean_artifacts": artifacts,
+                        "lean_conformance_ok": bool(conformance.get("ok", True)),
+                        "lean_conformance_status": conformance.get("status", ""),
+                        "lean_conformance_path": conformance.get("report_path", ""),
+                        "lean_conformance_report": conformance.get("report") or {},
+                        "lean_conformance_error": conformance.get("error", ""),
+                        "history": [{"agent": "formalizer", "path": str(final),
+                                     "complete": report["complete"],
+                                     "characters": len(final.read_text(encoding="utf-8"))}],
+                        "trace": ["Lean formalizer: compiled, %s"
+                                  % ("complete" if report["complete"] else "partial")]}
+            if not compiler["ok"]:
+                report["findings"] = ["Lean compiler: " + compiler["stdout"]]
+            else:
+                report["findings"] = [
+                    "the specification or the shared library changed during Lean generation"]
+        previous = raw
+        last_report = report
+        findings = "\n".join("- " + finding for finding in report.get("findings", []))
+        log(settings, "Lean    attempt %d: %s" % (attempt + 1, findings[:500]))
+    problem = "no compiling, trace-valid Lean module after %d attempt(s)" % (
+        settings.max_lean_retries + 1)
+    if last_report.get("findings"):
+        problem += ": " + str(last_report["findings"][-1])[:1000]
+    return {"lean_ok": False, "lean_partial": False, "lean_error": problem,
+            "lean_source_md5": "", "lean_report": last_report,
+            "lean_round": int(state.get("lean_round", 0)) + 1,
+            "lean_artifacts": artifacts,
+            "history": [{"agent": "formalizer", "error": problem,
+                         "seconds": round(time.time() - started, 1)}],
+            "trace": ["Lean formalizer: failed"]}
+
+
+# ---------------------------------------------------------------------------
+# Generated Lean conformance: corpus, executable runner, driver, report
+# ---------------------------------------------------------------------------
+
+
+def _cases_meta(path: Path) -> dict:
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_cases_meta(path: Path, spec_path: Path, source: str) -> None:
+    path.with_suffix(".meta.json").write_text(
+        json.dumps({"spec_md5": harness.md5(spec_path),
+                    "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                    "source": source,
+                    "written": datetime.now().isoformat(timespec="seconds")},
+                   indent=2) + "\n",
+        encoding="utf-8")
+
+
+def _cases_for_this_document(published: Path, published_doc: Path, run_path: Path,
+                             md5: str) -> bool:
+    """Whether the operator's accepted corpus may stand in for this document's.
+
+    It may when it is a different file and either the operator has no document to compare
+    with or that document is the one the run is formalizing.  A corpus written for another
+    revision of the document is not evidence for this one.
+    """
+    if not published.is_file() or published.resolve() == run_path.resolve():
+        return False
+    if not published_doc.is_file():
+        return True
+    return harness.md5(published_doc) == md5
+
+
+def ensure_conformance_corpus(state: SpecState, settings: Settings) -> dict:
+    """The corpus used by the Lean runner, frozen beside it.
+
+    A fresh corpus in the run directory is reused; otherwise an accepted corpus in the
+    operator's folder is copied when it is a different file and was written for the same
+    document; otherwise the tester is asked for one, through the same validation and retry
+    path the Python loop uses.  The copy under ``lean/`` means a later rewrite of the
+    loop's ``cases.py`` cannot change the evidence of this conformance run.
+    """
+    spec_path = Path(state["spec_path"])
+    md5 = harness.md5(spec_path)
+    run_path = settings.cases_path()
+    source = ""
+    if run_path.is_file() and _cases_meta(run_path.with_suffix(".meta.json")).get(
+            "spec_md5") == md5:
+        source = "run"
+    else:
+        published = settings.published_cases_path()
+        published_doc = settings.published_spec_path()
+        usable = _cases_for_this_document(published, published_doc, run_path, md5)
+        if usable:
+            run_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(published, run_path)
+            _write_cases_meta(run_path, spec_path, "published")
+            source = "published"
+        else:
+            try:
+                run_path = _write_cases(state, settings)
+            except ValueError as exc:
+                raise RuntimeError("no usable corpus: %s" % exc) from exc
+            source = "generated"
+    frozen = settings.lean_conformance_corpus_path()
+    frozen.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(run_path, frozen)
+    _write_cases_meta(frozen, spec_path, source)
+    return {"path": frozen, "source": source, "spec_md5": md5}
+
+
+def _runner_problem(raw: str) -> str:
+    if not raw.strip():
+        return "the answer is empty"
+    if not re.search(r"^def main\b", raw, re.M):
+        return "the module defines no `main : IO Unit`"
+    findings = (lean_support.forbidden_constructs(raw)
+                + lean_support.import_findings(raw, require_sonnx=False))
+    if findings:
+        return "; ".join(findings[:8])
+    return ""
+
+
+def write_conformance_runner(state: SpecState, settings: Settings, corpus: dict,
+                             profile: dict) -> dict:
+    """Ask the model for the executable Lean runner, then compile and smoke-test it."""
+    spec_path = Path(state["spec_path"])
+    base = (
+        "Operator: **%s** (ONNX opset %d). Write the executable Lean conformance runner "
+        "for the complete specification below. Return one Lean module and nothing else.\n\n"
+        "# Accepted informal specification\n\n%s\n\n"
+        "# Formal specification (compiled and trace-complete; it is a specification, not "
+        "necessarily executable)\n\n```lean\n%s\n```\n\n"
+        "# Corpus profile (the kinds, arities and attributes the runner will see)\n\n"
+        "```json\n%s\n```\n\n"
+        "# The wire protocol\n\n%s"
+        % (settings.op, settings.opset, harness.read_spec(spec_path),
+           clip(settings.lean_path().read_text(encoding="utf-8"), 24000, "formal spec"),
+           json.dumps(profile, indent=2, default=str), PROTOCOL_TEXT))
+    system = prompt("lean_conformance_runner.md")
+    findings = ""
+    previous = ""
+    artifacts: list[str] = []
+    attempts: list[str] = []
+    for attempt in range(settings.max_conformance_retries + 1):
+        if harness.md5(spec_path) != corpus["spec_md5"]:
+            return {"ok": False, "error": "the specification changed during runner generation",
+                    "artifacts": artifacts, "attempts": attempts}
+        asked = base
+        if findings:
+            asked += ("\n\n# Repair the previous candidate\n\n%s\n\n"
+                      "# Previous candidate\n\n```lean\n%s\n```" % (findings, previous))
+        answer = _artifact(settings, system, asked,
+                           "Lean run attempt %d" % (attempt + 1),
+                           max_tokens=settings.max_review_tokens)
+        raw = extract.extract_lean(answer)
+        candidate = settings.lean_conformance_attempt_path(attempt + 1)
+        candidate.parent.mkdir(parents=True, exist_ok=True)
+        candidate.write_text(raw, encoding="utf-8")
+        attempts.append(str(candidate))
+        artifacts.append(str(candidate))
+        problem = _runner_problem(raw)
+        compiler = {}
+        if not problem:
+            compiler = lean_support.compile_lean(candidate, settings.lake,
+                                                 settings.lean_timeout)
+            log_path = candidate.with_suffix(".log")
+            log_path.write_text((compiler.get("stdout") or "") + "\n", encoding="utf-8")
+            artifacts.append(str(log_path))
+            if not compiler["ok"]:
+                problem = "Lean compiler: " + (compiler.get("stdout") or "")[-6000:]
+        if not problem:
+            smoke = lean_conformance.smoke(candidate, profile, settings.lean_timeout,
+                                           settings.lake)
+            settings.lean_conformance_smoke_path().write_text(
+                json.dumps(smoke, indent=2, default=str) + "\n", encoding="utf-8")
+            artifacts.append(str(settings.lean_conformance_smoke_path()))
+            if not smoke["ok"]:
+                problem = "conformance protocol smoke test: " + "; ".join(
+                    smoke.get("findings") or [])[:6000]
+        if not problem:
+            final = settings.lean_conformance_runner_path()
+            shutil.copyfile(candidate, final)
+            artifacts.append(str(final))
+            log(settings, "Lean    conformance runner: compiled, smoke-tested -> %s" % final)
+            return {"ok": True, "path": str(final), "artifacts": artifacts,
+                    "attempts": attempts, "compiler": compiler}
+        kept = _keep_rejected(candidate, attempt + 1, answer, problem)
+        artifacts.append(str(kept))
+        previous = raw
+        findings = problem
+        log(settings, "Lean    conformance runner attempt %d: %s"
+            % (attempt + 1, problem[:500]))
+    return {"ok": False,
+            "error": "no compiling, protocol-valid Lean runner after %d attempt(s): %s"
+                     % (settings.max_conformance_retries + 1, findings[:2000]),
+            "artifacts": artifacts, "attempts": attempts}
+
+
+def write_conformance_driver(state: SpecState, settings: Settings, profile: dict) -> Path:
+    """Write the thin operator-specific driver over the shared runtime.
+
+    The driver is generated by the pipeline, not the model: its only operator-specific
+    content is the configuration below.  The protocol, corpus iteration, ONNX Runtime
+    reference values and comparison live in ``lean_conformance.py``.
+    """
+    config = {
+        "op": settings.op,
+        "opset": settings.opset,
+        "entry": settings.entry,
+        "runner": "lean/LeanConformance.lean",
+        "cases": "lean/cases.py",
+        "outputs": list(profile.get("outputs") or ["out"]),
+        "output_types": dict(profile.get("output_types") or {}),
+        "compare": getattr(settings, "lean_conformance_compare", "bits"),
+        "ulp": getattr(settings, "lean_conformance_ulp", 2),
+        "relative": getattr(settings, "lean_conformance_relative", 1e-6),
+        "spec_md5": harness.md5(Path(state["spec_path"])),
+        "formal_sha256": hashlib.sha256(settings.lean_path().read_bytes()).hexdigest(),
+    }
+    path = settings.lean_conformance_driver_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(lean_conformance.driver_source(config), encoding="utf-8")
+    return path
+
+
+PROTOCOL_TEXT = """\
+Input (one line per case, fields separated by TAB):
+
+    <id> TAB <attrs> TAB <arity> TAB <kind>|<shape>|<data> ...
+
+``attrs`` is ``-`` or ``name=value`` entries separated by ``;``.  A tensor field is
+``kind|shape|data``: shapes are comma-separated dimensions (``-`` for rank 0), data are
+comma-separated values (``-`` when empty).  ``kind`` is ``f64``, ``f32``, ``u8``..``u64``,
+``i8``..``i64``, or ``rat``.  Floats and integers are sent as raw bit patterns; rationals
+are ``numerator/denominator``.
+
+Output (one line per input line, in the same order):
+
+    <id> TAB OK TAB <nout> TAB <kind>|<shape>|<data> ...
+    <id> TAB UNSUPPORTED TAB 0 TAB <reason>
+    <id> TAB ERR TAB 0 TAB <reason>
+    <id> TAB MALFORMED TAB 0 TAB <message>
+
+The runner must never print anything else on stdout, must continue after a malformed
+line, and must report a type it cannot represent (for example float16) as UNSUPPORTED.
+"""
+
+
+def _conformance_fields(result: dict, *, generated: bool, artifacts: list[str],
+                        runner: str = "", driver: str = "", manifest: str = "",
+                        manifest_data: dict | None = None, corpus: str = "",
+                        corpus_source: str = "") -> dict:
+    status = result.get("status", "")
+    return {
+        "lean_conformance_ok": bool(result.get("ok")),
+        "lean_conformance_status": status,
+        "lean_conformance_path": result.get("report_path", ""),
+        "lean_conformance_report": result.get("report") or {},
+        "lean_conformance_error": result.get("error", ""),
+        "lean_conformance_generated": generated,
+        "lean_conformance_runner": runner,
+        "lean_conformance_driver": driver,
+        "lean_conformance_corpus": corpus,
+        "lean_conformance_manifest": manifest,
+        "lean_conformance_manifest_data": manifest_data or {},
+        "lean_conformance_corpus_source": corpus_source,
+        "lean_conformance_attempts": [],
+        "lean_conformance_artifacts": artifacts,
+        "history": [{"agent": "lean-conformance", "status": status,
+                     "generated": generated, "report": result.get("report_path", ""),
+                     "seconds": result.get("seconds", 0)}],
+        "trace": ["Lean conformance: %s" % status],
+    }
+
+
+def _conformance_error(status: str, message: str, artifacts: list[str]) -> dict:
+    return {
+        "lean_conformance_ok": False,
+        "lean_conformance_status": status,
+        "lean_conformance_path": "",
+        "lean_conformance_report": {},
+        "lean_conformance_error": message,
+        "lean_conformance_generated": bool(artifacts),
+        "lean_conformance_artifacts": artifacts,
+        "history": [{"agent": "lean-conformance", "status": status, "error": message}],
+        "trace": ["Lean conformance: %s" % status],
+    }
+
+
+def conform_lean(state: SpecState, settings: Settings) -> dict:
+    """Generate and run the executable Lean runner and its Python driver.
+
+    Only a trace-complete artifact reaches this node; a partial one keeps
+    ``skipped-partial`` from `formalize_lean`.  Generation is bypassed only when the
+    caller configured a script or disabled generation, and a generation failure is
+    reported as blocking rather than hidden behind a hand-written driver.
+    """
+    started = time.time()
+    if not getattr(settings, "lean_conformance", True):
+        return _conformance_fields(
+            {"status": "disabled", "ok": True, "report": {}, "error": ""},
+            generated=False, artifacts=[])
+    if not state.get("lean_ok"):
+        status = "skipped-partial" if state.get("lean_partial") else "error"
+        message = ("" if status == "skipped-partial"
+                   else "the Lean artifact is not complete")
+        return _conformance_fields(
+            {"status": status, "ok": status == "skipped-partial",
+             "report": {}, "error": message},
+            generated=False, artifacts=[])
+    if getattr(settings, "lean_conformance_script", None) or not getattr(
+            settings, "lean_conformance_generate", True):
+        result = lean_support.run_conformance(settings,
+                                              spec_path=Path(state["spec_path"]))
+        return _conformance_fields(result, generated=False, artifacts=[])
+
+    library = lean_support.build_library(
+        settings.lake, timeout=max(settings.lean_timeout, 600))
+    if not library["ok"]:
+        return _conformance_error(
+            "library-unusable",
+            "the shared Sonnx library does not build: %s" % library["stdout"][-2000:], [])
+    expected = (state.get("lean_report") or {}).get("library_sha256")
+    if expected and expected != lean_support.library_digest():
+        return _conformance_error(
+            "library-unusable",
+            "the shared Sonnx library changed after the formal specification was generated",
+            [])
+
+    artifacts: list[str] = []
+    try:
+        corpus = ensure_conformance_corpus(state, settings)
+        artifacts.append(str(corpus["path"]))
+        profile = lean_conformance.profile(corpus["path"], settings.python)
+        settings.lean_conformance_profile_path().write_text(
+            json.dumps(profile, indent=2, default=str) + "\n", encoding="utf-8")
+        artifacts.append(str(settings.lean_conformance_profile_path()))
+    except Exception as exc:
+        return _conformance_error("corpus-unusable",
+                                  "no usable conformance corpus: %s" % exc, artifacts)
+
+    generated = write_conformance_runner(state, settings, corpus, profile)
+    artifacts.extend(generated.get("artifacts") or [])
+    if not generated["ok"]:
+        result = _conformance_error("runner-unusable", generated["error"], artifacts)
+        result["lean_conformance_attempts"] = generated.get("attempts") or []
+        return result
+
+    driver = write_conformance_driver(state, settings, profile)
+    artifacts.append(str(driver))
+    manifest = lean_support.write_conformance_manifest(
+        settings, Path(state["spec_path"]), corpus["source"], profile,
+        Path(generated["path"]), driver)
+    artifacts.append(str(manifest))
+    try:
+        manifest_data = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        manifest_data = {}
+
+    result = lean_support.run_conformance(settings, driver=driver,
+                                          spec_path=Path(state["spec_path"]))
+    fields = _conformance_fields(
+        result, generated=True, artifacts=artifacts,
+        runner=generated["path"], driver=str(driver), manifest=str(manifest),
+        manifest_data=manifest_data, corpus=str(corpus["path"]),
+        corpus_source=corpus["source"])
+    fields["lean_conformance_attempts"] = generated.get("attempts") or []
+    fields["history"] = [{"agent": "lean-conformance", "status": result.get("status"),
+                          "generated": True, "corpus": corpus["source"],
+                          "seconds": round(time.time() - started, 1)}]
+    log(settings, "Lean    conformance: %s%s"
+        % (result.get("status"),
+           "" if not result.get("error") else " (%s)" % result["error"][:300]))
+    return fields
 
 
 def implement(state: SpecState, settings: Settings) -> dict:
@@ -1448,6 +1918,335 @@ def _fail_signature(state: SpecState) -> str:
                          json.dumps(sweeps)[:400])
 
 
+# ---------------------------------------------------------------------------
+# C generated from the Lean descriptor, and the C tester
+# ---------------------------------------------------------------------------
+
+# The element operations the C stage renders.  `CGen.rhs` computes a signed result in the
+# unsigned type of the same width, which is the right wrap for these three; division would
+# need a signed-aware element step, so it is not in the set.
+CGEN_SUPPORTED = {"add", "sub", "mul"}
+MIN_CGEN_CHECKS = 12
+
+_CGEN_METADATA = re.compile(r"SONNX-CGEN name=(\S+) binop=(\S+)")
+_CGEN_KERNEL = re.compile(
+    r"\bsonnx_[A-Za-z0-9_]+_(f32|f64|i8|i16|i32|i64|u8|u16|u32|u64)\b")
+_CGEN_TEST_HEADER = '#include "sonnx_kernels.h"'
+
+
+def _file_sha256(path: Path) -> str:
+    try:
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    except OSError:
+        return ""
+
+
+def _lean_string(text: str) -> str:
+    return text.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _cgen_trailer(settings: Settings, header: Path, source: Path) -> str:
+    """The `#eval` the C stage appends to a copy of the accepted Lean module.
+
+    It evaluates the module's own descriptor — so the C comes from the declaration Lean
+    checked, not from a second reading of the text — prints the name and element
+    operation for the stage to validate, and writes the two files.
+    """
+    return (
+        "\n\n-- Generated by the SONNX pipeline: render the module's C descriptor.\n"
+        "#eval do\n"
+        '  IO.println s!"SONNX-CGEN name={sonnxCGenOp.name} '
+        'binop={CGen.binOpName sonnxCGenOp.op}"\n'
+        '  IO.FS.writeFile "%s" '
+        "(CGen.renderFile (CGen.headerFileFor [sonnxCGenOp] CGen.dtypes))\n"
+        '  IO.FS.writeFile "%s" '
+        "(CGen.renderFile (CGen.sourceFileFor [sonnxCGenOp] CGen.dtypes))\n"
+        % (_lean_string(str(header)), _lean_string(str(source))))
+
+
+def _emit_c_files(settings: Settings, spec_text: str) -> dict:
+    """Compile the copy carrying the `#eval` trailer, and report what it rendered.
+
+    The accepted artifact is read, never written over.  A single `lake env lean` compiles
+    the copy and executes the trailer; importing the module would need an olean and a
+    `LEAN_PATH`, and this needs neither.
+    """
+    directory = settings.c_dir()
+    directory.mkdir(parents=True, exist_ok=True)
+    emit_path = settings.c_emit_path()
+    header = settings.c_header_path()
+    source = settings.c_source_path()
+    for path in (header, source):
+        path.unlink(missing_ok=True)
+    emit_path.write_text(spec_text.rstrip() + _cgen_trailer(settings, header, source),
+                         encoding="utf-8")
+    compiler = lean_support.compile_lean(emit_path, settings.lake, settings.lean_timeout)
+    match = _CGEN_METADATA.search(compiler.get("stdout", ""))
+    return {"ok": bool(compiler["ok"]) and match is not None,
+            "compiler": compiler, "emit": emit_path, "header": header, "source": source,
+            "name": match.group(1) if match else "",
+            "binop": match.group(2) if match else ""}
+
+
+def generate_c(state: SpecState, settings: Settings) -> dict:
+    """Render C from the descriptor the formal specification declares."""
+    spec_path = Path(state.get("lean_path") or settings.lean_path())
+    if not spec_path.is_file():
+        message = "there is no Lean artifact to render C from"
+        log(settings, "C       error: %s" % message)
+        return {"cgen_status": "error", "cgen_ok": False, "cgen_error": message,
+                "trace": ["C: no Lean artifact"]}
+    text = lean_support.read_source(spec_path)
+    if not lean_support.cgen_descriptor(text):
+        reason = ("the Lean module declares no top-level %s"
+                  % lean_support.CGEN_DESCRIPTOR)
+        log(settings, "C       unsupported: %s" % reason)
+        return {"cgen_status": "unsupported", "cgen_ok": False, "cgen_error": reason,
+                "cgen_artifacts": [], "trace": ["C: unsupported (no descriptor)"]}
+
+    emitted = _emit_c_files(settings, text)
+    if not emitted["ok"]:
+        message = "the Lean module did not render its C: %s" % (
+            (emitted.get("compiler") or {}).get("stdout", "")[-2000:]
+            or "no SONNX-CGEN line")
+        log(settings, "C       error: %s" % message[:500])
+        return {"cgen_status": "error", "cgen_ok": False, "cgen_error": message,
+                "cgen_artifacts": [str(emitted["emit"])],
+                "history": [{"agent": "cgen", "error": message}],
+                "trace": ["C: render failed"]}
+
+    name, binop = emitted["name"], emitted["binop"]
+    if binop not in CGEN_SUPPORTED:
+        reason = ("the descriptor's element operation %r is outside the C stage's set {%s}"
+                  % (binop, ", ".join(sorted(CGEN_SUPPORTED))))
+        for path in (emitted["header"], emitted["source"]):
+            Path(path).unlink(missing_ok=True)
+        log(settings, "C       unsupported: %s" % reason)
+        return {"cgen_status": "unsupported", "cgen_ok": False, "cgen_error": reason,
+                "cgen_artifacts": [str(emitted["emit"])],
+                "trace": ["C: unsupported (%s)" % binop]}
+    if name != settings.entry:
+        message = "the C descriptor names %r, expected the entry point %r" % (
+            name, settings.entry)
+        log(settings, "C       error: %s" % message)
+        return {"cgen_status": "error", "cgen_ok": False, "cgen_error": message,
+                "cgen_artifacts": [str(emitted["emit"])],
+                "history": [{"agent": "cgen", "error": message}],
+                "trace": ["C: descriptor name mismatch"]}
+    if not Path(emitted["header"]).is_file() or not Path(emitted["source"]).is_file():
+        message = "the Lean module rendered no C files"
+        log(settings, "C       error: %s" % message)
+        return {"cgen_status": "error", "cgen_ok": False, "cgen_error": message,
+                "cgen_artifacts": [str(emitted["emit"])],
+                "history": [{"agent": "cgen", "error": message}],
+                "trace": ["C: no files rendered"]}
+
+    log(settings, "C       generated %s -> %s" % (binop, emitted["source"]))
+    return {"cgen_status": "generated", "cgen_ok": False, "cgen_error": "",
+            "cgen_header": str(emitted["header"]), "cgen_source": str(emitted["source"]),
+            "cgen_artifacts": [str(emitted["emit"]), str(emitted["header"]),
+                               str(emitted["source"])],
+            "history": [{"agent": "cgen", "name": name, "op": binop,
+                         "header": str(emitted["header"]),
+                         "source": str(emitted["source"])}],
+            "trace": ["C: generated %s kernels" % binop]}
+
+
+def _c_source_problem(source: str) -> str:
+    """Why an answer is not a usable C test program, or "" when it is one.
+
+    The textual checks are the ones a compiler will not make: the program must be one
+    standalone translation unit that includes the generated header and exercises the four
+    families the document carries.  Whether it compiles and what it measures are decided
+    by running it.
+    """
+    if not source.strip():
+        return "the answer is empty"
+    if not re.search(r"\bint\s+main\s*\(", source):
+        return "the program defines no `int main(void)`"
+    if _CGEN_TEST_HEADER not in source:
+        return 'the program does not include "sonnx_kernels.h"'
+    suffixes = set(_CGEN_KERNEL.findall(source))
+    missing = [suffix for suffix in ("f32", "f64") if suffix not in suffixes]
+    if not any(suffix.startswith("i") for suffix in suffixes):
+        missing.append("a signed integer kernel")
+    if not any(suffix.startswith("u") for suffix in suffixes):
+        missing.append("an unsigned integer kernel")
+    if missing:
+        return "the program does not exercise %s" % ", ".join(missing)
+    return ""
+
+
+def _compile_and_run_c(settings: Settings, test_path: Path) -> dict:
+    """Compile the generated kernels with the test program, run it, and read its lines.
+
+    A compile error, no comparison at all, a non-zero exit with no reported failure, or
+    fewer than `MIN_CGEN_CHECKS` passed checks is an *unusable* answer: the tester is asked
+    again.  A reported `FAIL` is evidence and is returned as such, whatever the exit
+    status; it is not a reason to ask the tester to weaken the program.
+    """
+    directory = settings.c_dir()
+    command = [settings.c_compiler, "-std=c11", "-Wall", "-Wextra", "-Werror", "-O2",
+               str(settings.c_source_path().resolve()), str(Path(test_path).resolve()),
+               "-o", str(settings.c_binary_path().resolve()), "-lm"]
+    result = {"ok": False, "unusable": "", "stage": "compile", "command": command,
+              "stdout": "", "stderr": "", "returncode": None,
+              "checks": {"total": 0, "passed": 0, "failed": 0}, "failures": []}
+    try:
+        built = subprocess.run(command, cwd=str(directory), capture_output=True, text=True,
+                               timeout=settings.c_timeout)
+    except FileNotFoundError:
+        result["unusable"] = "the C compiler %r was not found" % settings.c_compiler
+        return result
+    except subprocess.TimeoutExpired:
+        result["unusable"] = "the C compilation timed out after %d s" % settings.c_timeout
+        return result
+    result["stdout"] = built.stdout or ""
+    result["stderr"] = built.stderr or ""
+    result["returncode"] = built.returncode
+    if built.returncode != 0:
+        result["unusable"] = "the test program did not compile: %s" % (
+            (built.stderr or built.stdout or "").strip()[-3000:])
+        return result
+
+    result["stage"] = "run"
+    try:
+        ran = subprocess.run([str(settings.c_binary_path())], cwd=str(directory),
+                             capture_output=True, text=True, timeout=settings.c_timeout)
+    except subprocess.TimeoutExpired:
+        result["unusable"] = "the test program timed out after %d s" % settings.c_timeout
+        result["returncode"] = -1
+        return result
+    result["stdout"] = ran.stdout or ""
+    result["stderr"] = ran.stderr or ""
+    result["returncode"] = ran.returncode
+    passed, failures = [], []
+    for line in (ran.stdout or "").splitlines():
+        line = line.strip()
+        if line.startswith("ok "):
+            passed.append(line[3:].strip())
+        elif line.startswith("FAIL"):
+            failures.append(line)
+    result["checks"] = {"total": len(passed) + len(failures),
+                        "passed": len(passed), "failed": len(failures)}
+    result["failures"] = failures
+    if not passed and not failures:
+        result["unusable"] = "the test program reported no comparison (no `ok`/`FAIL` line)"
+        return result
+    if failures:
+        result["ok"] = False
+        return result
+    if ran.returncode != 0:
+        result["unusable"] = ("the test program exited with %d without reporting a failure: %s"
+                              % (ran.returncode, (ran.stderr or ran.stdout or "").strip()[-1000:]))
+        return result
+    if len(passed) < MIN_CGEN_CHECKS:
+        result["unusable"] = ("the test program compared %d case(s); at least %d are required"
+                              % (len(passed), MIN_CGEN_CHECKS))
+        return result
+    result["ok"] = True
+    return result
+
+
+def _cgen_report(settings: Settings, test_path: Path, result: dict) -> dict:
+    return {
+        "generated_by": "sonnx-c-stage", "protocol": "sonnx-c/1",
+        "op": settings.op, "opset": settings.opset, "entry": settings.entry,
+        "spec_md5": harness.md5(Path(settings.resolved_spec_path())),
+        "lean": str(settings.lean_path()), "lean_sha256": _file_sha256(settings.lean_path()),
+        "header": str(settings.c_header_path()),
+        "header_sha256": _file_sha256(settings.c_header_path()),
+        "source": str(settings.c_source_path()),
+        "source_sha256": _file_sha256(settings.c_source_path()),
+        "test": str(test_path), "test_sha256": _file_sha256(test_path),
+        "cc": settings.c_compiler, "command": result.get("command", []),
+        "stage": result.get("stage", ""), "returncode": result.get("returncode"),
+        "checks": result.get("checks") or {"total": 0, "passed": 0, "failed": 0},
+        "failures": (result.get("failures") or [])[:50],
+        "ok": bool(result.get("ok")), "error": result.get("unusable", ""),
+        "stdout": (result.get("stdout") or "")[-8000:],
+        "stderr": (result.get("stderr") or "")[-4000:],
+        "written": datetime.now().isoformat(timespec="seconds"),
+    }
+
+
+def test_c(state: SpecState, settings: Settings) -> dict:
+    """The C tester: one standalone C program, compiled with the generated kernels."""
+    spec_path = Path(state.get("lean_path") or settings.lean_path())
+    source_path = Path(state.get("cgen_source") or settings.c_source_path())
+    header_path = Path(state.get("cgen_header") or settings.c_header_path())
+    system = prompt("c_tester.md")
+    user = "\n\n".join([
+        "# The operator\n\n%s, ONNX opset %d." % (settings.op, settings.opset),
+        "# The specification under test\n\n%s" % harness.read_spec(Path(state["spec_path"])),
+        "# The restrictions that apply to this operator\n\n%s" % restrictions_context(settings),
+        "# The Lean formal specification\n\n```lean\n%s\n```"
+        % clip(lean_support.read_source(spec_path), 40000, "Lean specification"),
+        "# The generated C header (`sonnx_kernels.h`)\n\n```c\n%s\n```"
+        % clip(header_path.read_text(encoding="utf-8"), 20000, "C header"),
+        "# The generated C implementation (`sonnx_kernels.c`)\n\n```c\n%s\n```"
+        % clip(source_path.read_text(encoding="utf-8"), 40000, "C implementation"),
+    ])
+    attempts: list[str] = []
+    artifacts: list[str] = []
+    problem = ""
+    for attempt in range(settings.max_c_retries + 1):
+        asked = user
+        if problem:
+            asked += "\n\n# Repair the previous answer\n\n%s" % problem
+        answer = _artifact(settings, system, asked, "C test  attempt %d" % (attempt + 1))
+        raw = extract.extract_c(answer)
+        candidate = settings.c_test_attempt_path(attempt + 1)
+        candidate.parent.mkdir(parents=True, exist_ok=True)
+        candidate.write_text(raw, encoding="utf-8")
+        attempts.append(str(candidate))
+        artifacts.append(str(candidate))
+        problem = _c_source_problem(raw)
+        if problem:
+            log(settings, "C test  attempt %d: %s" % (attempt + 1, problem))
+            continue
+        result = _compile_and_run_c(settings, candidate)
+        log(settings, "C test  attempt %d: %s"
+            % (attempt + 1, "PASS" if result["ok"] else
+               (result.get("unusable") or "%d failure(s)"
+                % len(result.get("failures") or []))))
+        report = _cgen_report(settings, candidate, result)
+        settings.c_report_path().write_text(json.dumps(report, indent=2) + "\n",
+                                            encoding="utf-8")
+        artifacts.append(str(settings.c_report_path()))
+        if result["ok"]:
+            accepted = settings.c_test_path()
+            shutil.copyfile(candidate, accepted)
+            artifacts.append(str(accepted))
+            log(settings, "C test  PASS (%d checks) -> %s"
+                % (report["checks"]["passed"], accepted))
+            return {"cgen_status": "passed", "cgen_ok": True, "cgen_error": "",
+                    "cgen_test": str(accepted), "cgen_report": report,
+                    "cgen_attempts": attempts, "cgen_artifacts": artifacts,
+                    "history": [{"agent": "c-tester", "attempt": attempt + 1,
+                                 "checks": report["checks"],
+                                 "report": str(settings.c_report_path())}],
+                    "trace": ["C test: pass"]}
+        if result.get("failures"):
+            error = "the generated C failed %d check(s)" % len(result["failures"])
+            log(settings, "C test  FAIL: %s" % error)
+            return {"cgen_status": "failed", "cgen_ok": False, "cgen_error": error,
+                    "cgen_test": str(candidate), "cgen_report": report,
+                    "cgen_attempts": attempts, "cgen_artifacts": artifacts,
+                    "history": [{"agent": "c-tester", "attempt": attempt + 1,
+                                 "checks": report["checks"],
+                                 "report": str(settings.c_report_path())}],
+                    "trace": ["C test: fail"]}
+        problem = result.get("unusable") or "the test program is not usable"
+    error = "no usable C test program after %d attempt(s): %s" % (
+        settings.max_c_retries + 1, problem)
+    log(settings, "C test  %s" % error)
+    return {"cgen_status": "error", "cgen_ok": False, "cgen_error": error,
+            "cgen_attempts": attempts, "cgen_artifacts": artifacts,
+            "history": [{"agent": "c-tester", "error": error}],
+            "trace": ["C test: no usable program"]}
+
+
 def mark_failure(state: SpecState, settings: Settings) -> dict:
     """Remember the failing set of this round, so an unchanged round can be spotted."""
     return {"previous_failure": state.get("fail_signature", ""),
@@ -1469,6 +2268,31 @@ def _run_record(state: SpecState, settings: Settings, outcome: str) -> dict:
         # defect of the document
         "cases_unusable": state.get("cases_unusable"),
         "impl_unusable": state.get("impl_unusable"),
+        "lean": state.get("lean_path"), "lean_trace": state.get("lean_trace_path"),
+        "lean_source_md5": state.get("lean_source_md5"), "lean_ok": state.get("lean_ok"),
+        "lean_partial": state.get("lean_partial"), "lean_error": state.get("lean_error"),
+        "lean_coverage": state.get("lean_coverage"),
+        "lean_artifacts": state.get("lean_artifacts", []),
+        "lean_conformance_ok": state.get("lean_conformance_ok"),
+        "lean_conformance_status": state.get("lean_conformance_status"),
+        "lean_conformance_path": state.get("lean_conformance_path"),
+        "lean_conformance_report": state.get("lean_conformance_report"),
+        "lean_conformance_error": state.get("lean_conformance_error"),
+        "lean_conformance_generated": state.get("lean_conformance_generated"),
+        "lean_conformance_runner": state.get("lean_conformance_runner"),
+        "lean_conformance_driver": state.get("lean_conformance_driver"),
+        "lean_conformance_corpus": state.get("lean_conformance_corpus"),
+        "lean_conformance_corpus_source": state.get("lean_conformance_corpus_source"),
+        "lean_conformance_manifest": state.get("lean_conformance_manifest"),
+        "lean_conformance_attempts": state.get("lean_conformance_attempts", []),
+        "lean_conformance_artifacts": state.get("lean_conformance_artifacts", []),
+        # the C the Lean descriptor rendered, and the C tester's verdict
+        "cgen_status": state.get("cgen_status"), "cgen_ok": state.get("cgen_ok"),
+        "cgen_error": state.get("cgen_error"),
+        "cgen_header": state.get("cgen_header"), "cgen_source": state.get("cgen_source"),
+        "cgen_test": state.get("cgen_test"), "cgen_report": state.get("cgen_report"),
+        "cgen_attempts": state.get("cgen_attempts", []),
+        "cgen_artifacts": state.get("cgen_artifacts", []),
         "finished": datetime.now().isoformat(timespec="seconds"),
     }
     run_dir = settings.resolved_run_dir()
@@ -1489,7 +2313,7 @@ def _finish(outcome: str, reason: str):
 
 def _route_after_check(state: SpecState, settings: Settings) -> str:
     if state.get("spec_ok"):
-        return "implement"
+        return "formalize_lean" if settings.lean else "implement"
     if state.get("review_failed"):
         return "finish_verifier"
     if state.get("no_progress"):
@@ -1500,6 +2324,44 @@ def _route_after_check(state: SpecState, settings: Settings) -> str:
     if signature and signature in list(state.get("seen_amendments", []))[:-1]:
         return "finish_guard"
     return "write_spec"
+
+
+def _route_after_lean(state: SpecState, settings: Settings) -> str:
+    if state.get("lean_ok"):
+        return "conform_lean"
+    if state.get("lean_partial"):
+        return "finish_lean_partial"
+    return "finish_lean"
+
+
+def _route_after_conform(state: SpecState, settings: Settings) -> str:
+    status = state.get("lean_conformance_status", "")
+    if status == "skipped-partial":
+        return "finish_lean_partial"
+    if state.get("lean_conformance_ok"):
+        if settings.cgen and state.get("lean_ok"):
+            return "generate_c"
+        return "finish_formalized" if settings.lean_only else "implement"
+    if status == "failed":
+        return "finish_lean_conformance"
+    return "finish_lean_conformance_error"
+
+
+def _route_after_cgen(state: SpecState, settings: Settings) -> str:
+    status = state.get("cgen_status", "")
+    if status == "generated":
+        return "test_c"
+    if status == "unsupported":
+        # the descriptor is absent or names an element step CGen cannot render: worth
+        # recording, not worth stopping a run that has its other evidence
+        return "finish_formalized" if settings.lean_only else "implement"
+    return "finish_c"
+
+
+def _route_after_c_test(state: SpecState, settings: Settings) -> str:
+    if state.get("cgen_ok"):
+        return "finish_formalized" if settings.lean_only else "implement"
+    return "finish_c"
 
 
 def _route_after_implement(state: SpecState, settings: Settings) -> str:
@@ -1545,12 +2407,28 @@ def build_graph(settings: Settings):
     graph = StateGraph(SpecState)
     graph.add_node("write_spec", lambda s: write_spec(s, settings))
     graph.add_node("check_spec", lambda s: check_spec(s, settings))
+    graph.add_node("formalize_lean", lambda s: formalize_lean(s, settings))
+    graph.add_node("conform_lean", lambda s: conform_lean(s, settings))
+    graph.add_node("generate_c", lambda s: generate_c(s, settings))
+    graph.add_node("test_c", lambda s: test_c(s, settings))
     graph.add_node("implement", lambda s: implement(s, settings))
     graph.add_node("test", lambda s: test(s, settings))
     graph.add_node("diagnose", lambda s: diagnose(s, settings))
     graph.add_node("record_failure", lambda s: mark_failure(s, settings))
     ends = {
         "finish_pass": ("converged", "a fresh blind implementation passed"),
+        "finish_formalized": ("formalized", "the Lean specification compiled and is trace-complete"),
+        "finish_lean_partial": ("lean-partial",
+                                "the Lean artifact compiled but its coverage is explicitly partial"),
+        "finish_lean_conformance": (
+            "lean-conformance-failed",
+            "the generated Lean runner did not reproduce the corpus under ONNX Runtime"),
+        "finish_lean_conformance_error": (
+            "lean-conformance-error",
+            "the Lean conformance runner or driver could not be generated, or did not run"),
+        "finish_lean": ("lean-failed", "the Lean formalizer produced no valid artifact"),
+        "finish_c": ("c-failed",
+                     "the generated C could not be produced or did not pass its C tests"),
         "finish_cap": ("iteration-cap", "the iteration cap was reached"),
         "finish_guard": ("unresolved-review", "the verifier's finding was not resolved"),
         "finish_stalled": ("stalled",
@@ -1575,13 +2453,35 @@ def build_graph(settings: Settings):
     for name, (outcome, reason) in ends.items():
         graph.add_node(name, (lambda o, r: (lambda s: _finish(o, r)(s, settings)))(outcome, reason))
 
-    graph.add_edge(START, "check_spec" if settings.start_from == "spec" else "write_spec")
+    graph.add_edge(START, "check_spec" if settings.start_from == "spec" or settings.lean_only
+                   else "write_spec")
     graph.add_edge("write_spec", "check_spec")
     graph.add_conditional_edges("check_spec", lambda s: _route_after_check(s, settings),
-                                {"implement": "implement", "write_spec": "write_spec",
+                                {"implement": "implement", "formalize_lean": "formalize_lean",
+                                 "write_spec": "write_spec",
                                  "finish_guard": "finish_guard",
                                  "finish_stalled": "finish_stalled",
                                  "finish_verifier": "finish_verifier"})
+    graph.add_conditional_edges("formalize_lean", lambda s: _route_after_lean(s, settings),
+                                {"conform_lean": "conform_lean",
+                                 "finish_lean_partial": "finish_lean_partial",
+                                 "finish_lean": "finish_lean"})
+    graph.add_conditional_edges("conform_lean", lambda s: _route_after_conform(s, settings),
+                                {"implement": "implement",
+                                 "generate_c": "generate_c",
+                                 "finish_formalized": "finish_formalized",
+                                 "finish_lean_partial": "finish_lean_partial",
+                                 "finish_lean_conformance": "finish_lean_conformance",
+                                 "finish_lean_conformance_error":
+                                     "finish_lean_conformance_error"})
+    graph.add_conditional_edges("generate_c", lambda s: _route_after_cgen(s, settings),
+                                {"test_c": "test_c", "finish_c": "finish_c",
+                                 "finish_formalized": "finish_formalized",
+                                 "implement": "implement"})
+    graph.add_conditional_edges("test_c", lambda s: _route_after_c_test(s, settings),
+                                {"finish_c": "finish_c",
+                                 "finish_formalized": "finish_formalized",
+                                 "implement": "implement"})
     graph.add_conditional_edges("implement", lambda s: _route_after_implement(s, settings),
                                 {"test": "test", "finish_impl": "finish_impl"})
     graph.add_edge("test", "record_failure")
@@ -1596,7 +2496,9 @@ def build_graph(settings: Settings):
                                 {"write_spec": "write_spec", "implement": "implement",
                                  "test": "test", "finish_stop": "finish_stop",
                                  "finish_cap": "finish_cap", "finish_repeat": "finish_repeat"})
-    for name in ("finish_pass", "finish_cap", "finish_guard", "finish_stalled",
+    for name in ("finish_pass", "finish_formalized", "finish_lean_partial",
+                 "finish_lean_conformance", "finish_lean_conformance_error", "finish_lean",
+                 "finish_c", "finish_cap", "finish_guard", "finish_stalled",
                  "finish_verifier", "finish_cases", "finish_impl", "finish_uncovered",
                  "finish_unchanged", "finish_cases_stuck", "finish_repeat", "finish_stop"):
         graph.add_edge(name, END)

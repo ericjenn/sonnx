@@ -1,0 +1,16 @@
+# ONNX operator definition, as the `onnx` package 1.23.1 states it (schema of opset 13, the opset asked for is 14)
+
+**Abs**, since opset 13.
+
+Absolute takes one input data (Tensor<T>) and produces one output data
+(Tensor<T>) where absolute value, y = abs(x), is applied to
+the tensor elementwise.
+
+- type constraint `T`: `tensor(uint8)`, `tensor(uint16)`, `tensor(uint32)`, `tensor(uint64)`, `tensor(int8)`, `tensor(int16)`, `tensor(int32)`, `tensor(int64)`, `tensor(float16)`, `tensor(float)`, `tensor(double)`, `tensor(bfloat16)`. Constrain input and output types to all numeric tensors.
+
+- Input `X` (`tensor(double)`, `tensor(uint16)`, `tensor(int8)`, `tensor(int64)`, `tensor(uint64)`, `tensor(int32)`, `tensor(bfloat16)`, `tensor(float16)`, `tensor(int16)`, `tensor(uint32)`, `tensor(uint8)`, `tensor(float)`): Input tensor
+- Output `Y` (`tensor(double)`, `tensor(uint16)`, `tensor(int8)`, `tensor(int64)`, `tensor(uint64)`, `tensor(int32)`, `tensor(bfloat16)`, `tensor(float16)`, `tensor(int16)`, `tensor(uint32)`, `tensor(uint8)`, `tensor(float)`): Output tensor
+
+This operator has no attribute.
+
+Documentation page: https://onnx.ai/onnx/operators/onnx__Abs.html
