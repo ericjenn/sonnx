@@ -286,5 +286,9 @@ class Settings:
     def c_report_path(self) -> Path:
         return self.c_dir() / "c-report.json"
 
+    def c_trace_path(self) -> Path:
+        """The derivation manifest: which Lean declarations each kernel comes from."""
+        return self.c_dir() / "cgen-trace.json"
+
     def c_publication_dir(self) -> Path:
         return self.ops_root() / self.entry / "c"

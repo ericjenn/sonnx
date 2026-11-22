@@ -854,8 +854,7 @@ def validate_candidate(raw: str, inv: dict) -> dict:
     entries, errors = parse_markers(raw)
     trace = validate_entries(entries, errors, inv)
     findings = (trace["findings"] + forbidden_constructs(raw)
-                + import_findings(raw) + shared_redefinition_findings(raw)
-                + cgen_findings(raw))
+                + import_findings(raw) + shared_redefinition_findings(raw))
     return {**trace, "ok": not findings, "findings": findings,
             "library_sha256": library_digest()}
 
@@ -891,7 +890,6 @@ def check_files(spec_path: Path, paths: list[Path], lake: str | None = None,
     findings.extend(forbidden_constructs(text))
     findings.extend(import_findings(text))
     findings.extend(shared_redefinition_findings(text))
-    findings.extend(cgen_findings(text))
     library = library_digest()
     library_digests = re.findall(r"@library-digest\s+([0-9a-fA-F]{64})", text)
     if not library_digests:

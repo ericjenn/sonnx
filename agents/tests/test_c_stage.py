@@ -7,6 +7,7 @@ protocol tests compile and run fixed C programs with `cc`.
 
 from __future__ import annotations
 
+import json
 import shutil
 import sys
 import tempfile
@@ -17,20 +18,57 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from sonnx_agents import extract, graph, lean  # noqa: E402
 from sonnx_agents.config import Settings  # noqa: E402
 
-SPEC = """import CGen
+SPEC = """import Sonnx
 
-def sonnxCGenOp : CGen.Elementwise := ⟨"sub", .sub⟩
+namespace Generated.Sub
+
+def realSub (a b : Rat) : Rat := a - b
+def floatSub (a b : Rat) : Rat := a - b
+def intSub (a b : Int) : Int := a - b
+def uintSub (a b : Nat) : Nat := a - b
+
+end Generated.Sub
 """
 
-SPEC_DIV = """import CGen
+SPEC_DIV = """import Sonnx
 
-def sonnxCGenOp : CGen.Elementwise := ⟨"sub", .div⟩
+namespace Generated.Div
+
+def realDiv (a b : Rat) : Rat := a / b
+def floatDiv (a b : Rat) : Rat := a / b
+def intDiv (a b : Int) : Int := a / b
+def uintDiv (a b : Nat) : Nat := a / b
+
+end Generated.Div
 """
 
 SPEC_NONE = """import Sonnx
 
 def thing : Nat := 0
 """
+
+FAMILIES = (("real", "REAL"), ("float", "FLOAT"), ("int", "INT"), ("uint", "UINT"))
+
+
+def derivations_for(op: str, names: dict[str, str]) -> list[dict]:
+    """The family declarations a mini specification's trace names."""
+    return [{"family": family,
+             "declaration": "Generated.%s.%s" % (op, names[family]),
+             "requirement": "E_%s_%s_FUNC_0010" % (op.upper(), tag),
+             "source": "ops/%s/%s.md:L1-L2" % (op.lower(), op.lower())}
+            for family, tag in FAMILIES]
+
+
+SUB_DERIVATIONS = derivations_for("Sub", {"real": "realSub", "float": "floatSub",
+                                          "int": "intSub", "uint": "uintSub"})
+DIV_DERIVATIONS = derivations_for("Div", {"real": "realDiv", "float": "floatDiv",
+                                          "int": "intDiv", "uint": "uintDiv"})
+
+
+def write_trace(settings: Settings, rows: list[dict]) -> None:
+    path = settings.lean_trace_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"entries": rows}, indent=2) + "\n", encoding="utf-8")
 
 GOOD_TEST = """#include <stddef.h>
 #include <stdint.h>
@@ -129,8 +167,8 @@ def check(name: str, condition: bool) -> None:
     print("  ok  %s" % name)
 
 
-def settings_for(directory: Path) -> Settings:
-    return Settings(op="Sub", opset=14, run_dir=directory, lean=True, lean_only=True,
+def settings_for(directory: Path, op: str = "Sub") -> Settings:
+    return Settings(op=op, opset=14, run_dir=directory, lean=True, lean_only=True,
                     cgen=True, lake=lean.find_lake(), verbose=False)
 
 
@@ -172,10 +210,14 @@ def test_guard() -> None:
 
 def test_render(directory: Path) -> Settings:
     settings = settings_for(directory)
-    emitted = graph._emit_c_files(settings, SPEC)
-    check("the emit trailer renders the descriptor", emitted["ok"])
-    check("the driver prints the descriptor's name and operation",
+    emitted = graph._emit_c_files(settings, SPEC, SUB_DERIVATIONS)
+    check("the derivation trailer renders the module's C", emitted["ok"])
+    check("the driver prints the derived name and operation",
           emitted["name"] == "sub" and emitted["binop"] == "sub")
+    check("the derivation reads the family declarations",
+          [source["declaration"] for source in emitted["sources"]]
+          == ["Generated.Sub.realSub", "Generated.Sub.floatSub",
+              "Generated.Sub.intSub", "Generated.Sub.uintSub"])
     check("the header is written", Path(emitted["header"]).is_file())
     check("the source is written", Path(emitted["source"]).is_file())
     if not emitted["ok"]:
@@ -191,33 +233,64 @@ def test_render(directory: Path) -> Settings:
           "void sonnx_sub_u64(const sonnx_tensor *a, const sonnx_tensor *b, "
           "sonnx_tensor *c) {" in source)
     check("the source includes the header", '#include "sonnx_kernels.h"' in source)
+    check("the header comment names the derivation",
+          "derived from Generated.Sub.floatSub" in header
+          and "E_SUB_FLOAT_FUNC_0010" in header)
+    check("the definition comment names the derivation",
+          "derived from Generated.Sub.floatSub" in source)
     return settings
 
 
 def test_generate(directory: Path) -> None:
     settings = settings_for(directory)
     descriptor = write(directory, "FormalSpec.lean", SPEC)
-    accepted = graph.generate_c({"lean_path": str(descriptor)}, settings)
-    check("generate_c renders a supported descriptor",
+    write_trace(settings, [{"key": item["requirement"], "declaration": item["declaration"],
+                            "source": item["source"]} for item in SUB_DERIVATIONS])
+    state = {"lean_path": str(descriptor), "spec_path": str(descriptor)}
+    accepted = graph.generate_c(state, settings)
+    check("generate_c derives a supported operation",
           accepted["cgen_status"] == "generated" and not accepted["cgen_ok"])
     check("generate_c records the two files", Path(accepted["cgen_header"]).is_file()
           and Path(accepted["cgen_source"]).is_file())
+    check("generate_c records the derivation", Path(accepted["cgen_trace"]).is_file())
+    trace = json.loads(Path(accepted["cgen_trace"]).read_text())
+    check("the manifest names every family",
+          [item["family"] for item in trace["derivations"]]
+          == ["real", "float", "int", "uint"])
+    check("the manifest maps the kernels to their family",
+          [kernel["family"] for kernel in trace["kernels"][:3]]
+          == ["float", "float", "int"])
 
+    div_descriptor = write(directory, "Div.lean", SPEC_DIV)
+    write_trace(settings, [{"key": item["requirement"], "declaration": item["declaration"],
+                            "source": item["source"]} for item in DIV_DERIVATIONS])
+    div_settings = settings_for(directory, "Div")
     unsupported = graph.generate_c(
-        {"lean_path": str(write(directory, "Div.lean", SPEC_DIV))}, settings)
-    check("a division descriptor is unsupported, not an error",
+        {"lean_path": str(div_descriptor), "spec_path": str(div_descriptor)}, div_settings)
+    check("a division derivation is unsupported, not an error",
           unsupported["cgen_status"] == "unsupported")
-    check("an unsupported descriptor names the reason", "div" in unsupported["cgen_error"])
+    check("the unsupported reason names the operation", "div" in unsupported["cgen_error"])
+    check("the unsupported derivation is still traced",
+          Path(unsupported["cgen_trace"]).is_file())
+    check("no C files are left for an unsupported operation",
+          not div_settings.c_header_path().is_file()
+          and not div_settings.c_source_path().is_file())
 
+    absent_descriptor = write(directory, "None.lean", SPEC_NONE)
+    write_trace(settings, [])
     absent = graph.generate_c(
-        {"lean_path": str(write(directory, "None.lean", SPEC_NONE))}, settings)
-    check("an absent descriptor is unsupported", absent["cgen_status"] == "unsupported")
-    check("an absent descriptor names the reason",
-          "sonnxCGenOp" in absent["cgen_error"])
+        {"lean_path": str(absent_descriptor), "spec_path": str(absent_descriptor)},
+        settings)
+    check("a specification with no family declaration is unsupported",
+          absent["cgen_status"] == "unsupported")
+    check("the reason names the missing family", "family" in absent["cgen_error"])
 
+    broken_descriptor = write(directory, "Broken.lean",
+                              SPEC + "\ndef broken : Nat :=\n")
+    write_trace(settings, [{"key": item["requirement"], "declaration": item["declaration"],
+                            "source": item["source"]} for item in SUB_DERIVATIONS])
     broken = graph.generate_c(
-        {"lean_path": str(write(directory, "Broken.lean",
-                                SPEC + "\ndef broken : Nat :=\n"))},
+        {"lean_path": str(broken_descriptor), "spec_path": str(broken_descriptor)},
         settings)
     check("a module that does not compile is an error", broken["cgen_status"] == "error")
 
@@ -253,6 +326,31 @@ def test_protocol(settings: Settings) -> None:
           and "no comparison" in result["unusable"])
 
 
+def test_checked_in_specs(work: Path) -> None:
+    """Derive the checked-in formal specifications without a model call.
+
+    The real `_emit_c_files` reads the family declarations and compiles the copy; Add, Sub
+    and Mul render, Div derives `.div` and is classified unsupported.
+    """
+    repo = Path(__file__).resolve().parents[2]
+    for op in ("add", "sub", "mul", "div"):
+        source = repo / "ops" / op / "lean" / "FormalSpec.lean"
+        trace = json.loads(source.with_name("FormalSpec.trace.json").read_text())
+        settings = Settings(op=op.capitalize(), run_dir=work / op, lean=True, cgen=True,
+                            verbose=False)
+        derivations = graph._cgen_derivations(op, trace)
+        check("%s: the trace names every family" % op, len(derivations) == 4)
+        emitted = graph._emit_c_files(settings, source.read_text(), derivations)
+        check("%s: the derivation succeeds" % op, emitted["ok"])
+        check("%s: the derived operation" % op, emitted["binop"] == op)
+        if op in ("add", "sub", "mul"):
+            check("%s: the C files are rendered" % op,
+                  emitted["header_written"] and emitted["source_written"])
+        else:
+            check("div: no C files are rendered",
+                  not emitted["header_written"] and not emitted["source_written"])
+
+
 def main() -> int:
     if shutil.which(lean.find_lake()) is None:
         sys.stderr.write("lake not found\n")
@@ -269,6 +367,7 @@ def main() -> int:
         generate_dir = directory / "generate"
         generate_dir.mkdir()
         test_generate(generate_dir)
+        test_checked_in_specs(directory / "checked-in")
         test_protocol(settings)
     return 0
 

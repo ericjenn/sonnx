@@ -8,10 +8,12 @@
   "lean": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/lean/FormalSpec.lean",
   "lean_sha256": "c98032d53eab3e4cc39c7f5251e5a9834b5167a92028dd7eccceed7af72b729d",
   "header": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/sonnx_kernels.h",
-  "header_sha256": "4f344a99165760ee3efd6dd1bee7e3606d55c37828b598c15a6376d9256dbe39",
+  "header_sha256": "3239b8d7515793df079dae8da53c5a7d07f3c0f5e5fbb9eaa82bf76072cdc303",
   "source": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/sonnx_kernels.c",
-  "source_sha256": "f8ab203f6082ed763bd884104ada627f464628418a5d3aede20b79243e9cb4da",
-  "test": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/c_tests-attempt-001.c",
+  "source_sha256": "a4cfdbc522ed162e0f579ad030990a2112f10ea3528bf5d30b1fcd9d85c2f457",
+  "trace": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/cgen-trace.json",
+  "trace_sha256": "e6d5b2c193105cbf10b2e00d26fa0831cfc5e196bb045a55786693f999a9a3e4",
+  "test": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/c_tests.c",
   "test_sha256": "3a4f000b0c8ff6cac41c9a3362ae221388c226da08dfed87d0418a18c9cdf595",
   "cc": "cc",
   "command": [
@@ -22,7 +24,7 @@
     "-Werror",
     "-O2",
     "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/sonnx_kernels.c",
-    "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/c_tests-attempt-001.c",
+    "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/c_tests.c",
     "-o",
     "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/c_tests",
     "-lm"
@@ -39,5 +41,5 @@
   "error": "",
   "stdout": "ok f32_example1\nok f32_example2\nok f32_inf\nok f32_nan\nok f32_subnormal\nok f32_overflow\nok f32_zero_size\nok f64_example3\nok f64_special\nok f64_rank0\nok i8_example1\nok i8_example2\nok i16_bounds\nok i32_bounds\nok i64_bounds\nok u8_example1\nok u16_bounds\nok u32_bounds\nok u64_bounds\n",
   "stderr": "",
-  "written": "2026-11-21T17:59:34"
+  "written": "2026-11-22T15:44:53"
 }

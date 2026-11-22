@@ -11,6 +11,10 @@
  *
  * Signed integer kernels wrap modulo 2^bits (Sonnx.sintWrap); unsigned
  * kernels wrap modulo 2^bits (Sonnx.uintWrap). float16 is not generated.
+ *
+ * Derived from the Lean formal specification; each kernel's comment names
+ * its Lean declaration, the frontier path, the @trace key and the informal
+ * source span it comes from.
  */
 #include <stddef.h>
 #include <stdint.h>
@@ -21,13 +25,23 @@ typedef struct {
   const size_t *shape;
 } sonnx_tensor;
 
+/* sonnx_mul_f32: derived from Generated.Mul.FloatMulRel (Generated.Mul.FloatMulRel -> Generated.Mul.floatMulStep); E_MUL_FLOAT_FUNC_0010; ops/mul/mul.md:L170-L208; operation mul */
 void sonnx_mul_f32(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_mul_f64: derived from Generated.Mul.FloatMulRel (Generated.Mul.FloatMulRel -> Generated.Mul.floatMulStep); E_MUL_FLOAT_FUNC_0010; ops/mul/mul.md:L170-L208; operation mul */
 void sonnx_mul_f64(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_mul_i8: derived from Generated.Mul.IntMulRel (Generated.Mul.IntMulRel -> Generated.Mul.intMulStep); E_MUL_INT_FUNC_0010; ops/mul/mul.md:L334-L366; operation mul */
 void sonnx_mul_i8(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_mul_i16: derived from Generated.Mul.IntMulRel (Generated.Mul.IntMulRel -> Generated.Mul.intMulStep); E_MUL_INT_FUNC_0010; ops/mul/mul.md:L334-L366; operation mul */
 void sonnx_mul_i16(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_mul_i32: derived from Generated.Mul.IntMulRel (Generated.Mul.IntMulRel -> Generated.Mul.intMulStep); E_MUL_INT_FUNC_0010; ops/mul/mul.md:L334-L366; operation mul */
 void sonnx_mul_i32(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_mul_i64: derived from Generated.Mul.IntMulRel (Generated.Mul.IntMulRel -> Generated.Mul.intMulStep); E_MUL_INT_FUNC_0010; ops/mul/mul.md:L334-L366; operation mul */
 void sonnx_mul_i64(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_mul_u8: derived from Generated.Mul.UintMulRel (Generated.Mul.UintMulRel -> Generated.Mul.uintMulStep); E_MUL_UINT_FUNC_0010; ops/mul/mul.md:L465-L492; operation mul */
 void sonnx_mul_u8(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_mul_u16: derived from Generated.Mul.UintMulRel (Generated.Mul.UintMulRel -> Generated.Mul.uintMulStep); E_MUL_UINT_FUNC_0010; ops/mul/mul.md:L465-L492; operation mul */
 void sonnx_mul_u16(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_mul_u32: derived from Generated.Mul.UintMulRel (Generated.Mul.UintMulRel -> Generated.Mul.uintMulStep); E_MUL_UINT_FUNC_0010; ops/mul/mul.md:L465-L492; operation mul */
 void sonnx_mul_u32(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_mul_u64: derived from Generated.Mul.UintMulRel (Generated.Mul.UintMulRel -> Generated.Mul.uintMulStep); E_MUL_UINT_FUNC_0010; ops/mul/mul.md:L465-L492; operation mul */
 void sonnx_mul_u64(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);

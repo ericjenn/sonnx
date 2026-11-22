@@ -37,15 +37,16 @@ printf 'import Sonnx\n#check @Sonnx.Tensor\n#check @Sonnx.binary\n' \
   | lake env lean --stdin
 ```
 
-The pipeline's `lean.build_library()` runs `lake build Sonnx CGen` together, because a generated
-module may import `CGen` for its descriptor, and an olean that does not exist fails the compile
-that carries it.
+The pipeline's `lean.build_library()` runs `lake build Sonnx CGen` together, because the C
+stage's derivation trailer imports `CGen.Derive`/`CGen.Print`; an olean that does not exist
+fails that compile. The generated formal module itself needs no `CGen` import.
 
 ## The import contract
 
 A generated module starts with `import Sonnx` (or the one library module it needs,
-`Sonnx.Float`, say) and may otherwise import only Lean core (`Init`, `Std`, `Lean`) and, for
-the C descriptor, `CGen`. It never
+`Sonnx.Float`, say) and may otherwise import only Lean core (`Init`, `Std`, `Lean`). `CGen` is
+still accepted for older artifacts that carry the retired descriptor, but new modules do not
+import it. A generated module never
 imports another operator's generated module, Mathlib, Batteries or Lake, and never redeclares a
 name the library exports. The pipeline enforces this mechanically for both the formal
 specification and the generated conformance runner: `agents/sonnx_agents/lean.py` rejects a
@@ -132,22 +133,29 @@ entry that is already delimited (`"…"` or `<…>`) unchanged, so the source's 
 reproduced as written. `binOpName` renders an operator as the string a reader sees (`add`,
 `sub`, `mul`) rather than as a Lean constructor.
 
-The pipeline renders the split pair from a **descriptor** the formalizer writes into the
-generated module:
+The pipeline **derives** the split pair from the formal specification, not from a descriptor.
+`CGen.Derive.deriveElementwise` reads the declarations named by the family function requirements
+in `FormalSpec.trace.json` (the `@declaration` of each `E_<OP>_<FAMILY>_FUNC_<nnnn>` entry) and
+runs a **frontier search** over the spec-local step definitions: a node that exposes
+`HAdd.hAdd`/`HSub.hSub`/`HMul.hMul`/`HDiv.hDiv`/`HMod.hMod` is a witness and is not descended;
+otherwise its constants under `Generated.<Op>.` are enqueued. It intersects the per-family
+operator sets and records each witness path. The search is deliberately not a transitive
+closure: descending past `floatMulStep` would reach the rounding helpers and pick up `HSub`/`HDiv`
+as well.
 
-```lean
-def sonnxCGenOp : CGen.Elementwise := ⟨"sub", .sub⟩
-```
+The C stage copies the formal specification, prepends `import CGen.Derive`, appends a `run_cmd`
+that prints the derivation and writes `headerFileForDerived`/`sourceFileForDerived`, and compiles
+the copy with `lake env lean`. The header and source carry a comment per kernel naming the
+declaration, the witness path, the `@trace` key and the informal span; Python writes
+`cgen-trace.json` with the hashes (including `CGen/Derive.lean`), the declarations and the
+kernel-to-family map.
 
-It is a top-level `def` outside every namespace, named exactly `sonnxCGenOp`, whose `name` is the
-operator's lowercase entry and whose second field is the matching `CGen.BinOp`. The C stage
-copies the formal specification, appends an `#eval` trailer that prints the descriptor and writes
-`headerFileFor [sonnxCGenOp] dtypes` and `sourceFileFor [sonnxCGenOp] dtypes` where Lean can see
-them, and compiles the copy with `lake env lean`. Only `add`, `sub` and `mul` are rendered:
-`CGen`'s signed-integer element step computes in the unsigned type, which is the specified wrap
-for those three but not signed division, so `Div` and `Mod` descriptors are refused. A module
-without the descriptor — any operator that is not elementwise binary — is reported `unsupported`
-by the C stage, which is not a failure of the run.
+Only `add`, `sub` and `mul` are rendered: `CGen`'s signed-integer element step computes in the
+unsigned type, which is the specified wrap for those three but not signed division. **Div**
+derives `.div` correctly and is recorded `unsupported` with its trace, without C files; any
+undecided family (missing declaration, a theorem with no value, or a frontier without a single
+operation) is `unsupported`, not a failure of the run. The library's own `operatorsFile` table
+and the `Elementwise` two-field constructor are unchanged.
 
 `CGen` is not covered by the library digest (which hashes `lakefile.lean` and the `Sonnx` tree
 only). A change to a `CGen` source file therefore does not invalidate a generated Lean artifact;
@@ -167,10 +175,12 @@ ops/<op>/c/sonnx_kernels.h           the rendered prototypes
 ops/<op>/c/sonnx_kernels.c           the rendered definitions
 ops/<op>/c/c_tests.c                 the accepted C test program
 ops/<op>/c/c-report.json             its checks, hashes and failing lines
+ops/<op>/c/cgen-trace.json           the derivation: declarations, witnesses, spans, hashes
 ```
 
-The C files kept under `ops/{add,sub}/c` predate the `sonnx_tensor` contract (they were
-generated over flat arrays); the next C stage renders and tests them again with the struct.
+Re-deriving an operator model-free rewrites the header and source with the new derivation
+comments. A `c-report.json` written before that still names the earlier header/source hashes;
+the next C tester run refreshes it.
 
 A run with an explicit `--run-dir` keeps them there until `--publish` validates the Lean
 artifact and conformance and copies the set into `ops/<op>/lean/`. The pipeline invokes:

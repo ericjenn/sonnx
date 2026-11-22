@@ -3,9 +3,10 @@
 The SONNX operator-specification profile: the guidelines that define the form of an operator
 specification, the accepted specifications, and the multi-agent system that writes, reviews,
 amends and verifies them. The pipeline can also formalize an accepted specification in Lean 4,
-and, from what the formalizer declares, generate and test C kernels of the operator over a
-generated `sonnx_tensor` type (data, rank and dimensions) — the C is rendered by a
-deterministic generator, never written by a model.
+and, from the family definitions of the formal specification, derive and test C kernels of
+the operator over a generated `sonnx_tensor` type (data, rank and dimensions). The C is
+derived and rendered by deterministic code, never written by a model, and every kernel names
+the Lean declaration and `@trace` requirement it came from.
 
 The description of the multi-agent system is in [`agents/README.md`](agents/README.md).
 

@@ -61,6 +61,7 @@ class SpecState(TypedDict, total=False):
     cgen_header: str
     cgen_test: str
     cgen_report: dict
+    cgen_trace: str              # the derivation manifest (cgen-trace.json)
     cgen_attempts: Annotated[list[str], operator.add]
     cgen_artifacts: Annotated[list[str], operator.add]
 

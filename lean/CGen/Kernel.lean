@@ -52,6 +52,50 @@ def dtypes : List CType :=
    .int 8 true, .int 16 true, .int 32 true, .int 64 true,
    .int 8 false, .int 16 false, .int 32 false, .int 64 false]
 
+/-- The type family a derivation comes from.  The real family has no C type. -/
+inductive Family where
+  | real | float | int | uint
+  deriving Repr, DecidableEq, Inhabited
+
+/-- The family's name in the manifest and the C comments. -/
+def familyName : Family → String
+  | .real => "real"
+  | .float => "float"
+  | .int => "int"
+  | .uint => "uint"
+
+/-- One derivation: the formal declaration a kernel is derived from, the path
+the frontier search followed to the element step, the trace key and informal
+span, and the arithmetic operations that path exposed. -/
+structure Derivation where
+  family : Family
+  declaration : String
+  witness : String
+  requirement : String
+  source : String
+  ops : List String
+  deriving Repr, Inhabited
+
+/-- An elementwise operator together with the derivations of its kernels. -/
+structure Derived where
+  op : Elementwise
+  derivations : List Derivation
+  deriving Repr, Inhabited
+
+/-- The family a C element type belongs to.  The real family has no C type. -/
+def dtypeFamily : CType → Option Family
+  | .float _ => some .float
+  | .int _ true => some .int
+  | .int _ false => some .uint
+  | _ => none
+
+/-- The element types for which a derivation exists. -/
+def dtypesFor (derivations : List Derivation) : List CType :=
+  dtypes.filter (fun t =>
+    match dtypeFamily t with
+    | some family => derivations.any (fun d => d.family == family)
+    | none => false)
+
 /-- The suffix used in a kernel's name for an element type. -/
 def dtypeSuffix : CType → String
   | .float 32 => "f32"
@@ -161,6 +205,29 @@ def funsFor (ops : List Elementwise) (types : List CType) : List Fun :=
 type. -/
 def funs : List Fun := funsFor operators dtypes
 
+/-- The derivation comment above a kernel: the Lean declaration, the witness
+path, the trace key and informal span, and the derived operation. -/
+def derivationComment (e : Elementwise) (t : CType) (s : Derivation) : List String :=
+  [s!"{funName e t}: derived from {s.declaration} ({s.witness}); "
+    ++ s!"{s.requirement}; {s.source}; operation {binOpName e.op}"]
+
+/-- The kernel of a derived operator and an element type, with the comment
+that names its derivation.  An element type whose family has no derivation is
+not rendered by `funsForDerived`; here it simply has no comment. -/
+def kernelFor (d : Derived) (t : CType) : Fun :=
+  let fn := kernel d.op t
+  match dtypeFamily t with
+  | some family =>
+      match d.derivations.find? (fun s => s.family == family) with
+      | some s => { fn with comment := derivationComment d.op t s }
+      | none => fn
+  | none => fn
+
+/-- Every kernel of every derived operator, for the element types whose family
+has a derivation. -/
+def funsForDerived (ds : List Derived) : List Fun :=
+  ds.flatMap (fun d => (dtypesFor d.derivations).map (kernelFor d))
+
 /-- The comment block at the top of the generated file.  It states the
 contract the kernels assume. -/
 def banner : List String :=
@@ -206,5 +273,34 @@ def sourceFileFor (ops : List Elementwise) (types : List CType) : CFile :=
   { banner := banner
     includes := ["\"" ++ headerName ++ "\""]
     decls := (funsFor ops types).map (fun f => .funDef f) }
+
+/-- The banner of a file whose kernels are derived from a formal
+specification. -/
+def derivedBanner : List String :=
+  banner ++
+    ["",
+     "Derived from the Lean formal specification; each kernel's comment names",
+     "its Lean declaration, the frontier path, the @trace key and the informal",
+     "source span it comes from."]
+
+/-- The prototypes of the derived operators, as a header. -/
+def headerFileForDerived (ds : List Derived) : CFile :=
+  { banner := derivedBanner
+    includes := ["stddef.h", "stdint.h"]
+    decls := tensorStruct :: (funsForDerived ds).map (fun f => .funDecl f) }
+
+/-- The definitions of the derived operators, as a source file. -/
+def sourceFileForDerived (ds : List Derived) : CFile :=
+  { banner := derivedBanner
+    includes := ["\"" ++ headerName ++ "\""]
+    decls := (funsForDerived ds).map (fun f => .funDef f) }
+
+/-- The all-in-one translation unit of the derived operators. -/
+def operatorsFileForDerived (ds : List Derived) : CFile :=
+  let funs := funsForDerived ds
+  { banner := derivedBanner
+    includes := ["stddef.h", "stdint.h"]
+    decls := tensorStruct :: ((funs.map (fun f => .funDecl f)) ++
+                              (funs.map (fun f => .funDef f))) }
 
 end CGen

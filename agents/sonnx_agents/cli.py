@@ -412,6 +412,7 @@ def _publish_cgen(settings: Settings, state: dict) -> list[Path]:
         "sonnx_kernels.c": Path(state.get("cgen_source") or settings.c_source_path()),
         "c_tests.c": Path(state.get("cgen_test") or settings.c_test_path()),
         "c-report.json": settings.c_report_path(),
+        "cgen-trace.json": settings.c_trace_path(),
     }
     missing = [name for name, path in sources.items() if not path.is_file()]
     if missing:
@@ -420,7 +421,8 @@ def _publish_cgen(settings: Settings, state: dict) -> list[Path]:
     target_dir = settings.c_publication_dir()
     target_dir.mkdir(parents=True, exist_ok=True)
     published = []
-    for name in ("sonnx_kernels.h", "sonnx_kernels.c", "c_tests.c", "c-report.json"):
+    for name in ("sonnx_kernels.h", "sonnx_kernels.c", "c_tests.c", "c-report.json",
+                 "cgen-trace.json"):
         target = target_dir / name
         if not _same_file(sources[name], target):
             shutil.copyfile(sources[name], target)
@@ -522,6 +524,8 @@ def summarise(settings: Settings, state: dict) -> int:
                      checks.get("failed", "?")))
         if state.get("cgen_test"):
             print("C test       : %s" % state["cgen_test"])
+        if state.get("cgen_trace"):
+            print("C trace      : %s" % state["cgen_trace"])
         if state.get("cgen_error"):
             print("C error      : %s" % state["cgen_error"])
     # why an artifact is missing, when an agent's answer was not one: the outcome names the

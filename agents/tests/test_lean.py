@@ -127,13 +127,13 @@ def main() -> int:
 
     inv = lean.inventory(MUL)
     check("Mul has 25 requirements", len(inv["requirements"]) == 25)
-    check("Mul has eight examples", len(inv["examples"]) == 8)
+    check("Mul has seven examples", len(inv["examples"]) == 7)
     check("14 requirements have no anchor",
           sum(item["anchor"] is None for item in inv["requirements"]) == 14)
     b = next(item for item in inv["requirements"] if item["key"] == "E_MUL_REAL_CONSTR_B_0010")
-    check("unanchored B has its own source span", (b["start"], b["end"]) == (126, 127))
+    check("unanchored B has its own source span", (b["start"], b["end"]) == (131, 132))
     a0020 = next(item for item in inv["requirements"] if item["key"] == "E_MUL_FLOAT_CONSTR_A_0020")
-    check("adjacent anchor is not absorbed into previous clause", a0020["start"] == 299)
+    check("adjacent anchor is not absorbed into previous clause", a0020["start"] == 281)
 
     raw = raw_module(inv)
     check("fenced Lean extraction", extract.extract_lean("Here is code:\n```lean\n%s```" % raw) == raw)
@@ -179,7 +179,10 @@ def main() -> int:
     check("stale library digest rejected",
           not lean.check_files(spec, [source], compile_code=False)["ok"])
     source.write_text(original, encoding="utf-8")
-    damaged = original.replace("@source %s:L33-L58" % inv["source"],
+    func = next(item for item in inv["requirements"]
+                if item["key"] == "E_MUL_REAL_FUNC_0010")
+    func_span = "%s:L%d-L%d" % (func["source"], func["start"], func["end"])
+    damaged = original.replace("@source " + func_span,
                                "@source wrong.md:L1-L2", 1)
     source.write_text(damaged, encoding="utf-8")
     check("wrong source span rejected", not lean.check_files(spec, [source], compile_code=False)["ok"])

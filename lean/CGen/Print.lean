@@ -230,6 +230,11 @@ def renderFunHeader (fn : Fun) : String :=
 def renderFun (fn : Fun) : String :=
   renderFunHeader fn ++ " " ++ renderBody 0 (.block fn.body)
 
+/-- The derivation comments above a function's prototype and definition. -/
+private def renderFunComment : List String → String
+  | [] => ""
+  | lines => String.join (lines.map (fun l => "/* " ++ escapeComment l ++ " */\n"))
+
 /-- A top-level declaration, without a trailing newline. -/
 def renderDecl : Decl → String
   | .typedef t name => "typedef " ++ declType t name ++ ";"
@@ -237,8 +242,8 @@ def renderDecl : Decl → String
       "typedef struct {\n" ++
         String.join (fields.map (fun f => indent 1 ++ declType f.type f.name ++ ";\n")) ++
         "} " ++ name ++ ";"
-  | .funDecl fn => renderFunHeader fn ++ ";"
-  | .funDef fn => renderFun fn
+  | .funDecl fn => renderFunComment fn.comment ++ renderFunHeader fn ++ ";"
+  | .funDef fn => renderFunComment fn.comment ++ renderFun fn
   | .comment text => "/* " ++ escapeComment text ++ " */"
 
 /-- The separator between two declarations: prototypes are kept on adjacent

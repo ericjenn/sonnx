@@ -384,7 +384,7 @@ class Scenario:
             self.seen.append("c-tester")
             self.c_tester_users.append(user)
             assert "# Contents" in user, "the C tester must be given the document"
-            assert "sonnxCGenOp" in user, \
+            assert "# The Lean formal specification" in user, \
                 "the C tester must be given the Lean specification it tests against"
             assert "sonnx_kernels.h" in user, "the C tester must be given the header"
             assert "sonnx_kernels.c" in user, "the C tester must be given the source"
@@ -566,7 +566,19 @@ def run(scenario: Scenario, stale_reports=(), operator_restrictions=None,
     original_build = lean_support.build_library
     original_emit_c = graph._emit_c_files
     original_compile_c = graph._compile_and_run_c
+    original_derivations = graph._cgen_derivations
     build_calls = {"n": 0}
+
+    def fake_derivations(_op, _trace):
+        # The derivation itself is covered by `test_c_stage.py` on the checked-in specs;
+        # here `cgen_descriptor` stands for "the families' function declarations exist".
+        if not scenario.cgen_descriptor:
+            return []
+        return [{"family": family, "declaration": "Generated.Neg.%sStep" % family,
+                 "requirement": "E_NEG_%s_FUNC_0010" % tag,
+                 "source": "ops/neg/neg.md:L1-L2"}
+                for family, tag in (("real", "REAL"), ("float", "FLOAT"),
+                                    ("int", "INT"), ("uint", "UINT"))]
 
     def fake_build(*_args, **_kwargs):
         # building the shared library for real is covered by `test_lean.py`; here the
@@ -582,17 +594,22 @@ def run(scenario: Scenario, stale_reports=(), operator_restrictions=None,
                 "stdout": "Build completed successfully.",
                 "command": ["lake", "build", "Sonnx"], "seconds": 0.0}
 
-    def fake_emit_c(_settings, _text):
-        # The C stage's rendering is the CGen library's, verified by `test_c_stage.py`
-        # with the real `lake`; here what is under test is where the node goes and what it
-        # decides when the renderer fails.
+    def fake_emit_c(_settings, _text, _derivations):
+        # The C stage's derivation and rendering are the CGen library's, verified by
+        # `test_c_stage.py` with the real `lake`; here what is under test is where the node
+        # goes and what it decides when the derivation fails.
         header, source, emit = (_settings.c_header_path(), _settings.c_source_path(),
                                 _settings.c_emit_path())
         header.parent.mkdir(parents=True, exist_ok=True)
         emit.write_text("-- the fake renderer\n", encoding="utf-8")
+        sources = [{"family": item["family"], "declaration": item["declaration"],
+                    "witness": item["declaration"], "requirement": item["requirement"],
+                    "source": item["source"], "ops": ["HSub.hSub"]}
+                   for item in _derivations]
         if scenario.cgen_emit == "error":
             return {"ok": False, "emit": emit, "header": header, "source": source,
-                    "name": "", "binop": "",
+                    "name": "", "binop": "", "sources": sources, "derivation_error": "",
+                    "header_written": False, "source_written": False,
                     "compiler": {"ok": False, "stdout": "synthetic renderer failure"}}
         header.write_text("typedef struct { void *data; size_t ndim; "
                           "const size_t *shape; } sonnx_tensor;\n"
@@ -601,7 +618,9 @@ def run(scenario: Scenario, stale_reports=(), operator_restrictions=None,
                           encoding="utf-8")
         source.write_text('#include "sonnx_kernels.h"\n', encoding="utf-8")
         return {"ok": True, "emit": emit, "header": header, "source": source,
-                "name": "neg", "binop": "sub", "compiler": {"ok": True, "stdout": ""}}
+                "name": "neg", "binop": "sub", "sources": sources,
+                "derivation_error": "", "header_written": True, "source_written": True,
+                "compiler": {"ok": True, "stdout": ""}}
 
     def fake_compile_c(_settings, _test_path):
         # `test_c_stage.py` compiles and runs the real programs; this decides what the node
@@ -670,6 +689,7 @@ def run(scenario: Scenario, stale_reports=(), operator_restrictions=None,
     lean_support.build_library = fake_build
     graph._emit_c_files = fake_emit_c
     graph._compile_and_run_c = fake_compile_c
+    graph._cgen_derivations = fake_derivations
     try:
         state = graph.build_graph(settings).invoke(
             {"op": "Neg", "opset": 14, "spec_path": str(settings.resolved_spec_path()),
@@ -686,6 +706,7 @@ def run(scenario: Scenario, stale_reports=(), operator_restrictions=None,
         lean_support.build_library = original_build
         graph._emit_c_files = original_emit_c
         graph._compile_and_run_c = original_compile_c
+        graph._cgen_derivations = original_derivations
     state["_dir"] = str(workdir)
     return state
 
@@ -1718,7 +1739,7 @@ def main() -> int:
     check("no runner generated", s.runner_calls, 0)
     check("no conformance claimed", state["lean_conformance_ok"], False)
 
-    print("\n48. C is generated from the descriptor and passes before the Python loop")
+    print("\n48. C is derived from the formal specification and passes before the Python loop")
     # The C stage sits between the Lean conformance check and the implementer: the C is
     # rendered from the Lean module's own descriptor, and the C tester's program is the
     # evidence.  The rendering and the compilation are faked here; `test_c_stage.py` runs
@@ -1730,8 +1751,8 @@ def main() -> int:
     check("and before the implementer", s.seen,
           ["writer", "verifier", "formalizer", "c-tester", "implementer", "tester",
            "specloop"])
-    check("the accepted artifact carries the descriptor",
-          "sonnxCGenOp" in Path(state["lean_path"]).read_text(encoding="utf-8"), True)
+    check("the accepted artifact is the Lean formal specification",
+          Path(state["lean_path"]).is_file(), True)
     check("the C passed", state["cgen_ok"], True)
     check("the report counts the checks", state["cgen_report"]["checks"],
           {"total": 14, "passed": 14, "failed": 0})
@@ -1766,12 +1787,12 @@ def main() -> int:
     check("and told what was wrong", "did not compile" in s.c_tester_users[-1], True)
     check("the reason is recorded", "no usable C test program" in state["cgen_error"], True)
 
-    print("\n52. an operator without a C descriptor is unsupported, not failed")
+    print("\n52. an operator without a C derivation is unsupported, not failed")
     s = Scenario(verifier="ok", fail_times=0, cgen_descriptor=False)
     state = run(s, lean=True, lean_only=True, start_from="spec", cgen=True)
     check("outcome", outcome(state), "formalized")
     check("C is recorded as unsupported", state["cgen_status"], "unsupported")
-    check("the reason names the declaration", "sonnxCGenOp" in state["cgen_error"], True)
+    check("the reason names the missing trace", "trace" in state["cgen_error"], True)
     check("the C tester was never asked", s.c_tester_calls, 0)
 
     s = Scenario(verifier="ok", fail_times=0, cgen_descriptor=False)
@@ -1784,7 +1805,7 @@ def main() -> int:
     s = Scenario(verifier="ok", fail_times=0, cgen_descriptor=True, cgen_emit="error")
     state = run(s, lean=True, lean_only=True, start_from="spec", cgen=True)
     check("outcome", outcome(state), "c-failed")
-    check("the error names the renderer", "did not render" in state["cgen_error"], True)
+    check("the error names the renderer", "did not derive" in state["cgen_error"], True)
     check("the tester was never asked", s.c_tester_calls, 0)
 
     print("\n54. the C stage is asked for on the command line")

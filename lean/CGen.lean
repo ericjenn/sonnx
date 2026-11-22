@@ -7,7 +7,12 @@ This library turns an operator description into C11 source.  It holds
                  and operators, statements, functions, and a translation unit,
 * `CGen.Print` — the precedence-aware pretty-printer for that fragment,
 * `CGen.Kernel`— the elementwise operator description and the per-element-type
-                 kernel builders, plus `operatorsFile`, the generated unit.
+                 kernel builders, plus `operatorsFile`, the generated unit,
+* `CGen.Derive`— the metaprogram that derives the element operation from a formal
+                 specification's family declarations, and the derivation trailer's
+                 entry point.  It is built by `lake build CGen` but not imported here,
+                 so a consumer of the library does not pull in the Lean metaprogramming
+                 modules.
 
 The generated kernels take `sonnx_tensor` values — a data pointer, a rank and
 a pointer to the dimensions — and cover operands of one, already-broadcast

@@ -9,7 +9,9 @@ pipeline compiles it with the generated source and runs it.
   arithmetic model;
 - the generated header `sonnx_kernels.h` and source `sonnx_kernels.c`. They are not yours and
   are not to be modified or re-derived: the pipeline compiles exactly what it shows you. Test
-  the code that is there; if it looks wrong, write the test that shows it wrong.
+  the code that is there; if it looks wrong, write the test that shows it wrong. Each kernel
+  carries a comment naming the Lean declaration, the witness path and the `@trace` key it was
+  derived from; it tells you which part of the specification that kernel implements.
 
 ## What you return
 

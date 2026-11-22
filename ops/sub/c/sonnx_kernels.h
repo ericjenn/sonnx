@@ -11,6 +11,10 @@
  *
  * Signed integer kernels wrap modulo 2^bits (Sonnx.sintWrap); unsigned
  * kernels wrap modulo 2^bits (Sonnx.uintWrap). float16 is not generated.
+ *
+ * Derived from the Lean formal specification; each kernel's comment names
+ * its Lean declaration, the frontier path, the @trace key and the informal
+ * source span it comes from.
  */
 #include <stddef.h>
 #include <stdint.h>
@@ -21,13 +25,23 @@ typedef struct {
   const size_t *shape;
 } sonnx_tensor;
 
+/* sonnx_sub_f32: derived from Generated.Sub.floatSub (Generated.Sub.floatSub -> Generated.Sub.FloatSubRel -> Generated.Sub.finiteSubRel); E_SUB_FLOAT_FUNC_0010; ops/sub/sub.md:L179-L223; operation sub */
 void sonnx_sub_f32(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_sub_f64: derived from Generated.Sub.floatSub (Generated.Sub.floatSub -> Generated.Sub.FloatSubRel -> Generated.Sub.finiteSubRel); E_SUB_FLOAT_FUNC_0010; ops/sub/sub.md:L179-L223; operation sub */
 void sonnx_sub_f64(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_sub_i8: derived from Generated.Sub.intSubSpec (Generated.Sub.intSubSpec -> Generated.Sub.intSub); E_SUB_INT_FUNC_0010; ops/sub/sub.md:L347-L378; operation sub */
 void sonnx_sub_i8(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_sub_i16: derived from Generated.Sub.intSubSpec (Generated.Sub.intSubSpec -> Generated.Sub.intSub); E_SUB_INT_FUNC_0010; ops/sub/sub.md:L347-L378; operation sub */
 void sonnx_sub_i16(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_sub_i32: derived from Generated.Sub.intSubSpec (Generated.Sub.intSubSpec -> Generated.Sub.intSub); E_SUB_INT_FUNC_0010; ops/sub/sub.md:L347-L378; operation sub */
 void sonnx_sub_i32(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_sub_i64: derived from Generated.Sub.intSubSpec (Generated.Sub.intSubSpec -> Generated.Sub.intSub); E_SUB_INT_FUNC_0010; ops/sub/sub.md:L347-L378; operation sub */
 void sonnx_sub_i64(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_sub_u8: derived from Generated.Sub.uintSubSpec (Generated.Sub.uintSubSpec -> Generated.Sub.uintSub); E_SUB_UINT_FUNC_0010; ops/sub/sub.md:L488-L518; operation sub */
 void sonnx_sub_u8(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_sub_u16: derived from Generated.Sub.uintSubSpec (Generated.Sub.uintSubSpec -> Generated.Sub.uintSub); E_SUB_UINT_FUNC_0010; ops/sub/sub.md:L488-L518; operation sub */
 void sonnx_sub_u16(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_sub_u32: derived from Generated.Sub.uintSubSpec (Generated.Sub.uintSubSpec -> Generated.Sub.uintSub); E_SUB_UINT_FUNC_0010; ops/sub/sub.md:L488-L518; operation sub */
 void sonnx_sub_u32(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_sub_u64: derived from Generated.Sub.uintSubSpec (Generated.Sub.uintSubSpec -> Generated.Sub.uintSub); E_SUB_UINT_FUNC_0010; ops/sub/sub.md:L488-L518; operation sub */
 void sonnx_sub_u64(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);

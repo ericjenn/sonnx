@@ -1,0 +1,115 @@
+{
+  "generated_by": "sonnx-cgen",
+  "protocol": "sonnx-cgen/1",
+  "op": "Sub",
+  "opset": 14,
+  "entry": "sub",
+  "spec_md5": "7a65bd1dc1764a81e266a011e54a56c3",
+  "lean": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/lean/FormalSpec.lean",
+  "lean_sha256": "c98032d53eab3e4cc39c7f5251e5a9834b5167a92028dd7eccceed7af72b729d",
+  "library_sha256": "3162109b4c926c2fa5dd5f8bd2eb2d90fb17a0480eccc0216a4ea9bd2b43ffab",
+  "derivation_module": "/run/media/eric/Work1/Work/gits/sonnx/lean/CGen/Derive.lean",
+  "derivation_sha256": "8aecd79ec97b10c7263c23a25708dd5e4fb4ce93941449605527af945b1f9a3e",
+  "status": "generated",
+  "reason": "",
+  "binop": "sub",
+  "derivations": [
+    {
+      "family": "real",
+      "declaration": "Generated.Sub.realSub",
+      "witness": "Generated.Sub.realSub",
+      "requirement": "E_SUB_REAL_FUNC_0010",
+      "source": "ops/sub/sub.md:L33-L56",
+      "ops": [
+        "HSub.hSub"
+      ]
+    },
+    {
+      "family": "float",
+      "declaration": "Generated.Sub.floatSub",
+      "witness": "Generated.Sub.floatSub -> Generated.Sub.FloatSubRel -> Generated.Sub.finiteSubRel",
+      "requirement": "E_SUB_FLOAT_FUNC_0010",
+      "source": "ops/sub/sub.md:L179-L223",
+      "ops": [
+        "HSub.hSub"
+      ]
+    },
+    {
+      "family": "int",
+      "declaration": "Generated.Sub.intSubSpec",
+      "witness": "Generated.Sub.intSubSpec -> Generated.Sub.intSub",
+      "requirement": "E_SUB_INT_FUNC_0010",
+      "source": "ops/sub/sub.md:L347-L378",
+      "ops": [
+        "HSub.hSub"
+      ]
+    },
+    {
+      "family": "uint",
+      "declaration": "Generated.Sub.uintSubSpec",
+      "witness": "Generated.Sub.uintSubSpec -> Generated.Sub.uintSub",
+      "requirement": "E_SUB_UINT_FUNC_0010",
+      "source": "ops/sub/sub.md:L488-L518",
+      "ops": [
+        "HSub.hSub"
+      ]
+    }
+  ],
+  "kernels": [
+    {
+      "function": "sonnx_sub_f32",
+      "family": "float",
+      "dtype": "f32"
+    },
+    {
+      "function": "sonnx_sub_f64",
+      "family": "float",
+      "dtype": "f64"
+    },
+    {
+      "function": "sonnx_sub_i8",
+      "family": "int",
+      "dtype": "i8"
+    },
+    {
+      "function": "sonnx_sub_i16",
+      "family": "int",
+      "dtype": "i16"
+    },
+    {
+      "function": "sonnx_sub_i32",
+      "family": "int",
+      "dtype": "i32"
+    },
+    {
+      "function": "sonnx_sub_i64",
+      "family": "int",
+      "dtype": "i64"
+    },
+    {
+      "function": "sonnx_sub_u8",
+      "family": "uint",
+      "dtype": "u8"
+    },
+    {
+      "function": "sonnx_sub_u16",
+      "family": "uint",
+      "dtype": "u16"
+    },
+    {
+      "function": "sonnx_sub_u32",
+      "family": "uint",
+      "dtype": "u32"
+    },
+    {
+      "function": "sonnx_sub_u64",
+      "family": "uint",
+      "dtype": "u64"
+    }
+  ],
+  "header": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/sonnx_kernels.h",
+  "header_sha256": "3239b8d7515793df079dae8da53c5a7d07f3c0f5e5fbb9eaa82bf76072cdc303",
+  "source": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/sonnx_kernels.c",
+  "source_sha256": "a4cfdbc522ed162e0f579ad030990a2112f10ea3528bf5d30b1fcd9d85c2f457",
+  "written": "2026-11-22T15:44:22"
+}

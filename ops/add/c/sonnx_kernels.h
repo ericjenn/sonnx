@@ -11,6 +11,10 @@
  *
  * Signed integer kernels wrap modulo 2^bits (Sonnx.sintWrap); unsigned
  * kernels wrap modulo 2^bits (Sonnx.uintWrap). float16 is not generated.
+ *
+ * Derived from the Lean formal specification; each kernel's comment names
+ * its Lean declaration, the frontier path, the @trace key and the informal
+ * source span it comes from.
  */
 #include <stddef.h>
 #include <stdint.h>
@@ -21,13 +25,23 @@ typedef struct {
   const size_t *shape;
 } sonnx_tensor;
 
+/* sonnx_add_f32: derived from Generated.Add.floatFunction (Generated.Add.floatFunction -> Generated.Add.floatAddRel); E_ADD_FLOAT_FUNC_0010; ops/add/add.md:L163-L198; operation add */
 void sonnx_add_f32(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_add_f64: derived from Generated.Add.floatFunction (Generated.Add.floatFunction -> Generated.Add.floatAddRel); E_ADD_FLOAT_FUNC_0010; ops/add/add.md:L163-L198; operation add */
 void sonnx_add_f64(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_add_i8: derived from Generated.Add.intFunction (Generated.Add.intFunction); E_ADD_INT_FUNC_0010; ops/add/add.md:L322-L353; operation add */
 void sonnx_add_i8(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_add_i16: derived from Generated.Add.intFunction (Generated.Add.intFunction); E_ADD_INT_FUNC_0010; ops/add/add.md:L322-L353; operation add */
 void sonnx_add_i16(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_add_i32: derived from Generated.Add.intFunction (Generated.Add.intFunction); E_ADD_INT_FUNC_0010; ops/add/add.md:L322-L353; operation add */
 void sonnx_add_i32(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_add_i64: derived from Generated.Add.intFunction (Generated.Add.intFunction); E_ADD_INT_FUNC_0010; ops/add/add.md:L322-L353; operation add */
 void sonnx_add_i64(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_add_u8: derived from Generated.Add.uintFunction (Generated.Add.uintFunction); E_ADD_UINT_FUNC_0010; ops/add/add.md:L449-L479; operation add */
 void sonnx_add_u8(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_add_u16: derived from Generated.Add.uintFunction (Generated.Add.uintFunction); E_ADD_UINT_FUNC_0010; ops/add/add.md:L449-L479; operation add */
 void sonnx_add_u16(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_add_u32: derived from Generated.Add.uintFunction (Generated.Add.uintFunction); E_ADD_UINT_FUNC_0010; ops/add/add.md:L449-L479; operation add */
 void sonnx_add_u32(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);
+/* sonnx_add_u64: derived from Generated.Add.uintFunction (Generated.Add.uintFunction); E_ADD_UINT_FUNC_0010; ops/add/add.md:L449-L479; operation add */
 void sonnx_add_u64(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c);

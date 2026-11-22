@@ -92,12 +92,15 @@ structure Param where
   name : String
   deriving Repr, Inhabited
 
-/-- A function: its name, return type, parameters and body. -/
+/-- A function: its name, return type, parameters and body.  `comment` is
+the derivation block printed above the prototype and the definition; it is
+empty for the library's own table. -/
 structure Fun where
   name : String
   retType : CType
   params : List Param
   body : List Stmt
+  comment : List String := []
   deriving Repr, Inhabited
 
 /-- One field of a struct definition. -/

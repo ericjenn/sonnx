@@ -12,9 +12,9 @@ the requirement faithfully.
 # The shared library
 
 Every operator is stated over the shared `Sonnx` library. Start the module with `import Sonnx`;
-the library re-exports all its modules. One other import is permitted, and only for the C
-descriptor below: `import CGen`, the module that renders C from a Lean declaration. Do not import
-anything else except Lean core roots (`Init`, `Std`, `Lean`) if you need them. Never import a
+the library re-exports all its modules. Do not import `CGen`: the C stage derives the kernels
+from your family definitions and the tooling adds its own derivation imports to a copy. Do not
+import anything else except Lean core roots (`Init`, `Std`, `Lean`) if you need them. Never import a
 generated module (`FormalSpec`, `LeanConformance`), another operator's module, Mathlib, Batteries
 or Lake: they are either unavailable or not the vocabulary of the profile. Do not declare a name
 the library already exports (`Tensor`, `bcastShape`, `binary`, `FVal`, `UIntN`, ...); the tooling
@@ -49,27 +49,18 @@ family when the families differ), its example tensors and example claims, and an
 relation specific to it (the element step of a floating-point operator, for instance, is not
 operator-independent). Do not restate or re-prove a library declaration.
 
-# The C descriptor
+# The C derivation
 
-When the operator is an elementwise binary operator whose element step is addition,
-subtraction or multiplication, declare at the **top level, after every namespace** — importing
-`CGen` when you do — the descriptor the C stage renders:
+Do not write a C descriptor and do not import `CGen` for one.  The C stage derives the
+element operation by inspecting the declarations named by the `@trace` markers of the family
+function requirements: `E_<OP>_<FAMILY>_FUNC_<nnnn>` must point, through its `decl=`, at the
+definition of that family's function (the relation or executable function, not an example).
+The tooling follows that declaration's spec-local step definitions to the arithmetic
+operation; a family it cannot decide is reported as unsupported and the run continues.
 
-```lean
-import CGen
-
-/-- The CGen descriptor: the C stage renders it into elementwise kernels. -/
-def sonnxCGenOp : CGen.Elementwise := ⟨"sub", .sub⟩
-```
-
-The string is the operator's lowercase entry point (`sub`, `add`, `mul`), and the second field is
-the matching `CGen.BinOp`. The declaration must be a top-level `def` named exactly `sonnxCGenOp`;
-the tooling rejects one inside a namespace, one without `import CGen`, and one declared twice.
-The C is generated from this declaration by the tooling, not written by you: do not return C.
-
-Omit the declaration for any other operator. The C stage then records that C is unsupported for
-this operator and the run continues. It renders only `add`, `sub` and `mul`; do not name another
-constructor such as `.div`, which the stage would refuse.
+Keep each family function a top-level `def` in the module's namespace: the C stage resolves
+the declaration and needs its value to inspect it.  The C is derived from the specification by
+the tooling, not written by you: do not return C.
 
 # Mandatory trace markers
 

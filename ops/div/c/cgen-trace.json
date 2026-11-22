@@ -1,0 +1,64 @@
+{
+  "generated_by": "sonnx-cgen",
+  "protocol": "sonnx-cgen/1",
+  "op": "Div",
+  "opset": 14,
+  "entry": "div",
+  "spec_md5": "717593cc5df1428b5b3043ffd98a3f2d",
+  "lean": "/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/FormalSpec.lean",
+  "lean_sha256": "04934767e00859f09d9e83d3cdf9ea059a2d8a23319d7c747ac7b29e12d9d749",
+  "library_sha256": "3162109b4c926c2fa5dd5f8bd2eb2d90fb17a0480eccc0216a4ea9bd2b43ffab",
+  "derivation_module": "/run/media/eric/Work1/Work/gits/sonnx/lean/CGen/Derive.lean",
+  "derivation_sha256": "8aecd79ec97b10c7263c23a25708dd5e4fb4ce93941449605527af945b1f9a3e",
+  "status": "unsupported",
+  "reason": "the derived element operation 'div' has no CGen kernel (the set is {add, mul, sub})",
+  "binop": "div",
+  "derivations": [
+    {
+      "family": "real",
+      "declaration": "Generated.Div.realDivRel",
+      "witness": "Generated.Div.realDivRel -> Generated.Div.realDivElem",
+      "requirement": "E_DIV_REAL_FUNC_0010",
+      "source": "ops/div/div.md:L33-L59",
+      "ops": [
+        "HDiv.hDiv"
+      ]
+    },
+    {
+      "family": "float",
+      "declaration": "Generated.Div.floatDivRel",
+      "witness": "Generated.Div.floatDivRel -> Generated.Div.floatDivElem",
+      "requirement": "E_DIV_FLOAT_FUNC_0010",
+      "source": "ops/div/div.md:L166-L206",
+      "ops": [
+        "HDiv.hDiv"
+      ]
+    },
+    {
+      "family": "int",
+      "declaration": "Generated.Div.sintDivRel",
+      "witness": "Generated.Div.sintDivRel -> Generated.Div.sintDivElem -> Generated.Div.divTruncInt",
+      "requirement": "E_DIV_INT_FUNC_0010",
+      "source": "ops/div/div.md:L331-L366",
+      "ops": [
+        "HDiv.hDiv"
+      ]
+    },
+    {
+      "family": "uint",
+      "declaration": "Generated.Div.uintDivRel",
+      "witness": "Generated.Div.uintDivRel -> Generated.Div.uintDivElem",
+      "requirement": "E_DIV_UINT_FUNC_0010",
+      "source": "ops/div/div.md:L464-L490",
+      "ops": [
+        "HDiv.hDiv"
+      ]
+    }
+  ],
+  "kernels": [],
+  "header": "",
+  "header_sha256": "",
+  "source": "",
+  "source_sha256": "",
+  "written": "2026-11-22T15:44:23"
+}

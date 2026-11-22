@@ -76,6 +76,15 @@ def main() -> int:
         sys.stderr.write(probe.stdout + probe.stderr)
         return 1
 
+    derivation = run([lake, "env", "lean", "CGen/DeriveProbe.lean"], cwd=LEAN, timeout=120)
+    check("the derivation probes pass", derivation.returncode == 0)
+    check("the derivation probes cover the four operations",
+          "derivation probes hold" in derivation.stdout
+          and derivation.stdout.count("ok ") >= 3)
+    if derivation.returncode != 0:
+        sys.stderr.write(derivation.stdout + derivation.stderr)
+        return 1
+
     with tempfile.TemporaryDirectory() as raw:
         directory = Path(raw)
         path = directory / "operators.c"

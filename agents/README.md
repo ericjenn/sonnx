@@ -114,7 +114,7 @@ routing rules at the bottom of this section do, from the state the step wrote.
 | 2 | `check_spec` | `lint_spec.py` (subprocess), then the compliance verifier — one model call | reads the document mechanically and against the guidelines; writes `lint` and `review` into the state | `write_spec` on a blocking finding; `formalize_lean` under `--lean`, else `implement`; a finish node on a guard |
 | 3 | `formalize_lean` | Lean formalizer — one model call, retried on compiler or trace findings; deterministic tooling | produces `FormalSpec.lean`, extracts and checks its trace, compiles it with Lake | `conform_lean` when trace-complete; `lean-partial` or `lean-failed` otherwise |
 | 4 | `conform_lean` | Lean conformance — the runner is a model call, everything else deterministic | ensures and profiles the corpus, has the model write the runner and compiles and smoke-tests it, writes the driver and the freshness manifest, then runs the conformance report | `generate_c` under `--c`; `implement` (or `formalized` under `--lean-only`) otherwise; `lean-conformance-failed` or `lean-conformance-error` on a stop |
-| 5 | `generate_c` | deterministic | compiles the formal specification with a generated `#eval` trailer, which renders the CGen descriptor into `sonnx_kernels.h` and `sonnx_kernels.c` | `test_c` when the descriptor is supported and rendered; `implement`/`formalized` when it is `unsupported`; `c-failed` on an error |
+| 5 | `generate_c` | deterministic | compiles the formal specification with a generated derivation trailer, which reads the family declarations and writes `sonnx_kernels.h`/`.c` and `cgen-trace.json` | `test_c` when the derived operation is rendered; `implement`/`formalized` when it is `unsupported`; `c-failed` on an error |
 | 6 | `test_c` | C tester — one model call per attempt; `cc` is a subprocess | writes `c_tests.c`, compiles it with the generated source, runs it, and reads the PASS/FAIL lines | `implement` (or `formalized` under `--lean-only`) when it passes; `c-failed` on a FAIL or on exhausted attempts |
 | 7 | `implement` | blind implementer — one model call | writes `iter-NNN-impl.py` from the document alone | `test`; `impl-unusable` if the answer cannot be a module |
 | 8 | `test` | test agent — model calls inside the node; the harness is a subprocess | writes or repairs `cases.py`, runs the harness, and repairs a broken module or an uncovered section | `record_failure` |
@@ -135,13 +135,13 @@ policy:
   `lean-conformance-failed` and a runner that cannot be produced or run is
   `lean-conformance-error`. Under `--lean-only` a passing conformance ends `formalized`
   instead of continuing to `implement`.
-- **After `generate_c` / `test_c`.** An artifact the formalizer did not give a descriptor
-  for, or one whose descriptor names an operation CGen does not render (anything but Add,
-  Sub and Mul), is recorded `unsupported` and the run continues as it would have without
-  `--c` — a C generator that cannot render an operator is not a defect of the document. A
-  descriptor that cannot be compiled or rendered, and any FAIL line from the test program,
-  ends the run as `c-failed`; a test program that never becomes compilable or comparable is
-  asked for again and then ends `c-failed`.
+- **After `generate_c` / `test_c`.** A family the derivation cannot decide, or a derived
+  operation CGen does not render (anything but Add, Sub and Mul), is recorded `unsupported`
+  with its `cgen-trace.json` and the run continues as it would have without `--c` — a C
+  generator that cannot render an operator is not a defect of the document. A derivation
+  trailer that cannot be compiled, and any FAIL line from the test program, ends the run as
+  `c-failed`; a test program that never becomes compilable or comparable is asked for again
+  and then ends `c-failed`.
 - **After `implement`.** A module that could not be validated stops as `impl-unusable`.
 - **After `test` / `record_failure`.** A pass ends `converged`. A failure goes to the
   adjudicator unless the iteration cap is reached (`iteration-cap`), the identical failure
@@ -301,35 +301,33 @@ published; a target whose manifest is stale or whose digests no longer match is 
 
 ## Optional C generation from the formal specification
 
-`--c` adds two nodes after the conformance run, and it requires `--lean` or `--lean-only`:
-the C is rendered from the Lean artifact, not from the document a second time. The generated
-module declares the operator's element step in a machine-readable descriptor, at the top
-level of the module (outside every namespace) and after every other declaration:
-
-```lean
-def sonnxCGenOp : CGen.Elementwise := ⟨"sub", .sub⟩
-```
-
-The formalizer is allowed `import CGen` for exactly this declaration, and the contract is
-stated in its prompt: the name is the operator's lowercase entry, the second field the
-matching `CGen.BinOp`. The declaration is optional — an operator for which the formalizer has
-no such descriptor is reported `unsupported` and the run continues — and it is refused if it
-is namespaced, declared twice, or declared without the import. It is implementation-oriented
-content inside a formal artifact, which is why deterministic code checks its shape before
-anything is compiled from it.
+`--c` adds two nodes after the conformance run, and it requires `--lean` or `--lean-only`.
+The C is **derived from the Lean formal specification**, not from the document and not from a
+descriptor. The C stage reads the family function requirements in `FormalSpec.trace.json` —
+`E_<OP>_<FAMILY>_FUNC_<nnnn>`, whose `@declaration` names the family definition — and
+`CGen.Derive.deriveElementwise` runs a frontier search over the spec-local step definitions: a
+node that exposes `HAdd`/`HSub`/`HMul`/`HDiv`/`HMod` is a witness and is not descended,
+otherwise its `Generated.<Op>.` constants are enqueued. It intersects the per-family operator
+sets and records each witness path. A missing declaration, a theorem with no value, or a
+frontier without one operation makes the operator `unsupported`; the run continues. The
+formalizer writes no C descriptor and needs no `import CGen` for one.
 
 The C stage, in order:
 
-1. **Render.** `generate_c` copies `FormalSpec.lean` to `c/CGenEmit.lean` and appends a
-   generated `#eval` trailer that prints `SONNX-CGEN name=… binop=…` and writes
+1. **Derive and render.** `generate_c` copies `FormalSpec.lean` to `c/CGenEmit.lean`, prepends
+   `import CGen.Derive`, and appends a generated `run_cmd` trailer that prints
+   `SONNX-CGEN name=… binop=…` and one `SONNX-CGEN-SOURCE` line per family (declaration,
+   witness path, requirement key, informal span, operations found). It writes
    `c/sonnx_kernels.h` (the `sonnx_tensor` definition and the prototypes) and
-   `c/sonnx_kernels.c` (the definitions) through `CGen.headerFileFor` and
-   `CGen.sourceFileFor`. It compiles that copy with `lake env lean`,
-   so the files are the descriptor's own rendering — not the model's. The accepted artifact is
-   never modified. A name that is not the operator's entry, a binop outside `add`/`sub`/`mul`,
-   or a compilation that fails is `unsupported` or `error` as described above; `Div` and `Mod`
-   are excluded because CGen's signed-integer element step computes in the unsigned type,
-   which is the specified wrap for the first three and a different operation for division.
+   `c/sonnx_kernels.c` through `CGen.headerFileForDerived`/`CGen.sourceFileForDerived` only
+   when the derived operation is `add`/`sub`/`mul`, and compiles the copy with
+   `lake env lean`. The accepted artifact is never modified. Each kernel's comment names its
+   Lean declaration, witness path, `@trace` key and informal span. Python writes
+   `c/cgen-trace.json` (`sonnx-cgen/1`): the spec/Lean/library/`CGen/Derive.lean` hashes, the
+   per-family declarations, witness paths and operation sets, the chosen operation, the
+   kernels, and the status. `Div` derives `.div` and is `unsupported` with its trace and no C
+   files; `Div`/`Mod` are outside the kernel set because CGen's signed-integer element step
+   computes in the unsigned type, the specified wrap for add/sub/mul but not signed division.
 2. **Test.** The C tester is given the document, the restriction files, the formal
    specification and both generated files, and answers one standalone C program: it includes
    `"sonnx_kernels.h"`, defines `int main(void)`, builds a `sonnx_tensor` per operand (`void
@@ -358,11 +356,12 @@ The C stage, in order:
    code. `--publish` places the header, source, accepted test program and report in
    `ops/<op>/c/` when the stage passed (a default run already wrote them there).
 
-The C the stage tests is the C the descriptor renders, so the stage's question is whether the
-descriptor is a faithful reading of the formal specification's element step — and the
-tester's program is what says so, in the document's own terms. It is a test, not a proof: it
-says nothing about an input the program does not construct, and the kernel's `sonnx_tensor`,
-caller-broadcasts contract is the caller's to honour.
+The C the stage tests is derived from the formal specification's own family definitions, and
+the manifest and the per-kernel comments name the declaration and witness path each kernel
+came from. The tester's program is what says the C agrees with the document, in the document's
+own terms. It is a test, not a proof: it says nothing about an input the program does not
+construct, and the kernel's `sonnx_tensor`, caller-broadcasts contract is the caller's to
+honour.
 
 ## What the loop guarantees, and what it cannot
 
@@ -836,7 +835,7 @@ response with no text at all is retried once with twice the budget.
 | `--verdict-thinking auto\|off` | may the verifier and the adjudicator deliberate (default `off`) |
 | `--lean` | formalize and run conformance before the normal Python loop |
 | `--lean-only` | formalize and conform, without the Python/ONNX Runtime stages |
-| `--c` | render C from the Lean descriptor and test it (requires `--lean` or `--lean-only`) |
+| `--c` | derive and render C from the Lean formal specification and test it (requires `--lean` or `--lean-only`) |
 | `--cc <path>` | the C compiler (default `cc`) |
 | `--max-c-retries N` | test programs the C tester may answer after the first, when one cannot be compiled or run (default 2) |
 | `--c-timeout N` | seconds one compiled C test program may run (default 120) |
@@ -878,9 +877,9 @@ harness report to `ops/neg/loop/`. When the Lean stage ran, it also copies
 `FormalSpec.lean` and its trace manifest to `ops/neg/lean/`, with the generated runner,
 driver, frozen corpus and conformance manifest in the same relative layout, after
 revalidating every digest and re-running conformance. When the C stage passed, it places
-`sonnx_kernels.h`, `sonnx_kernels.c`, `c_tests.c` and `c-report.json` in `ops/<op>/c/`; a
-run whose C stage stopped `unsupported` publishes nothing for it, and a `c-failed` run is
-not published at all. It does not write a `loop/README.md`: that page classifies the blind
+`sonnx_kernels.h`, `sonnx_kernels.c`, `c_tests.c`, `cgen-trace.json` and `c-report.json` in
+`ops/<op>/c/`; a run whose C stage stopped `unsupported` publishes nothing for it, and a
+`c-failed` run is not published at all. It does not write a `loop/README.md`: that page classifies the blind
 reader's `DECISION:` points and records a detector check, which is work about the run that
 no copy can do. The run record (`run-<timestamp>.json`) is the raw material for it.
 
@@ -960,9 +959,10 @@ ops/<op>/
         conformance.manifest.json the SHA-256 of every artifact above
         LeanConformance.json    the driver's report
     c/
-        CGenEmit.lean           the formal specification with the generated render trailer
-        sonnx_kernels.h         the generated prototypes
-        sonnx_kernels.c         the generated definitions
+        CGenEmit.lean           the formal specification with the derivation trailer
+        sonnx_kernels.h         the derived prototypes, each with its derivation comment
+        sonnx_kernels.c         the derived definitions, each with its comment
+        cgen-trace.json         the derivation manifest: declarations, witnesses, hashes
         c_tests-attempt-NNN.c   the C tester's answers
         c_tests.c               the accepted test program
         c_tests                 the compiled test program
@@ -1055,14 +1055,14 @@ family, **Add** has one, **Sin** has neither `int` nor `uint`, and **MaxPool**'s
 type; and a `COVERAGE` dictionary
 the case module computes for itself is read as the module leaves it.
 
-The C stage has its own seven scenarios, all with the renderer and the compiler faked, since
-`test_c_stage.py` is what exercises the real tools: a descriptor and a passing test program
-give `converged`, with the C tester asked before the implementer (and `formalized` under
-`--lean-only`); a FAIL line stops the run `c-failed` with no implementer at all; a test
+The C stage has its own seven scenarios, all with the derivation, renderer and compiler faked,
+since `test_c_stage.py` is what exercises the real tools: a derivable operation and a passing
+test program give `converged`, with the C tester asked before the implementer (and `formalized`
+under `--lean-only`); a FAIL line stops the run `c-failed` with no implementer at all; a test
 program that never becomes usable is asked for again up to `--max-c-retries` and then stops
-`c-failed`; a formalizer answer without a descriptor is recorded `unsupported` and the run
-continues to convergence; a renderer that fails stops `c-failed`; and `--c` without `--lean`
-is a command-line error, with the C flags parsed through to the settings.
+`c-failed`; an operator without a family derivation is recorded `unsupported` and the run
+continues to convergence; a derivation trailer that fails stops `c-failed`; and `--c` without
+`--lean` is a command-line error, with the C flags parsed through to the settings.
 
 The Lean stages have their own groups. Five scenarios cover the graph: a complete artifact
 generates a corpus, a runner and a driver, conformance passes, and the run ends `formalized`
@@ -1097,10 +1097,12 @@ not being read as protocol responses (in the driver and in the smoke test), and 
 relative layout and overwrite guard.
 `test_c_stage.py` covers the C stage on the real tools: `extract_c` on fenced and bare
 answers, the textual guard (no `main`, no header include, no integer kernel, an empty
-answer), `_emit_c_files` rendering a mini descriptor with `lake env lean`, `generate_c` for a
-supported, a division, an absent and a broken descriptor, and the compile-and-run protocol —
-a correct program passes with its checks counted, a wrong expectation fails with the line
-kept, and a program that does not compile or compares nothing is unusable.
+answer), `_emit_c_files` deriving a mini specification's operation with `lake env lean`,
+`generate_c` for a supported, a division, an absent and a broken derivation, the
+compile-and-run protocol — a correct program passes with its checks counted, a wrong
+expectation fails with the line kept, and a program that does not compile or compares nothing
+is unusable — and a model-free end-to-end derivation of the checked-in Add, Sub, Mul and Div
+specifications (Add/Sub/Mul render, Div is `unsupported`).
 `test_cgen.py` covers the C generator in `lean/CGen/` (not part of the specification pipeline):
 the library and its two drivers build, the printer probes pass, the emitted translation unit is
 deterministic, defines the tensor struct once and carries the advertised signatures, and it
