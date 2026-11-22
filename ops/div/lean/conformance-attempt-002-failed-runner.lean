@@ -1,0 +1,363 @@
+import Sonnx
+
+/-!
+Executable conformance runner for ONNX `Div` (opset 14).
+
+Wire protocol: one input line per case, one output line per input line, same order and id.
+Integers and floats travel as raw bit patterns; rationals as `numerator/denominator`.
+Kinds that cannot be represented (e.g. float16) are reported as `UNSUPPORTED`.
+-/
+
+namespace DivRunner
+
+/-! ## Small string helpers -/
+
+def joinSep (sep : String) : List String → String
+  | [] => ""
+  | [x] => x
+  | x :: xs => x ++ sep ++ joinSep sep xs
+
+def splitLines (s : String) : List String :=
+  if s.isEmpty then []
+  else
+    match (s.splitOn "\n").reverse with
+    | [] => []
+    | "" :: rest => rest.reverse
+    | _ => s.splitOn "\n"
+
+/-- Drop a trailing carriage return, if any (tolerates CRLF input). -/
+def stripCR (s : String) : String :=
+  match s.splitOn "\r" with
+  | [] => s
+  | x :: _ => x
+
+def listGet? {α : Type} : List α → Nat → Option α
+  | [], _ => none
+  | x :: _, 0 => some x
+  | _ :: xs, n + 1 => listGet? xs n
+
+/-! ## Field parsers -/
+
+def parseNat? (s : String) : Option Nat :=
+  if s.isEmpty then none else s.toNat?
+
+def parseInt? (s : String) : Option Int :=
+  if s.isEmpty then none else s.toInt?
+
+def parseShape (s : String) : Option (List Nat) :=
+  if s = "-" then some []
+  else if s.isEmpty then none
+  else (s.splitOn ",").mapM parseNat?
+
+def parseData (s : String) : List String :=
+  if s = "-" then []
+  else if s.isEmpty then [] else s.splitOn ","
+
+structure TensorRaw where
+  kind : String
+  shape : List Nat
+  data : List String
+
+def parseTensor (s : String) : Option TensorRaw :=
+  match s.splitOn "|" with
+  | [k, sh, da] =>
+      if k.isEmpty then none
+      else
+        match parseShape sh with
+        | none => none
+        | some shape => some { kind := k, shape := shape, data := parseData da }
+  | _ => none
+
+/-! ## Shapes and broadcasting -/
+
+def shapeSize (s : List Nat) : Nat := s.foldl (fun acc d => acc * d) 1
+
+def padTo (n : Nat) (s : List Nat) : List Nat := List.replicate (n - s.length) 1 ++ s
+
+def broadcastDim (a b : Nat) : Option Nat :=
+  if a = b then some a
+  else if a = 1 then some b
+  else if b = 1 then some a
+  else none
+
+def broadcastShape (sa sb : List Nat) : Option (List Nat) :=
+  let n := max sa.length sb.length
+  let a := padTo n sa
+  let b := padTo n sb
+  (a.zip b).mapM (fun p => broadcastDim p.1 p.2)
+
+/-- Map a flat index of the broadcast result to a flat index of an operand. -/
+def opFlatAux : List Nat → List Nat → Nat → Nat → Nat → Option Nat
+  | [], _, _, _, acc => some acc
+  | od :: ods, opRev, rem, stride, acc =>
+      if od = 0 then none
+      else
+        let coord := rem % od
+        let rem' := rem / od
+        match opRev with
+        | [] => opFlatAux ods [] rem' stride acc
+        | pd :: pds =>
+            if pd = 0 then none
+            else
+              let c := if pd = 1 then 0 else coord
+              if c >= pd then none
+              else opFlatAux ods pds rem' (stride * pd) (acc + c * stride)
+
+def opFlatIndex (outShape opShape : List Nat) (idx : Nat) : Option Nat :=
+  opFlatAux outShape.reverse opShape.reverse idx 1 0
+
+def elemPairs (outShape aShape bShape : List Nat) : Option (List (Nat × Nat)) :=
+  (List.range (shapeSize outShape)).mapM (fun idx =>
+    match opFlatIndex outShape aShape idx, opFlatIndex outShape bShape idx with
+    | some ia, some ib => some (ia, ib)
+    | _, _ => none)
+
+/-! ## Output rendering -/
+
+def formatShape (s : List Nat) : String :=
+  if s.isEmpty then "-" else joinSep "," (s.map toString)
+
+def formatData (xs : List String) : String :=
+  if xs.isEmpty then "-" else joinSep "," xs
+
+def renderOk (id : String) (shape : List Nat) (kind : String) (data : List String) : String :=
+  id ++ "\tOK\t1\t" ++ kind ++ "|" ++ formatShape shape ++ "|" ++ formatData data
+
+def renderUnsupported (id : String) (reason : String) : String :=
+  id ++ "\tUNSUPPORTED\t0\t" ++ reason
+
+def renderErr (id : String) (reason : String) : String :=
+  id ++ "\tERR\t0\t" ++ reason
+
+def renderMalformed (id : String) (msg : String) : String :=
+  id ++ "\tMALFORMED\t0\t" ++ msg
+
+/-! ## Kind canonicalisation and element parsers -/
+
+def canonicalKind (k : String) : String :=
+  if k = "float16" then "f16"
+  else if k = "half" then "f16"
+  else if k = "float32" then "f32"
+  else if k = "float" then "f32"
+  else if k = "float64" then "f64"
+  else if k = "double" then "f64"
+  else k
+
+def parseF64 (s : String) : Option Float :=
+  match parseNat? s with
+  | none => none
+  | some n => if n < 2 ^ 64 then some (Float.ofBits (UInt64.ofNat n)) else none
+
+def parseF32 (s : String) : Option Float32 :=
+  match parseNat? s with
+  | none => none
+  | some n => if n < 2 ^ 32 then some (Float32.ofBits (UInt32.ofNat n)) else none
+
+def parseSInt (width : Nat) (s : String) : Option Int :=
+  match parseNat? s with
+  | none => none
+  | some bits =>
+      let m : Nat := 2 ^ width
+      if bits < m then
+        let half : Nat := 2 ^ (width - 1)
+        if bits < half then some (Int.ofNat bits)
+        else some (Int.ofNat bits - Int.ofNat m)
+      else none
+
+def parseUInt (width : Nat) (s : String) : Option Nat :=
+  match parseNat? s with
+  | none => none
+  | some bits => if bits < 2 ^ width then some bits else none
+
+/-- Raw bit pattern of an integer value in a signed `width`-bit type. -/
+def signedBits (width : Nat) (q : Int) : Nat :=
+  if q ≥ 0 then q.toNat
+  else (q + Int.ofNat (2 ^ width)).toNat
+
+/-! ## Rationals (exact, normalised) -/
+
+/-- Euclidean gcd with fuel; the inputs here are below `2^64`, so 200 steps suffice. -/
+def gcdFuel : Nat → Nat → Nat → Nat
+  | 0, a, _ => a
+  | _, a, 0 => a
+  | f + 1, a, b + 1 => gcdFuel f (b + 1) (a % (b + 1))
+
+structure Q where
+  n : Int
+  d : Nat
+
+/-- Normalise `num / den`: positive denominator, lowest terms, `0` as `0/1`. -/
+def mkQ (num : Int) (den : Nat) : Q :=
+  if den = 0 then { n := 0, d := 1 }
+  else
+    let g := gcdFuel 200 num.natAbs den
+    if g = 0 then { n := 0, d := 1 }
+    else { n := Int.tdiv num (Int.ofNat g), d := den / g }
+
+def qdiv (x y : Q) : Option Q :=
+  if y.n = 0 then none
+  else
+    let num : Int := x.n * Int.ofNat y.d
+    let den : Int := Int.ofNat x.d * y.n
+    if den > 0 then some (mkQ num den.toNat)
+    else some (mkQ (-num) (-den).toNat)
+
+def parseRat (s : String) : Option Q :=
+  match s.splitOn "/" with
+  | [ns, ds] =>
+      match parseInt? ns, parseNat? ds with
+      | some n, some d => if d = 0 then none else some (mkQ n d)
+      | _, _ => none
+  | _ => none
+
+/-! ## Element steps -/
+
+def sdivPair (ad bd : List Int) (p : Nat × Nat) : Except String Int :=
+  match listGet? ad p.1, listGet? bd p.2 with
+  | some va, some vb =>
+      if vb = 0 then Except.error "division by zero"
+      else Except.ok (Int.tdiv va vb)
+  | _, _ => Except.error "data index error"
+
+def udivPair (ad bd : List Nat) (p : Nat × Nat) : Except String Nat :=
+  match listGet? ad p.1, listGet? bd p.2 with
+  | some va, some vb =>
+      if vb = 0 then Except.error "division by zero"
+      else Except.ok (va / vb)
+  | _, _ => Except.error "data index error"
+
+def rdivPair (ad bd : List Q) (p : Nat × Nat) : Except String String :=
+  match listGet? ad p.1, listGet? bd p.2 with
+  | some va, some vb =>
+      match qdiv va vb with
+      | some c => Except.ok (toString c.n ++ "/" ++ toString c.d)
+      | none => Except.error "division by zero"
+  | _, _ => Except.error "data index error"
+
+/-! ## Per-kind runners -/
+
+def runF64 (id : String) (outShape : List Nat) (a b : TensorRaw) : String :=
+  match a.data.mapM parseF64, b.data.mapM parseF64 with
+  | some ad, some bd =>
+      match elemPairs outShape a.shape b.shape with
+      | none => renderErr id "broadcast index error"
+      | some pairs =>
+          match pairs.mapM (fun p =>
+                  match listGet? ad p.1, listGet? bd p.2 with
+                  | some va, some vb => some ((Float.toBits (va / vb)).toNat)
+                  | _, _ => none) with
+          | some bits => renderOk id outShape "f64" (bits.map toString)
+          | none => renderErr id "data index error"
+  | _, _ => renderMalformed id "bad f64 data"
+
+def runF32 (id : String) (outShape : List Nat) (a b : TensorRaw) : String :=
+  match a.data.mapM parseF32, b.data.mapM parseF32 with
+  | some ad, some bd =>
+      match elemPairs outShape a.shape b.shape with
+      | none => renderErr id "broadcast index error"
+      | some pairs =>
+          match pairs.mapM (fun p =>
+                  match listGet? ad p.1, listGet? bd p.2 with
+                  | some va, some vb => some ((Float32.toBits (va / vb)).toNat)
+                  | _, _ => none) with
+          | some bits => renderOk id outShape "f32" (bits.map toString)
+          | none => renderErr id "data index error"
+  | _, _ => renderMalformed id "bad f32 data"
+
+def runSInt (id : String) (width : Nat) (kind : String)
+    (outShape : List Nat) (a b : TensorRaw) : String :=
+  match a.data.mapM (parseSInt width), b.data.mapM (parseSInt width) with
+  | some ad, some bd =>
+      match elemPairs outShape a.shape b.shape with
+      | none => renderErr id "broadcast index error"
+      | some pairs =>
+          match pairs.mapM (fun p => sdivPair ad bd p) with
+          | Except.ok qs =>
+              renderOk id outShape kind (qs.map (fun q => toString (signedBits width q)))
+          | Except.error msg => renderErr id msg
+  | _, _ => renderMalformed id "bad signed integer data"
+
+def runUInt (id : String) (width : Nat) (kind : String)
+    (outShape : List Nat) (a b : TensorRaw) : String :=
+  match a.data.mapM (parseUInt width), b.data.mapM (parseUInt width) with
+  | some ad, some bd =>
+      match elemPairs outShape a.shape b.shape with
+      | none => renderErr id "broadcast index error"
+      | some pairs =>
+          match pairs.mapM (fun p => udivPair ad bd p) with
+          | Except.ok qs => renderOk id outShape kind (qs.map toString)
+          | Except.error msg => renderErr id msg
+  | _, _ => renderMalformed id "bad unsigned integer data"
+
+def runRat (id : String) (outShape : List Nat) (a b : TensorRaw) : String :=
+  match a.data.mapM parseRat, b.data.mapM parseRat with
+  | some ad, some bd =>
+      match elemPairs outShape a.shape b.shape with
+      | none => renderErr id "broadcast index error"
+      | some pairs =>
+          match pairs.mapM (fun p => rdivPair ad bd p) with
+          | Except.ok ds => renderOk id outShape "rat" ds
+          | Except.error msg => renderErr id msg
+  | _, _ => renderMalformed id "bad rational data"
+
+/-! ## Dispatch -/
+
+def runDiv (id : String) (a b : TensorRaw) : String :=
+  let ka := canonicalKind a.kind
+  let kb := canonicalKind b.kind
+  if ka = "f16" then renderUnsupported id "float16 unsupported"
+  else if kb = "f16" then renderUnsupported id "float16 unsupported"
+  else if ka ≠ kb then renderErr id "type mismatch"
+  else if shapeSize a.shape ≠ a.data.length then
+    renderMalformed id "A data length does not match shape"
+  else if shapeSize b.shape ≠ b.data.length then
+    renderMalformed id "B data length does not match shape"
+  else
+    match broadcastShape a.shape b.shape with
+    | none => renderErr id "incompatible shapes"
+    | some outShape =>
+        if shapeSize outShape = 0 then renderOk id outShape ka []
+        else if ka = "f64" then runF64 id outShape a b
+        else if ka = "f32" then runF32 id outShape a b
+        else if ka = "i8" then runSInt id 8 ka outShape a b
+        else if ka = "i16" then runSInt id 16 ka outShape a b
+        else if ka = "i32" then runSInt id 32 ka outShape a b
+        else if ka = "i64" then runSInt id 64 ka outShape a b
+        else if ka = "u8" then runUInt id 8 ka outShape a b
+        else if ka = "u16" then runUInt id 16 ka outShape a b
+        else if ka = "u32" then runUInt id 32 ka outShape a b
+        else if ka = "u64" then runUInt id 64 ka outShape a b
+        else if ka = "rat" then runRat id outShape a b
+        else renderUnsupported id ("unsupported kind " ++ ka)
+
+def processLine (line : String) : String :=
+  let fields := (stripCR line).splitOn "\t"
+  match fields with
+  | [] => renderMalformed "" "empty line"
+  | id :: rest =>
+      match rest with
+      | _attrs :: arityStr :: tensors =>
+          match parseNat? arityStr with
+          | none => renderMalformed id "bad arity"
+          | some arity =>
+              if arity ≠ tensors.length then
+                renderMalformed id "arity does not match tensor count"
+              else if arity ≠ 2 then
+                renderMalformed id "arity must be 2"
+              else
+                match tensors.mapM parseTensor with
+                | some [a, b] => runDiv id a b
+                | some _ => renderMalformed id "expected 2 tensors"
+                | none => renderMalformed id "bad tensor field"
+      | _ => renderMalformed id "expected id, attrs, arity and tensors"
+
+def main : IO Unit := do
+  let stdin ← IO.getStdin
+  let input ← stdin.readToEnd
+  let outs := (splitLines input).map processLine
+  if outs.isEmpty then
+    pure ()
+  else
+    IO.print (joinSep "\n" outs ++ "\n")
+
+end DivRunner

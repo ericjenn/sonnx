@@ -32,7 +32,8 @@ SPEC_NONE = """import Sonnx
 def thing : Nat := 0
 """
 
-GOOD_TEST = """#include <stdint.h>
+GOOD_TEST = """#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include "sonnx_kernels.h"
 
@@ -48,44 +49,76 @@ static void ok(const char *name, int condition) {
 }
 
 int main(void) {
-  { const float a[2] = {5.0f, -1.0f}, b[2] = {3.0f, -1.0f};
-    float c[2] = {0.0f, 0.0f};
-    sonnx_sub_f32(a, b, c, 2);
-    ok("f32 5-3", c[0] == 2.0f);
-    ok("f32 -1 minus -1", c[1] == 0.0f); }
-  { const double a[2] = {0.25, 1.5}, b[2] = {0.5, 2.5};
-    double c[2] = {0.0, 0.0};
-    sonnx_sub_f64(a, b, c, 2);
-    ok("f64 0.25-0.5", c[0] == -0.25);
-    ok("f64 1.5-2.5", c[1] == -1.0); }
-  { const int8_t a[2] = {127, -128}, b[2] = {1, 1};
-    int8_t c[2] = {0, 0};
-    sonnx_sub_i8(a, b, c, 2);
-    ok("i8 127-1", c[0] == 126);
-    ok("i8 -128-1 wraps", c[1] == 127); }
-  { const int32_t a[2] = {5, INT32_MIN}, b[2] = {3, 1};
-    int32_t c[2] = {0, 0};
-    sonnx_sub_i32(a, b, c, 2);
-    ok("i32 5-3", c[0] == 2);
-    ok("i32 INT32_MIN-1 wraps", c[1] == INT32_MAX); }
-  { const uint8_t a[2] = {0, 200}, b[2] = {1, 100};
-    uint8_t c[2] = {0, 0};
-    sonnx_sub_u8(a, b, c, 2);
-    ok("u8 0-1 wraps", c[0] == 255);
-    ok("u8 200-100", c[1] == 100); }
-  { const uint32_t a[2] = {0, 7}, b[2] = {1, 7};
-    uint32_t c[2] = {0, 0};
-    sonnx_sub_u32(a, b, c, 2);
-    ok("u32 0-1 wraps", c[0] == UINT32_MAX);
-    ok("u32 7-7", c[1] == 0); }
-  { const float a[1] = {1.0f}, b[1] = {2.0f};
-    float c[1] = {0.0f};
-    sonnx_sub_f32(a, b, c, 1);
-    ok("f32 1-2", c[0] == -1.0f); }
-  { const int64_t a[1] = {INT64_MAX}, b[1] = {-1};
-    int64_t c[1] = {0};
-    sonnx_sub_i64(a, b, c, 1);
-    ok("i64 INT64_MAX minus -1 wraps", c[0] == INT64_MIN); }
+  { const size_t shape[1] = {2};
+    float a_data[2] = {5.0f, -1.0f}, b_data[2] = {3.0f, -1.0f};
+    float c_data[2] = {0.0f, 0.0f};
+    sonnx_tensor a = { .data = a_data, .ndim = 1, .shape = shape };
+    sonnx_tensor b = { .data = b_data, .ndim = 1, .shape = shape };
+    sonnx_tensor c = { .data = c_data, .ndim = 1, .shape = shape };
+    sonnx_sub_f32(&a, &b, &c);
+    ok("f32 5-3", c_data[0] == 2.0f);
+    ok("f32 -1 minus -1", c_data[1] == 0.0f); }
+  { const size_t shape[1] = {2};
+    double a_data[2] = {0.25, 1.5}, b_data[2] = {0.5, 2.5};
+    double c_data[2] = {0.0, 0.0};
+    sonnx_tensor a = { .data = a_data, .ndim = 1, .shape = shape };
+    sonnx_tensor b = { .data = b_data, .ndim = 1, .shape = shape };
+    sonnx_tensor c = { .data = c_data, .ndim = 1, .shape = shape };
+    sonnx_sub_f64(&a, &b, &c);
+    ok("f64 0.25-0.5", c_data[0] == -0.25);
+    ok("f64 1.5-2.5", c_data[1] == -1.0); }
+  { const size_t shape[1] = {2};
+    int8_t a_data[2] = {127, -128}, b_data[2] = {1, 1};
+    int8_t c_data[2] = {0, 0};
+    sonnx_tensor a = { .data = a_data, .ndim = 1, .shape = shape };
+    sonnx_tensor b = { .data = b_data, .ndim = 1, .shape = shape };
+    sonnx_tensor c = { .data = c_data, .ndim = 1, .shape = shape };
+    sonnx_sub_i8(&a, &b, &c);
+    ok("i8 127-1", c_data[0] == 126);
+    ok("i8 -128-1 wraps", c_data[1] == 127); }
+  { const size_t shape[1] = {2};
+    int32_t a_data[2] = {5, INT32_MIN}, b_data[2] = {3, 1};
+    int32_t c_data[2] = {0, 0};
+    sonnx_tensor a = { .data = a_data, .ndim = 1, .shape = shape };
+    sonnx_tensor b = { .data = b_data, .ndim = 1, .shape = shape };
+    sonnx_tensor c = { .data = c_data, .ndim = 1, .shape = shape };
+    sonnx_sub_i32(&a, &b, &c);
+    ok("i32 5-3", c_data[0] == 2);
+    ok("i32 INT32_MIN-1 wraps", c_data[1] == INT32_MAX); }
+  { const size_t shape[1] = {2};
+    uint8_t a_data[2] = {0, 200}, b_data[2] = {1, 100};
+    uint8_t c_data[2] = {0, 0};
+    sonnx_tensor a = { .data = a_data, .ndim = 1, .shape = shape };
+    sonnx_tensor b = { .data = b_data, .ndim = 1, .shape = shape };
+    sonnx_tensor c = { .data = c_data, .ndim = 1, .shape = shape };
+    sonnx_sub_u8(&a, &b, &c);
+    ok("u8 0-1 wraps", c_data[0] == 255);
+    ok("u8 200-100", c_data[1] == 100); }
+  { const size_t shape[1] = {2};
+    uint32_t a_data[2] = {0, 7}, b_data[2] = {1, 7};
+    uint32_t c_data[2] = {0, 0};
+    sonnx_tensor a = { .data = a_data, .ndim = 1, .shape = shape };
+    sonnx_tensor b = { .data = b_data, .ndim = 1, .shape = shape };
+    sonnx_tensor c = { .data = c_data, .ndim = 1, .shape = shape };
+    sonnx_sub_u32(&a, &b, &c);
+    ok("u32 0-1 wraps", c_data[0] == UINT32_MAX);
+    ok("u32 7-7", c_data[1] == 0); }
+  { const size_t shape[1] = {1};
+    float a_data[1] = {1.0f}, b_data[1] = {2.0f};
+    float c_data[1] = {0.0f};
+    sonnx_tensor a = { .data = a_data, .ndim = 1, .shape = shape };
+    sonnx_tensor b = { .data = b_data, .ndim = 1, .shape = shape };
+    sonnx_tensor c = { .data = c_data, .ndim = 1, .shape = shape };
+    sonnx_sub_f32(&a, &b, &c);
+    ok("f32 1-2", c_data[0] == -1.0f); }
+  { const size_t shape[1] = {1};
+    int64_t a_data[1] = {INT64_MAX}, b_data[1] = {-1};
+    int64_t c_data[1] = {0};
+    sonnx_tensor a = { .data = a_data, .ndim = 1, .shape = shape };
+    sonnx_tensor b = { .data = b_data, .ndim = 1, .shape = shape };
+    sonnx_tensor c = { .data = c_data, .ndim = 1, .shape = shape };
+    sonnx_sub_i64(&a, &b, &c);
+    ok("i64 INT64_MAX minus -1 wraps", c_data[0] == INT64_MIN); }
   return failures == 0 ? 0 : 1;
 }
 """
@@ -116,7 +149,7 @@ def test_extract() -> None:
     check("extract_c prefers the block with main",
           "helper" not in extract.extract_c(fragment))
     bare = extract.extract_c("Sure.\n\n" + GOOD_TEST)
-    check("extract_c reads a bare answer", bare.startswith("#include <stdint.h>"))
+    check("extract_c reads a bare answer", bare.startswith("#include <stddef.h>"))
 
 
 def test_guard() -> None:
@@ -150,11 +183,13 @@ def test_render(directory: Path) -> Settings:
         return settings
     header = Path(emitted["header"]).read_text()
     source = Path(emitted["source"]).read_text()
+    check("the header declares the tensor struct", "} sonnx_tensor;" in header)
     check("the header declares the f32 kernel",
-          "void sonnx_sub_f32(const float *a, const float *b, float *c, size_t n);" in header)
+          "void sonnx_sub_f32(const sonnx_tensor *a, const sonnx_tensor *b, "
+          "sonnx_tensor *c);" in header)
     check("the source defines the u64 kernel",
-          "void sonnx_sub_u64(const uint64_t *a, const uint64_t *b, uint64_t *c, size_t n) {"
-          in source)
+          "void sonnx_sub_u64(const sonnx_tensor *a, const sonnx_tensor *b, "
+          "sonnx_tensor *c) {" in source)
     check("the source includes the header", '#include "sonnx_kernels.h"' in source)
     return settings
 
@@ -198,7 +233,8 @@ def test_protocol(settings: Settings) -> None:
                                                          "failed": 0})
     check("a passing program exits 0", result["returncode"] == 0)
 
-    bad = write(directory, "bad-tests.c", GOOD_TEST.replace("c[0] == 2.0f", "c[0] == 2.5f"))
+    bad = write(directory, "bad-tests.c",
+                GOOD_TEST.replace("c_data[0] == 2.0f", "c_data[0] == 2.5f"))
     result = graph._compile_and_run_c(settings, bad)
     check("a wrong expectation fails", not result["ok"] and result["failures"])
     check("the failing line is kept", result["failures"][0].startswith("FAIL f32 5-3"))

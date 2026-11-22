@@ -24,6 +24,26 @@ parsed as a decimal unless the protocol says so. Shapes and data are comma-separ
 marks an empty list. A kind the module cannot represent (for example float16, which Lean core
 does not have) must produce `UNSUPPORTED`, never a wrong number or a dropped line.
 
+**Transcribe the specification's element step; do not substitute a Lean operator with
+different semantics.** In particular, Lean's `Int` division `/` is floor division:
+`(-7 : Int) / 2 = -4`, while the **Div** document and `FormalSpec.lean`'s truncating
+definition require `-3`. Compute the signed quotient as the magnitude
+`a.natAbs / b.natAbs` with the sign of `a * b` (then apply the specification's wrap), and
+reproduce the specification's operand order and broadcasting exactly. Measured on
+2026-11-22: the **Div** runner's `divIntBits` used `a / b` and the conformance failed 13
+cases — `int truncation` wanted `-3` and got `-4`, and `sweep_int_domain` wanted
+`[1, 1, …]` and got `[1, 2, …]` — while the formal specification's `truncDiv` was correct.
+
+**Float division is the specification's exact quotient rounded to the format, not Lean's
+`Float` arithmetic.** Convert the operands to the exact rational values the specification
+uses (`fvalRat`), divide them, and round the exact quotient with the specification's
+`RoundToFormat`; do not substitute a floating-point operator that rounds differently.
+Reproduce the specification's broadcasting too: a rank-0 operand broadcasts to the other
+operand's shape, and the result index is the specification's `bcastIdx`/`bcastShape`, not a
+flat element loop. Measured on 2026-11-22: the **Div** runner's `float32 exact quotients`
+wanted `-2.25` and got `-4.0`, its rounding boundary wanted `1.0000001` and got `2.0`, and
+its rank-0/row/column broadcasts produced the wrong elements.
+
 # Hard requirements
 
 - Define `def main : IO Unit`.

@@ -1,0 +1,38 @@
+{
+  "generated_by": "sonnx-lean-pipeline-conformance",
+  "protocol": "sonnx-conformance/1",
+  "op": "Div",
+  "opset": 14,
+  "entry": "div",
+  "spec_md5": "a8cd637d6a06c39a769d75ebdb3b2818",
+  "library_sha256": "3162109b4c926c2fa5dd5f8bd2eb2d90fb17a0480eccc0216a4ea9bd2b43ffab",
+  "formal_spec": "lean/FormalSpec.lean",
+  "formal_spec_sha256": "06e2ceac3025fc81b38d63051d07278ed604e334ac5415f5c91f73da6bc7a9f9",
+  "runner": "lean/LeanConformance.lean",
+  "runner_sha256": "dfcdfa143d2f61aa2d003d5b5f8890d79c2c57d4624b3443fe0c99d6ac9b5db3",
+  "driver": "lean_conformance.py",
+  "driver_sha256": "7ecfeb98081143d53d802ee595bde06c8a12f51fc22b851483c4cdc3ff1d6d0c",
+  "corpus": "lean/cases.py",
+  "corpus_sha256": "9e50c3531b736562837c7cca1c4de83b8d5216a471917b73fa74819c2e56360f",
+  "corpus_source": "run",
+  "outputs": [
+    "out"
+  ],
+  "output_types": {},
+  "supported_kinds": [
+    "f32",
+    "f64",
+    "i16",
+    "i32",
+    "i64",
+    "i8",
+    "u16",
+    "u32",
+    "u64",
+    "u8"
+  ],
+  "compare": "bits",
+  "ulp": 2,
+  "relative": 1e-06,
+  "written": "2026-11-22T13:29:38"
+}

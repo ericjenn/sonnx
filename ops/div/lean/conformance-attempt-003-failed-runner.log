@@ -1,0 +1,3 @@
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-003.lean:276:4: error(lean.redundantMatchAlt): Redundant alternative: Any expression matching
+  x✝¹, x✝
+will match one of the preceding alternatives

@@ -42,7 +42,7 @@ CONFIG = {
     "cases": "lean/cases.py",
     "compare": "bits",
     "entry": "mul",
-    "formal_sha256": "b39a7cb73f78401a801959ffdef6778f987f63b5e18b36286df648e77870e0bd",
+    "formal_sha256": "788eae73e6b857f82396304a1b6fae9c1ee210bf10d24e50c9a129a435082e2f",
     "op": "Mul",
     "opset": 14,
     "output_types": {},
@@ -51,7 +51,7 @@ CONFIG = {
     ],
     "relative": 1e-06,
     "runner": "lean/LeanConformance.lean",
-    "spec_md5": "e273fab3a1434ad517852479f2424862",
+    "spec_md5": "07e1f247d67a12027ed6b87c56c03147",
     "ulp": 2
 }
 

@@ -1,0 +1,46 @@
+{
+  "generated_by": "sonnx-c-stage",
+  "protocol": "sonnx-c/1",
+  "op": "Sub",
+  "opset": 14,
+  "entry": "sub",
+  "spec_md5": "7a65bd1dc1764a81e266a011e54a56c3",
+  "lean": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/lean/FormalSpec.lean",
+  "lean_sha256": "c98032d53eab3e4cc39c7f5251e5a9834b5167a92028dd7eccceed7af72b729d",
+  "header": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/sonnx_kernels.h",
+  "header_sha256": "4f344a99165760ee3efd6dd1bee7e3606d55c37828b598c15a6376d9256dbe39",
+  "source": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/sonnx_kernels.c",
+  "source_sha256": "f8ab203f6082ed763bd884104ada627f464628418a5d3aede20b79243e9cb4da",
+  "test": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/c_tests-attempt-003.c",
+  "test_sha256": "fef36ff9deb256f2576aa80b7f614607075a6025396eb9b8c6af1db117382770",
+  "cc": "cc",
+  "command": [
+    "cc",
+    "-std=c11",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-O2",
+    "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/sonnx_kernels.c",
+    "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/c_tests-attempt-003.c",
+    "-o",
+    "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/c_tests",
+    "-lm"
+  ],
+  "stage": "run",
+  "returncode": 1,
+  "checks": {
+    "total": 28,
+    "passed": 26,
+    "failed": 2
+  },
+  "failures": [
+    "FAIL f32_subnormal_result: expected 7.00649e-39 (0x1.312dp-127), got 5.87747e-39 (0x1.fffff8p-128)",
+    "FAIL f32_rank0_example3"
+  ],
+  "ok": false,
+  "error": "",
+  "stdout": "ok f32_example1\nok f32_example2_special\nok f32_infinities\nok f32_nan_propagation\nok f32_invalid_inf_minus_inf\nFAIL f32_subnormal_result: expected 7.00649e-39 (0x1.312dp-127), got 5.87747e-39 (0x1.fffff8p-128)\nok f32_cancel_and_negative\nFAIL f32_rank0_example3\nok f32_zero_sized_dim\nok f64_example3\nok f64_specials\nok f64_nan_and_invalid\nok f64_exact_fractions\nok f64_zero_sized_dim\nok i8_example1\nok i8_example2_wrap\nok i8_boundaries_wrap\nok i16_boundaries_wrap\nok i32_boundaries_wrap\nok i64_boundaries_wrap\nok i32_zero_sized_dim\nok u8_example1_wrap\nok u8_boundaries_wrap\nok u16_boundaries_wrap\nok u32_boundaries_wrap\nok u64_boundaries_wrap\nok u16_zero_sized_dim\nok u32_multi_element\n",
+  "stderr": "",
+  "written": "2026-11-21T14:07:01"
+}

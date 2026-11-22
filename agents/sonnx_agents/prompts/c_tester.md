@@ -22,11 +22,43 @@ The program:
   `<limits.h>`, `<string.h>` it needs;
 - defines `int main(void)` and allocates its own inputs, outputs and reference arrays;
 - calls the kernels by the names the header declares,
-  `void sonnx_<op>_<suffix>(const T *a, const T *b, T *c, size_t n)`;
+  `void sonnx_<op>_<suffix>(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c)`;
 - compiles cleanly with `cc -std=c11 -Wall -Wextra -Werror -O2`. An unused variable, a
   signed/unsigned comparison or an unused static helper is a compile error and the program is
   returned to you;
 - exits 0 when nothing failed, non-zero when something did.
+
+The header defines the tensor type:
+
+```c
+typedef struct {
+  void *data;            /* the elements, contiguous and row-major */
+  size_t ndim;           /* number of dimensions */
+  const size_t *shape;   /* ndim dimensions, owned by the caller */
+} sonnx_tensor;
+```
+
+Build one value per operand. For example:
+
+```c
+const size_t shape[2] = {2, 3};
+float a_data[6] = { /* ... */ }, b_data[6] = { /* ... */ }, c_data[6] = {0};
+sonnx_tensor a = { .data = a_data, .ndim = 2, .shape = shape };
+sonnx_tensor b = { .data = b_data, .ndim = 2, .shape = shape };
+sonnx_tensor c = { .data = c_data, .ndim = 2, .shape = shape };
+sonnx_add_f32(&a, &b, &c);
+```
+
+`data` points at your array; `shape` must outlive the call and hold `ndim` dimensions; `a`,
+`b` and `c` describe the same shape. The kernel computes the element count from `c` and
+writes nothing when a dimension is zero, so there is no length argument. A rank-0 tensor has
+`ndim = 0`, a `NULL` shape and one element. A `const T *` array assigned to `data` must be
+cast to `(void *)`, or the compiler rejects the discarded qualifier.
+
+**Never pass tensors of different ranks or shapes to a kernel.** The kernel does not
+broadcast. If the document's example has a scalar or rank-0 operand, broadcast it yourself:
+copy its value into an array of the output's element count and give that tensor the output's
+shape. A rank-0 tensor is one element, not a broadcast scalar for a larger output.
 
 ## The protocol
 
@@ -64,24 +96,27 @@ Within them, test what the document's boundaries make interesting:
   step outside the range, which wrap;
 - the document's own examples, replayed exactly as stated;
 - negative operands, equal operands and operands that cancel;
-- an output of length zero, and a length greater than one, so the loop bounds are checked.
+- a zero-sized dimension, and a shape with several elements, so the loop bounds are checked.
 
 Expectations are exact. Floating point: use values that are exactly representable (binary
 fractions such as `1.5f`, `0.25`), or compare the bit pattern of the result with the bit
 pattern the document's arithmetic prescribes, read through a `union` or `memcpy`. Expected
 NaN is tested with `isnan`, and a signed zero with `signbit` — never with `==`, which is false
 for NaN and true for `+0.0` against `-0.0`. Do not introduce a tolerance to make a boundary
-pass.
+pass. For subnormal results and the edges of the exponent range, write the expected value as
+an exact hex float (`0x1p-149f`, `0x1.fffff8p-128f`) or as its bit pattern; a decimal literal
+for a tiny or subnormal value is easily off, and `2^-127` is a subnormal, not the smallest
+normal `float` (`0x1p-126f` is).
 
 Integer arithmetic wraps modulo `2^bits` — the generated kernels compute a signed result in
 the unsigned type of the same width and convert back, and an unsigned result modulo its
 width. State the wrapped expectation literally: `(int8_t)-112` for a product of `400` at
 `i8`, `UINT32_MAX` for `0u - 1`.
 
-The arrays are flat and contiguous; broadcasting is the caller's responsibility. Use arrays
-of equal length, or broadcast explicitly in the test program before calling the kernel. A
-case whose operands the document's restrictions exclude is not a case: test inside the
-domain the document defines, and test its boundary.
+The tensors describe the same, already-broadcast shape; broadcasting is the caller's
+responsibility. Use equal shapes, or broadcast explicitly in the test program before calling
+the kernel. A case whose operands the document's restrictions exclude is not a case: test
+inside the domain the document defines, and test its boundary.
 
 ## Repairs and failures
 

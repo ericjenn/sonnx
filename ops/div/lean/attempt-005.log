@@ -1,0 +1,15 @@
+Generated.Div.floatExample1 : Sonnx.Tensor Sonnx.FVal × Sonnx.Tensor Sonnx.FVal × Sonnx.Tensor Sonnx.FVal
+Generated.Div.floatExample2 : Sonnx.Tensor Sonnx.FVal × Sonnx.Tensor Sonnx.FVal × Sonnx.Tensor Sonnx.FVal
+Generated.Div.floatFunction : Sonnx.FloatKind →
+  Sonnx.Tensor Sonnx.FVal → Sonnx.Tensor Sonnx.FVal → Sonnx.Tensor Sonnx.FVal → Prop
+Generated.Div.intExample1 : Sonnx.Tensor Int × Sonnx.Tensor Int × Sonnx.Tensor Int
+Generated.Div.intFunction : Nat → Sonnx.Tensor Int → Sonnx.Tensor Int → Sonnx.Tensor Int → Prop
+Generated.Div.realDivisorNonzero : Sonnx.Tensor Rat → Prop
+Generated.Div.realExample1 : Sonnx.Tensor Rat × Sonnx.Tensor Rat × Sonnx.Tensor Rat
+Generated.Div.realExample2 : Sonnx.Tensor Rat × Sonnx.Tensor Rat × Sonnx.Tensor Rat
+Generated.Div.realFunction : Sonnx.Tensor Rat → Sonnx.Tensor Rat → Sonnx.Tensor Rat → Prop
+Generated.Div.uintExample1 : Sonnx.Tensor Int × Sonnx.Tensor Int × Sonnx.Tensor Int
+Generated.Div.uintFunction : Nat → Sonnx.Tensor Int → Sonnx.Tensor Int → Sonnx.Tensor Int → Prop
+@Sonnx.BroadcastCompatible : {α : Type} → Sonnx.Tensor α → Sonnx.Tensor α → Prop
+@Sonnx.BroadcastShapeIs : {α : Type} → Sonnx.Tensor α → Sonnx.Tensor α → Sonnx.Tensor α → Prop
+@Sonnx.TypeConsistent : {α : Type} → α → α → α → Prop

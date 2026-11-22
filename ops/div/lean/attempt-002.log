@@ -1,0 +1,22 @@
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-002.lean:44:27: error: unexpected token '/-!'; expected '#guard_msgs', 'abbrev', 'add_decl_doc', 'axiom', 'binder_predicate', 'builtin_cbv_simproc', 'builtin_cbv_simproc_decl', 'builtin_dsimproc', 'builtin_dsimproc_decl', 'builtin_grind_propagator', 'builtin_initialize', 'builtin_simproc', 'builtin_simproc_decl', 'cbv_simproc', 'cbv_simproc_decl', 'class', 'coinductive', 'declare_simp_like_tactic', 'declare_syntax_cat', 'def', 'dsimproc', 'dsimproc_decl', 'elab', 'elab_rules', 'example', 'grind_propagator', 'inductive', 'infix', 'infixl', 'infixr', 'initialize', 'instance', 'macro', 'macro_rules', 'notation', 'opaque', 'postfix', 'prefix', 'recommended_spelling', 'register_error_explanation', 'register_tactic_tag', 'register_try?_tactic', 'simproc', 'simproc_decl', 'structure', 'syntax', 'tactic_extension', 'theorem' or 'unif_hint'
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-002.lean:151:56: error(lean.unknownIdentifier): Unknown identifier `sb`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-002.lean:153:54: error(lean.unknownIdentifier): Unknown identifier `sa`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-002.lean:155:68: error(lean.unknownIdentifier): Unknown identifier `sb`
+Generated.Div.floatDivRel : Sonnx.FloatFormat →
+  Sonnx.Tensor Sonnx.FVal → Sonnx.Tensor Sonnx.FVal → Sonnx.Tensor Sonnx.FVal → Prop
+Generated.Div.floatExample1 : Prop
+Generated.Div.floatExample2 : Prop
+Generated.Div.floatExample3 : Prop
+Generated.Div.intExample1 : Prop
+Generated.Div.realDivElem : Rat → Rat → Rat → Prop
+Generated.Div.realDivRel : Sonnx.Tensor Rat → Sonnx.Tensor Rat → Sonnx.Tensor Rat → Prop
+Generated.Div.realExample1 : Prop
+Generated.Div.realExample2 : Prop
+Generated.Div.sintDivRel : (n : Nat) →
+  Sonnx.Tensor (Sonnx.SIntN n) → Sonnx.Tensor (Sonnx.SIntN n) → Sonnx.Tensor (Sonnx.SIntN n) → Prop
+Generated.Div.uintDivRel : (n : Nat) →
+  Sonnx.Tensor (Sonnx.UIntN n) → Sonnx.Tensor (Sonnx.UIntN n) → Sonnx.Tensor (Sonnx.UIntN n) → Prop
+Generated.Div.uintExample1 : Prop
+@Sonnx.BroadcastCompatible : {α : Type} → Sonnx.Tensor α → Sonnx.Tensor α → Prop
+@Sonnx.BroadcastShapeIs : {α : Type} → Sonnx.Tensor α → Sonnx.Tensor α → Sonnx.Tensor α → Prop
+@Sonnx.TypeConsistent : {α : Type} → α → α → α → Prop

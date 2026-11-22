@@ -1,0 +1,30 @@
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:362:9: warning: Variable name `sa` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _sa
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:362:18: warning: Variable name `sb` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _sb
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:363:10: warning: Variable name `sa` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _sa
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:363:20: warning: Variable name `sb` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _sb
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:551:14: warning: `String.trim` has been deprecated: Use `String.trimAscii` instead
+
+Note: The updated constant has a different type:
+  String → String.Slice
+instead of
+  String → String

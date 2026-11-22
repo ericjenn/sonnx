@@ -1,0 +1,149 @@
+# the module defines no `cases()` function
+
+```python
+"""The cases with which the **Div** specification is checked.
+
+Read by `specloop.py`:
+
+  * ``cases()``   -- one labelled pair of operands per case, of the ONNX types the
+                     document announces.  The float type has no excluded operand (a null
+                     divisor is specified), so every special value is a case; the integer
+                     types leave a null divisor undetermined, so no case has one.
+  * ``sweeps()``  -- the bulk checks, batched into single ONNX Runtime runs: the domain
+                     of the integer types (exhaustive for the 8-bit ones), the float
+                     formula against exact `Fraction` arithmetic, the worked examples of
+                     every section, the document's declared types against the ONNX
+                     schema, and the real section, which has no ONNX type and is checked
+                     against exact rational arithmetic instead.
+  * ``COVERAGE``  -- the four section anchors of the document.
+"""
+
+from __future__ import annotations
+
+import math
+from fractions import Fraction
+
+import numpy as np
+
+import onnxruntime as ort
+from onnx import helper
+
+OP = "Div"
+OPSET = 14
+IR_VERSION = 10
+
+NODE_OUTPUTS = ("out",)
+
+ALL_FLOAT = [np.float16, np.float32, np.float64]
+SIGNED_INT = [np.int8, np.int16, np.int32, np.int64]
+UNSIGNED_INT = [np.uint8, np.uint16, np.uint32, np.uint64]
+ALL_INT = SIGNED_INT + UNSIGNED_INT
+UINT_OF_WIDTH = {2: np.uint16, 4: np.uint32, 8: np.uint64}
+
+# The signed widths whose division overflows the C type at (-2^(n-1) / -1): ONNX
+# Runtime dies with SIGFPE on that pair, so it is never sent to it, nor to the
+# implementation (which is ONNX Runtime itself in the Lean conformance replay).
+WIDE_SIGNED = (np.dtype(np.int32), np.dtype(np.int64))
+
+
+# ---------------------------------------------------------------------------
+# ONNX Runtime, batched (the sweeps only; single cases go through specloop)
+# ---------------------------------------------------------------------------
+
+
+def run_ort_batch(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """One Div node over two arrays of the same type, in a single runtime call."""
+    proto = helper.np_dtype_to_tensor_dtype(a.dtype)
+    vi_a = helper.make_tensor_value_info("A", proto, list(a.shape))
+    vi_b = helper.make_tensor_value_info("B", proto, list(b.shape))
+    vi_c = helper.make_tensor_value_info("C", proto, None)
+    node = helper.make_node(OP, ["A", "B"], ["C"], name="div0")
+    graph = helper.make_graph([node], "div_graph", [vi_a, vi_b], [vi_c])
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", OPSET)],
+                              ir_version=IR_VERSION)
+    sess = ort.InferenceSession(model.SerializeToString(),
+                                providers=["CPUExecutionProvider"])
+    (c,) = sess.run(["C"], {"A": a, "B": b})
+    return c
+
+
+def _bits_equal(want: np.ndarray, got: np.ndarray) -> bool:
+    """Bit-for-bit equality, NaN equal to NaN, of two arrays of the same type.
+
+    The sign of a zero is part of the bit pattern: the document specifies it, so
+    +0.0 and -0.0 are different results here.
+    """
+    if want.shape != got.shape or want.dtype != got.dtype:
+        return False
+    if want.dtype.kind == "f":
+        uint = UINT_OF_WIDTH[want.dtype.itemsize]
+        bw = np.ascontiguousarray(want).view(uint)
+        bg = np.ascontiguousarray(got).view(uint)
+        both_nan = np.isnan(want) & np.isnan(got)
+        return bool(np.all((bw == bg) | both_nan))
+    return bool(np.all(want == got))
+
+
+def _diff_indices(want, got, limit=None):
+    """Flat indices where two arrays differ (NaN equal to NaN); None on shape/type."""
+    want = np.asarray(want)
+    got = np.asarray(got)
+    if want.shape != got.shape or want.dtype != got.dtype:
+        return None
+    if want.dtype.kind == "f":
+        uint = UINT_OF_WIDTH[want.dtype.itemsize]
+        bw = np.ascontiguousarray(want).view(uint)
+        bg = np.ascontiguousarray(got).view(uint)
+        both_nan = np.isnan(want) & np.isnan(got)
+        mask = ~((bw == bg) | both_nan)
+    else:
+        mask = ~(want == got)
+    idx = [int(i) for i in np.nonzero(mask.ravel())[0]]
+    return idx if limit is None else idx[:limit]
+
+
+def _same_bits(want, got) -> bool:
+    return _bits_equal(np.asarray(want).ravel(), np.asarray(got).ravel())
+
+
+# ---------------------------------------------------------------------------
+# exact arithmetic: the reference the document itself states
+# ---------------------------------------------------------------------------
+#
+# The float formula is round(A / B): the exact quotient in the reals, rounded to the
+# nearest value of the type with roundTiesToEven and an unbounded exponent range.  It
+# is computed here from the operands' exact values (Fraction of the float, never of the
+# decimal literal that built the array).
+
+
+def _pow2(e: int) -> Fraction:
+    return Fraction(2) ** e
+
+
+def _round_half_even(x: Fraction) -> int:
+    """roundTiesToEven of a non-negative rational to the nearest integer."""
+    q = x.numerator // x.denominator
+    r = x - q
+    half = Fraction(1, 2)
+    if r > half:
+        return q + 1
+    if r < half:
+        return q
+    return q if q % 2 == 0 else q + 1
+
+
+def _frac_round_to_type(value: Fraction, dtype):
+    """Round an exact rational to the nearest value of `dtype`, ties to even.
+
+    The exponent range is unbounded when deciding an overflow, as the document states:
+    a magnitude whose rounded value exceeds the largest finite value gives an infinity,
+    and one below the smallest subnormal gives a zero of the sign of the value.
+    """
+    dt = np.dtype(dtype)
+    f = np.finfo(dt)
+    p = f.nmant + 1                       # significand bits, implicit bit included
+    emin = f.minexp                       # exponent of the smallest normal
+    max_finite = Fraction(float(f.max))
+    if value == 0:
+        return dt.type(0.0)
+    sign = -1.0 if value < 0 else 1.0

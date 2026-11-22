@@ -1,5 +1,5 @@
 {
-  "case_count_sampled": 199,
+  "case_count_sampled": 29,
   "arities": [
     2
   ],
@@ -26,7 +26,58 @@
   "opset": 14,
   "samples": [
     {
-      "label": "float16: signed zeros",
+      "label": "float Example 1 (float32): every product representable",
+      "arity": 2,
+      "shapes": [
+        [
+          4
+        ],
+        [
+          4
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float Example 2 (float32): zero by infinity, signs of zeros",
+      "arity": 2,
+      "shapes": [
+        [
+          6
+        ],
+        [
+          6
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float Example 3 (double): rounding, overflow, underflow to -0",
+      "arity": 2,
+      "shapes": [
+        [
+          3
+        ],
+        [
+          3
+        ]
+      ],
+      "dtypes": [
+        "float64",
+        "float64"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: exact products of representable values",
       "arity": 2,
       "shapes": [
         [
@@ -43,14 +94,14 @@
       "attrs": {}
     },
     {
-      "label": "float16: infinities",
+      "label": "float16: special values, every branch of the formula",
       "arity": 2,
       "shapes": [
         [
-          6
+          7
         ],
         [
-          6
+          7
         ]
       ],
       "dtypes": [
@@ -60,41 +111,24 @@
       "attrs": {}
     },
     {
-      "label": "float16: zero times infinity (invalid)",
+      "label": "float32: special values, extremes and the subnormal range",
       "arity": 2,
       "shapes": [
         [
-          4
+          8
         ],
         [
-          4
+          8
         ]
       ],
       "dtypes": [
-        "float16",
-        "float16"
+        "float32",
+        "float32"
       ],
       "attrs": {}
     },
     {
-      "label": "float16: nan",
-      "arity": 2,
-      "shapes": [
-        [
-          4
-        ],
-        [
-          4
-        ]
-      ],
-      "dtypes": [
-        "float16",
-        "float16"
-      ],
-      "attrs": {}
-    },
-    {
-      "label": "float16: exact product",
+      "label": "float64: overflow of the largest finite value, both signs",
       "arity": 2,
       "shapes": [
         [
@@ -105,13 +139,13 @@
         ]
       ],
       "dtypes": [
-        "float16",
-        "float16"
+        "float64",
+        "float64"
       ],
       "attrs": {}
     },
     {
-      "label": "float16: overflow to inf",
+      "label": "float64: rounding of a product that is not representable",
       "arity": 2,
       "shapes": [
         [
@@ -122,16 +156,17 @@
         ]
       ],
       "dtypes": [
-        "float16",
-        "float16"
+        "float64",
+        "float64"
       ],
       "attrs": {}
     },
     {
-      "label": "float16: just below the largest finite value",
+      "label": "broadcast: (3,2) by (2,) (float32)",
       "arity": 2,
       "shapes": [
         [
+          3,
           2
         ],
         [
@@ -139,13 +174,99 @@
         ]
       ],
       "dtypes": [
-        "float16",
-        "float16"
+        "float32",
+        "float32"
       ],
       "attrs": {}
     },
     {
-      "label": "float16: subnormal result",
+      "label": "rank-0 operand broadcast to (3,) (float32)",
+      "arity": 2,
+      "shapes": [
+        [],
+        [
+          3
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "two rank-0 operands (float64)",
+      "arity": 2,
+      "shapes": [
+        [],
+        []
+      ],
+      "dtypes": [
+        "float64",
+        "float64"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "broadcast: (2,1,3) by (1,4,1) (float32)",
+      "arity": 2,
+      "shapes": [
+        [
+          2,
+          1,
+          3
+        ],
+        [
+          1,
+          4,
+          1
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "zero-sized dimension (2,0) by (1,0) (float32)",
+      "arity": 2,
+      "shapes": [
+        [
+          2,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "zero-sized dimension (0,3) by (3,) (float32)",
+      "arity": 2,
+      "shapes": [
+        [
+          0,
+          3
+        ],
+        [
+          3
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "int Example 1 (int8)",
       "arity": 2,
       "shapes": [
         [
@@ -156,149 +277,30 @@
         ]
       ],
       "dtypes": [
-        "float16",
-        "float16"
+        "int8",
+        "int8"
       ],
       "attrs": {}
     },
     {
-      "label": "float16: underflow to zero",
+      "label": "int8: every boundary pair of the 8-bit domain",
       "arity": 2,
       "shapes": [
         [
-          4
+          8
         ],
         [
-          4
+          8
         ]
       ],
       "dtypes": [
-        "float16",
-        "float16"
+        "int8",
+        "int8"
       ],
       "attrs": {}
     },
     {
-      "label": "float16: product needing rounding",
-      "arity": 2,
-      "shapes": [
-        [
-          4
-        ],
-        [
-          4
-        ]
-      ],
-      "dtypes": [
-        "float16",
-        "float16"
-      ],
-      "attrs": {}
-    },
-    {
-      "label": "float16: exactly one step above 1.0",
-      "arity": 2,
-      "shapes": [
-        [
-          1
-        ],
-        [
-          1
-        ]
-      ],
-      "dtypes": [
-        "float16",
-        "float16"
-      ],
-      "attrs": {}
-    },
-    {
-      "label": "float16: NaN operand, quiet, payload 1",
-      "arity": 2,
-      "shapes": [
-        [
-          1
-        ],
-        [
-          1
-        ]
-      ],
-      "dtypes": [
-        "float16",
-        "float16"
-      ],
-      "attrs": {}
-    },
-    {
-      "label": "float16: NaN operand, quiet, payload 1, sign set",
-      "arity": 2,
-      "shapes": [
-        [
-          1
-        ],
-        [
-          1
-        ]
-      ],
-      "dtypes": [
-        "float16",
-        "float16"
-      ],
-      "attrs": {}
-    },
-    {
-      "label": "float16: NaN operand, signalling",
-      "arity": 2,
-      "shapes": [
-        [
-          1
-        ],
-        [
-          1
-        ]
-      ],
-      "dtypes": [
-        "float16",
-        "float16"
-      ],
-      "attrs": {}
-    },
-    {
-      "label": "float16: invalid operation, inf * 0",
-      "arity": 2,
-      "shapes": [
-        [
-          1
-        ],
-        [
-          1
-        ]
-      ],
-      "dtypes": [
-        "float16",
-        "float16"
-      ],
-      "attrs": {}
-    },
-    {
-      "label": "float16: invalid operation, 0 * -inf",
-      "arity": 2,
-      "shapes": [
-        [
-          1
-        ],
-        [
-          1
-        ]
-      ],
-      "dtypes": [
-        "float16",
-        "float16"
-      ],
-      "attrs": {}
-    },
-    {
-      "label": "float32: signed zeros",
+      "label": "int16: boundary products wrapping modulo 2**16",
       "arity": 2,
       "shapes": [
         [
@@ -309,59 +311,57 @@
         ]
       ],
       "dtypes": [
-        "float32",
-        "float32"
+        "int16",
+        "int16"
       ],
       "attrs": {}
     },
     {
-      "label": "float32: infinities",
+      "label": "int32: boundary products wrapping modulo 2**32",
       "arity": 2,
       "shapes": [
         [
-          6
+          5
         ],
         [
-          6
+          5
         ]
       ],
       "dtypes": [
-        "float32",
-        "float32"
+        "int32",
+        "int32"
       ],
       "attrs": {}
     },
     {
-      "label": "float32: zero times infinity (invalid)",
+      "label": "int64: boundary products wrapping modulo 2**64",
       "arity": 2,
       "shapes": [
         [
-          4
+          5
         ],
         [
-          4
+          5
         ]
       ],
       "dtypes": [
-        "float32",
-        "float32"
+        "int64",
+        "int64"
       ],
       "attrs": {}
     },
     {
-      "label": "float32: nan",
+      "label": "int8: rank-0 operand broadcast to (3,)",
       "arity": 2,
       "shapes": [
+        [],
         [
-          4
-        ],
-        [
-          4
+          3
         ]
       ],
       "dtypes": [
-        "float32",
-        "float32"
+        "int8",
+        "int8"
       ],
       "attrs": {}
     }

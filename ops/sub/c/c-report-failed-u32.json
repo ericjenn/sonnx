@@ -1,0 +1,45 @@
+{
+  "generated_by": "sonnx-c-stage",
+  "protocol": "sonnx-c/1",
+  "op": "Sub",
+  "opset": 14,
+  "entry": "sub",
+  "spec_md5": "7a65bd1dc1764a81e266a011e54a56c3",
+  "lean": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/lean/FormalSpec.lean",
+  "lean_sha256": "c98032d53eab3e4cc39c7f5251e5a9834b5167a92028dd7eccceed7af72b729d",
+  "header": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/sonnx_kernels.h",
+  "header_sha256": "4f344a99165760ee3efd6dd1bee7e3606d55c37828b598c15a6376d9256dbe39",
+  "source": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/sonnx_kernels.c",
+  "source_sha256": "f8ab203f6082ed763bd884104ada627f464628418a5d3aede20b79243e9cb4da",
+  "test": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/c_tests-attempt-001.c",
+  "test_sha256": "3bf08664f8b2eae689cc50e74a99319d1508c28c418ec6d97acfa3df6a6835bd",
+  "cc": "cc",
+  "command": [
+    "cc",
+    "-std=c11",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-O2",
+    "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/sonnx_kernels.c",
+    "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/c_tests-attempt-001.c",
+    "-o",
+    "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/c_tests",
+    "-lm"
+  ],
+  "stage": "run",
+  "returncode": 1,
+  "checks": {
+    "total": 26,
+    "passed": 25,
+    "failed": 1
+  },
+  "failures": [
+    "FAIL u32_2d: expected 4294967295, got 4294967293"
+  ],
+  "ok": false,
+  "error": "",
+  "stdout": "ok f32_example1\nok f32_example2\nok f32_infinities\nok f32_nan\nok f32_signed_zero\nok f32_overflow\nok f32_subnormal\nok f32_rounding\nok f32_rank0\nok f32_zero_size\nok f64_example3\nok f64_special\nok f64_overflow\nok i8_example1\nok i8_example2\nok i8_wrap\nok i16_bounds\nok i32_wrap\nok i32_2d\nok i64_wrap\nok u8_example1\nok u8_wrap\nok u16_wrap\nok u32_wrap\nFAIL u32_2d: expected 4294967295, got 4294967293\nok u64_wrap\n",
+  "stderr": "1 failure(s)\n",
+  "written": "2026-11-21T14:03:20"
+}

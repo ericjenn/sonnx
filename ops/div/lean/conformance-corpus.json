@@ -1,0 +1,368 @@
+{
+  "case_count_sampled": 75,
+  "arities": [
+    2
+  ],
+  "dtypes": [
+    "float16",
+    "float32",
+    "float64",
+    "int16",
+    "int32",
+    "int64",
+    "int8",
+    "uint16",
+    "uint32",
+    "uint64",
+    "uint8"
+  ],
+  "attr_keys": [],
+  "outputs": [
+    "out"
+  ],
+  "output_types": {},
+  "has_sweeps": true,
+  "op": "Div",
+  "opset": 14,
+  "samples": [
+    {
+      "label": "float Example 1",
+      "arity": 2,
+      "shapes": [
+        [
+          3
+        ],
+        [
+          3
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float Example 2",
+      "arity": 2,
+      "shapes": [
+        [
+          8
+        ],
+        [
+          8
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float Example 3",
+      "arity": 2,
+      "shapes": [
+        [
+          3
+        ],
+        [
+          3
+        ]
+      ],
+      "dtypes": [
+        "float64",
+        "float64"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "int Example 1",
+      "arity": 2,
+      "shapes": [
+        [
+          5
+        ],
+        [
+          5
+        ]
+      ],
+      "dtypes": [
+        "int8",
+        "int8"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "uint Example 1",
+      "arity": 2,
+      "shapes": [
+        [
+          4
+        ],
+        [
+          4
+        ]
+      ],
+      "dtypes": [
+        "uint8",
+        "uint8"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "rank-0 / rank-0",
+      "arity": 2,
+      "shapes": [
+        [],
+        []
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "rank-0 / (3,)",
+      "arity": 2,
+      "shapes": [
+        [],
+        [
+          3
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "(3,) / rank-0",
+      "arity": 2,
+      "shapes": [
+        [
+          3
+        ],
+        []
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "(2,3) / (3,)",
+      "arity": 2,
+      "shapes": [
+        [
+          2,
+          3
+        ],
+        [
+          3
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "(2,1) / (1,3)",
+      "arity": 2,
+      "shapes": [
+        [
+          2,
+          1
+        ],
+        [
+          1,
+          3
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "(0,3) / (1,3)",
+      "arity": 2,
+      "shapes": [
+        [
+          0,
+          3
+        ],
+        [
+          1,
+          3
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "(0,) / (0,)",
+      "arity": 2,
+      "shapes": [
+        [
+          0
+        ],
+        [
+          0
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "(2,0) / (2,0)",
+      "arity": 2,
+      "shapes": [
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          0
+        ]
+      ],
+      "dtypes": [
+        "float32",
+        "float32"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: float Example 2",
+      "arity": 2,
+      "shapes": [
+        [
+          8
+        ],
+        [
+          8
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: signed zeros",
+      "arity": 2,
+      "shapes": [
+        [
+          4
+        ],
+        [
+          4
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: infinities",
+      "arity": 2,
+      "shapes": [
+        [
+          4
+        ],
+        [
+          4
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: finite / infinity",
+      "arity": 2,
+      "shapes": [
+        [
+          4
+        ],
+        [
+          4
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: NaN propagation",
+      "arity": 2,
+      "shapes": [
+        [
+          4
+        ],
+        [
+          4
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: subnormal range",
+      "arity": 2,
+      "shapes": [
+        [
+          4
+        ],
+        [
+          4
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    },
+    {
+      "label": "float16: extremes",
+      "arity": 2,
+      "shapes": [
+        [
+          4
+        ],
+        [
+          4
+        ]
+      ],
+      "dtypes": [
+        "float16",
+        "float16"
+      ],
+      "attrs": {}
+    }
+  ]
+}

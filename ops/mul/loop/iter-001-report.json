@@ -1,41 +1,41 @@
 {
-  "spec": "ops/mul.md",
+  "spec": "/run/media/eric/Work1/Work/gits/sonnx/ops/mul/mul.md",
   "op": "Mul",
   "opset": 14,
-  "impl": "verification/mul/loop/iter-001-impl.py",
+  "impl": "/run/media/eric/Work1/Work/gits/sonnx/ops/mul/loop/iter-001-impl.py",
   "entry": "mul",
-  "generated": "2026-10-03T15:16:40Z",
+  "generated": "2026-11-22T13:53:32Z",
   "cases": {
-    "total": 199,
-    "passed": 199,
+    "total": 29,
+    "passed": 29,
     "mismatched": [],
     "open": [],
-    "nan_payload": [
-      {
-        "case": "float16: NaN operand, quiet, payload 1"
-      },
-      {
-        "case": "float16: NaN operand, quiet, payload 1, sign set"
-      },
-      {
-        "case": "float16: NaN operand, signalling"
-      }
-    ]
+    "nan_payload": []
   },
   "sweeps": [
     {
-      "sweep": "the document's worked examples",
-      "summary": "6 examples, as documented vs ORT vs implementation",
-      "failures": []
-    },
-    {
       "sweep": "int domain (document vs ORT vs implementation)",
-      "summary": "8 types: int8 exhaustive, int16 249 pairs, int32 249 pairs, int64 249 pairs, uint8 exhaustive, uint16 216 pairs, uint32 216 pairs, uint64 216 pairs",
+      "summary": "8 types: int8 exhaustive (65536 pairs), int16 249 pairs, int32 249 pairs, int64 249 pairs, uint8 exhaustive (65536 pairs), uint16 225 pairs, uint32 225 pairs, uint64 225 pairs",
       "failures": []
     },
     {
-      "sweep": "real section (exact rationals, no ONNX Runtime)",
-      "summary": "2 examples",
+      "sweep": "the float formula against exact arithmetic (Fraction)",
+      "summary": "1800 operand pairs: float16: 600 operand pairs, float32: 600 operand pairs, float64: 600 operand pairs; 0 float16 departures of ONNX Runtime are recorded, not required",
+      "failures": []
+    },
+    {
+      "sweep": "the document's worked examples",
+      "summary": "5 examples, as documented vs ORT vs implementation",
+      "failures": []
+    },
+    {
+      "sweep": "the real section (exact rational arithmetic, no ONNX Runtime)",
+      "summary": "3 cases checked against Fraction arithmetic",
+      "failures": []
+    },
+    {
+      "sweep": "the document's types against the ONNX schema",
+      "summary": "11 declared types, every one admitted by the schema of Mul-14; the schema also admits tensor(bfloat16), which the document does not specify",
       "failures": []
     }
   ],

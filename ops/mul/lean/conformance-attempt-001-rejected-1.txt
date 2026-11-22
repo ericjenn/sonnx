@@ -1,0 +1,571 @@
+# Lean compiler: /run/media/eric/Work1/Work/gits/sonnx/ops/mul/lean/conformance-attempt-001.lean:29:20: warning: `String.mk` has been deprecated: Use `String.ofList` instead
+/run/media/eric/Work1/Work/gits/sonnx/ops/mul/lean/conformance-attempt-001.lean:82:27: warning: `String.mk` has been deprecated: Use `String.ofList` instead
+/run/media/eric/Work1/Work/gits/sonnx/ops/mul/lean/conformance-attempt-001.lean:132:4: warning: Variable name `d` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _d
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/run/media/eric/Work1/Work/gits/sonnx/ops/mul/lean/conformance-attempt-001.lean:164:10: error: fail to show termination for
+  MulRunner.bcastFlatIndex.go
+with errors
+failed to infer structural recursion:
+Not considering parameter R of MulRunner.bcastFlatIndex.go:
+  it is unchanged in the recursive calls
+Not considering parameter S of MulRunner.bcastFlatIndex.go:
+  it is unchanged in the recursive calls
+Not considering parameter flat of MulRunner.bcastFlatIndex.go:
+  it is unchanged in the recursive calls
+Not considering parameter rank of MulRunner.bcastFlatIndex.go:
+  it is unchanged in the recursive calls
+Not considering parameter st of MulRunner.bcastFlatIndex.go:
+  it is unchanged in the recursive calls
+Cannot use parameter i:
+  failed to eliminate recursive application
+    bcastFlatIndex.go R S flat rank st (i + 1) (acc * dimS + coordS)
+Cannot use parameter acc:
+  failed to eliminate recursive application
+    bcastFlatIndex.go R S flat rank st (i + 1) (acc * dimS + coordS)
+
+
+Could not find a decreasing measure.
+The basic measures relate at each recursive call as follows:
+(<, ≤, =: relation proved, ? all proofs failed, _: no proof attempted)
+            i acc
+1) 172:6-38 ?   ?
+Please use `termination_by` to specify a decreasing measure.
+
+```lean
+import Sonnx
+
+namespace MulRunner
+
+/-! ## Small total helpers -/
+
+def joinWith (sep : String) : List String → String
+  | [] => ""
+  | [x] => x
+  | x :: xs => x ++ sep ++ joinWith sep xs
+
+def listGet? {α : Type} : List α → Nat → Option α
+  | [], _ => none
+  | x :: _, 0 => some x
+  | _ :: xs, n + 1 => listGet? xs n
+
+def listGetD {α : Type} (l : List α) (i : Nat) (d : α) : α :=
+  match listGet? l i with
+  | some x => x
+  | none => d
+
+def dropLastList {α : Type} : List α → List α
+  | [] => []
+  | [_] => []
+  | x :: xs => x :: dropLastList xs
+
+def stripCR (s : String) : String :=
+  match s.toList.reverse with
+  | '\r' :: rest => String.mk rest.reverse
+  | _ => s
+
+def endsWithNewline (s : String) : Bool :=
+  match s.toList.reverse with
+  | '\n' :: _ => true
+  | _ => false
+
+def shapeToString (s : List Nat) : String :=
+  match s with
+  | [] => "-"
+  | _ => joinWith "," (s.map (fun n => toString n))
+
+def dataToStringNat (l : List Nat) : String :=
+  match l with
+  | [] => "-"
+  | _ => joinWith "," (l.map (fun n => toString n))
+
+def dataToStringRat (l : List (Int × Nat)) : String :=
+  match l with
+  | [] => "-"
+  | _ => joinWith "," (l.map (fun p => ratToString p.1 p.2))
+where
+  ratToString (n : Int) (d : Nat) : String :=
+    if n = 0 then "0/1"
+    else
+      let a := n.natAbs
+      let g := Nat.gcd a d
+      let a' := a / g
+      let d' := d / g
+      let sign := if n < 0 then "-" else ""
+      sign ++ toString a' ++ "/" ++ toString d'
+
+/-! ## Parsing -/
+
+def parseNatList (s : String) : Option (List Nat) :=
+  if s = "" || s = "-" then some []
+  else
+    let parts := s.splitOn ","
+    let rec go : List String → Option (List Nat)
+      | [] => some []
+      | p :: ps =>
+          match String.toNat? p with
+          | none => none
+          | some n =>
+              match go ps with
+              | none => none
+              | some rest => some (n :: rest)
+    go parts
+
+def parseSignedInt (s : String) : Option Int :=
+  match s.toList with
+  | '-' :: rest =>
+      match String.toNat? (String.mk rest) with
+      | some n => some (-(Int.ofNat n))
+      | none => none
+  | _ =>
+      match String.toNat? s with
+      | some n => some (Int.ofNat n)
+      | none => none
+
+def parseRat (s : String) : Option (Int × Nat) :=
+  match s.splitOn "/" with
+  | [num, den] =>
+      match parseSignedInt num, String.toNat? den with
+      | some n, some d => if d = 0 then none else some (n, d)
+      | _, _ => none
+  | _ => none
+
+def parseBits (s : String) (bits : Nat) : Option Nat :=
+  match parseSignedInt s with
+  | none => none
+  | some n =>
+      let m := 2 ^ bits
+      if n >= 0 then
+        let v := n.natAbs
+        if v < m then some v else some (v % m)
+      else
+        let v := n.natAbs % m
+        some ((m - v) % m)
+
+structure TensorField where
+  kind : String
+  shape : List Nat
+  dataTokens : List String
+
+def parseTensorField (s : String) : Option TensorField :=
+  match s.splitOn "|" with
+  | [k, sh, dat] =>
+      match parseNatList sh with
+      | none => none
+      | some shape =>
+          let tokens := if dat = "-" || dat = "" then [] else dat.splitOn ","
+          some { kind := k, shape := shape, dataTokens := tokens }
+  | _ => none
+
+/-! ## Shapes and broadcasting -/
+
+def shapeSize (s : List Nat) : Nat :=
+  s.foldl (fun acc d => acc * d) 1
+
+def strides : List Nat → List Nat
+  | [] => []
+  | d :: ds => shapeSize ds :: strides ds
+
+def getDim (s : List Nat) (rank i : Nat) : Nat :=
+  let offset := rank - s.length
+  if i < offset then 1
+  else
+    match listGet? s (i - offset) with
+    | some d => d
+    | none => 1
+
+def bcastDim (A B : List Nat) (rank i : Nat) : Option Nat :=
+  let a := getDim A rank i
+  let b := getDim B rank i
+  if a = b then some a
+  else if a = 1 then some b
+  else if b = 1 then some a
+  else none
+
+def bcastShape (A B : List Nat) : Option (List Nat) :=
+  let rank := max A.length B.length
+  let rec go (i : Nat) (acc : List Nat) : Option (List Nat) :=
+    if i = 0 then some acc
+    else
+      let j := i - 1
+      match bcastDim A B rank j with
+      | none => none
+      | some d => go j (d :: acc)
+  go rank []
+
+def bcastFlatIndex (R S : List Nat) (flat : Nat) : Nat :=
+  let rank := R.length
+  let st := strides R
+  let rec go (i : Nat) (acc : Nat) : Nat :=
+    if i = rank then acc
+    else
+      let dimR := listGetD R i 1
+      let stride := listGetD st i 1
+      let coordR := (flat / stride) % dimR
+      let dimS := getDim S rank i
+      let coordS := if dimS = 1 then 0 else coordR
+      go (i + 1) (acc * dimS + coordS)
+  go 0 0
+
+def buildData {α β γ : Type}
+    (step : α → β → γ) (R S T : List Nat)
+    (dataA : List α) (dataB : List β) : Option (List γ) :=
+  let N := shapeSize R
+  let rec go (i : Nat) (acc : List γ) : Option (List γ) :=
+    if i = 0 then some acc
+    else
+      let j := i - 1
+      let ia := bcastFlatIndex R S j
+      let ib := bcastFlatIndex R T j
+      match listGet? dataA ia, listGet? dataB ib with
+      | some a, some b => go j (step a b :: acc)
+      | _, _ => none
+  go N []
+
+def bcastBinary {α β γ : Type}
+    (step : α → β → γ) (A : List Nat) (dataA : List α)
+    (B : List Nat) (dataB : List β) : Option (List Nat × List γ) :=
+  match bcastShape A B with
+  | none => none
+  | some R =>
+      if dataA.length == shapeSize A then
+        if dataB.length == shapeSize B then
+          match buildData step R A B dataA dataB with
+          | some out => some (R, out)
+          | none => none
+        else none
+      else none
+
+/-! ## Floating point values and IEEE rounding -/
+
+inductive FKind where
+  | nan
+  | inf (neg : Bool)
+  | zero (neg : Bool)
+  | finite (neg : Bool) (mant : Nat) (exp : Int)
+
+def fIsNaN : FKind → Bool
+  | .nan => true
+  | _ => false
+
+def fIsInf : FKind → Bool
+  | .inf _ => true
+  | _ => false
+
+def fIsZero : FKind → Bool
+  | .zero _ => true
+  | _ => false
+
+def fNeg : FKind → Bool
+  | .nan => false
+  | .inf s => s
+  | .zero s => s
+  | .finite s _ _ => s
+
+def fMant : FKind → Nat
+  | .finite _ m _ => m
+  | _ => 0
+
+def fExp : FKind → Int
+  | .finite _ _ e => e
+  | _ => 0
+
+def bxor (a b : Bool) : Bool :=
+  if a then !b else b
+
+structure Fmt where
+  fbits : Nat
+  expBits : Nat
+  bias : Nat
+  emin : Int
+  emax : Int
+
+def fmt32 : Fmt :=
+  { fbits := 23, expBits := 8, bias := 127, emin := -126, emax := 127 }
+
+def fmt64 : Fmt :=
+  { fbits := 52, expBits := 11, bias := 1023, emin := -1022, emax := 1023 }
+
+def decodeF32 (bits : Nat) : FKind :=
+  let sign := 2 ^ 31 ≤ bits
+  let expField := (bits / (2 ^ 23)) % (2 ^ 8)
+  let frac := bits % (2 ^ 23)
+  if expField = 255 then
+    if frac = 0 then .inf sign else .nan
+  else if expField = 0 then
+    if frac = 0 then .zero sign
+    else .finite sign frac (-149)
+  else
+    .finite sign (2 ^ 23 + frac) (Int.ofNat expField - 150)
+
+def decodeF64 (bits : Nat) : FKind :=
+  let sign := 2 ^ 63 ≤ bits
+  let expField := (bits / (2 ^ 52)) % (2 ^ 11)
+  let frac := bits % (2 ^ 52)
+  if expField = 2047 then
+    if frac = 0 then .inf sign else .nan
+  else if expField = 0 then
+    if frac = 0 then .zero sign
+    else .finite sign frac (-1074)
+  else
+    .finite sign (2 ^ 52 + frac) (Int.ofNat expField - 1075)
+
+def encodeBits (fmt : Fmt) (sign : Bool) (expField : Nat) (frac : Nat) : Nat :=
+  let signBit := if sign then 2 ^ (fmt.expBits + fmt.fbits) else 0
+  signBit + expField * (2 ^ fmt.fbits) + frac
+
+def encodeNaN (fmt : Fmt) : Nat :=
+  encodeBits fmt false ((2 ^ fmt.expBits) - 1) (2 ^ (fmt.fbits - 1))
+
+def encodeInf (fmt : Fmt) (sign : Bool) : Nat :=
+  encodeBits fmt sign ((2 ^ fmt.expBits) - 1) 0
+
+def encodeZero (fmt : Fmt) (sign : Bool) : Nat :=
+  encodeBits fmt sign 0 0
+
+def encodeNormal (fmt : Fmt) (sign : Bool) (e : Int) (m : Nat) : Nat :=
+  let ef := (e + Int.ofNat fmt.bias).toNat
+  let frac := m - (2 ^ fmt.fbits)
+  encodeBits fmt sign ef frac
+
+def bitLenAux : Nat → Nat → Nat
+  | 0, _ => 0
+  | _, 0 => 0
+  | fuel + 1, n + 1 => 1 + bitLenAux fuel ((n + 1) / 2)
+
+def bitLen (n : Nat) : Nat := bitLenAux 4096 n
+
+def roundScaled (sig : Nat) (shift : Int) : Nat :=
+  if shift >= 0 then
+    sig * (2 ^ shift.natAbs)
+  else
+    let d := shift.natAbs
+    let den := 2 ^ d
+    let q := sig / den
+    let r := sig % den
+    let half := 2 ^ (d - 1)
+    if r > half || (r = half && q % 2 = 1) then q + 1 else q
+
+def roundFiniteToBits (fmt : Fmt) (sign : Bool) (sig : Nat) (exp : Int) : Nat :=
+  if sig = 0 then encodeZero fmt sign
+  else
+    let bl := bitLen sig
+    let e : Int := Int.ofNat (bl - 1) + exp
+    if e < fmt.emin then
+      let shift : Int := exp - (fmt.emin - Int.ofNat fmt.fbits)
+      let k := roundScaled sig shift
+      if k = 0 then encodeZero fmt sign
+      else if k >= 2 ^ fmt.fbits then
+        encodeNormal fmt sign fmt.emin (2 ^ fmt.fbits)
+      else
+        encodeBits fmt sign 0 k
+    else
+      let shift : Int := Int.ofNat (fmt.fbits + 1) - Int.ofNat bl
+      let m := roundScaled sig shift
+      if m >= 2 ^ (fmt.fbits + 1) then
+        let e' := e + 1
+        if e' > fmt.emax then encodeInf fmt sign
+        else encodeNormal fmt sign e' (2 ^ fmt.fbits)
+      else
+        if e > fmt.emax then encodeInf fmt sign
+        else encodeNormal fmt sign e m
+
+def mulFloat (fmt : Fmt) (a b : FKind) : Nat :=
+  if fIsNaN a || fIsNaN b then encodeNaN fmt
+  else if (fIsZero a && fIsInf b) || (fIsInf a && fIsZero b) then encodeNaN fmt
+  else if fIsInf a || fIsInf b then
+    encodeInf fmt (bxor (fNeg a) (fNeg b))
+  else
+    let sign := bxor (fNeg a) (fNeg b)
+    if fIsZero a || fIsZero b then encodeZero fmt sign
+    else
+      let sig := fMant a * fMant b
+      let exp := fExp a + fExp b
+      roundFiniteToBits fmt sign sig exp
+
+/-! ## Data parsers -/
+
+def parseF32Data (tokens : List String) : Option (List FKind) :=
+  let rec go : List String → Option (List FKind)
+    | [] => some []
+    | t :: ts =>
+        match String.toNat? t with
+        | some bits =>
+            if bits < 2 ^ 32 then
+              match go ts with
+              | some rest => some (decodeF32 bits :: rest)
+              | none => none
+            else none
+        | none => none
+  go tokens
+
+def parseF64Data (tokens : List String) : Option (List FKind) :=
+  let rec go : List String → Option (List FKind)
+    | [] => some []
+    | t :: ts =>
+        match String.toNat? t with
+        | some bits =>
+            if bits < 2 ^ 64 then
+              match go ts with
+              | some rest => some (decodeF64 bits :: rest)
+              | none => none
+            else none
+        | none => none
+  go tokens
+
+def parseIntData (bits : Nat) (tokens : List String) : Option (List Nat) :=
+  let rec go : List String → Option (List Nat)
+    | [] => some []
+    | t :: ts =>
+        match parseBits t bits with
+        | some v =>
+            match go ts with
+            | some rest => some (v :: rest)
+            | none => none
+        | none => none
+  go tokens
+
+def parseRatData (tokens : List String) : Option (List (Int × Nat)) :=
+  let rec go : List String → Option (List (Int × Nat))
+    | [] => some []
+    | t :: ts =>
+        match parseRat t with
+        | some v =>
+            match go ts with
+            | some rest => some (v :: rest)
+            | none => none
+        | none => none
+  go tokens
+
+/-! ## Kind classification and line processing -/
+
+inductive KindTag where
+  | f32
+  | f64
+  | f16
+  | i (bits : Nat)
+  | u (bits : Nat)
+  | rat
+  | unsupported
+
+def parseKind (s : String) : KindTag :=
+  if s == "f32" || s == "float32" then .f32
+  else if s == "f64" || s == "float64" then .f64
+  else if s == "f16" || s == "float16" then .f16
+  else if s == "i8" || s == "int8" then .i 8
+  else if s == "i16" || s == "int16" then .i 16
+  else if s == "i32" || s == "int32" then .i 32
+  else if s == "i64" || s == "int64" then .i 64
+  else if s == "u8" || s == "uint8" then .u 8
+  else if s == "u16" || s == "uint16" then .u 16
+  else if s == "u32" || s == "uint32" then .u 32
+  else if s == "u64" || s == "uint64" then .u 64
+  else if s == "rat" then .rat
+  else .unsupported
+
+def mkOk (id kind : String) (shape : List Nat) (data : String) : String :=
+  id ++ "\tOK\t1\t" ++ kind ++ "|" ++ shapeToString shape ++ "|" ++ data
+
+def mkUnsupported (id reason : String) : String :=
+  id ++ "\tUNSUPPORTED\t0\t" ++ reason
+
+def mkErr (id reason : String) : String :=
+  id ++ "\tERR\t0\t" ++ reason
+
+def mkMalformed (id msg : String) : String :=
+  id ++ "\tMALFORMED\t0\t" ++ msg
+
+def processTensor (id : String) (ka : KindTag) (ta tb : TensorField) : String :=
+  match ka with
+  | .f32 =>
+      match parseF32Data ta.dataTokens, parseF32Data tb.dataTokens with
+      | some da, some db =>
+          match bcastBinary (mulFloat fmt32) ta.shape da tb.shape db with
+          | some (shape, out) => mkOk id ta.kind shape (dataToStringNat out)
+          | none => mkErr id "broadcast or data length"
+      | _, _ => mkMalformed id "f32 data"
+  | .f64 =>
+      match parseF64Data ta.dataTokens, parseF64Data tb.dataTokens with
+      | some da, some db =>
+          match bcastBinary (mulFloat fmt64) ta.shape da tb.shape db with
+          | some (shape, out) => mkOk id ta.kind shape (dataToStringNat out)
+          | none => mkErr id "broadcast or data length"
+      | _, _ => mkMalformed id "f64 data"
+  | .i bits =>
+      match parseIntData bits ta.dataTokens, parseIntData bits tb.dataTokens with
+      | some da, some db =>
+          let step : Nat → Nat → Nat := fun a b => (a * b) % (2 ^ bits)
+          match bcastBinary step ta.shape da tb.shape db with
+          | some (shape, out) => mkOk id ta.kind shape (dataToStringNat out)
+          | none => mkErr id "broadcast or data length"
+      | _, _ => mkMalformed id "integer data"
+  | .u bits =>
+      match parseIntData bits ta.dataTokens, parseIntData bits tb.dataTokens with
+      | some da, some db =>
+          let step : Nat → Nat → Nat := fun a b => (a * b) % (2 ^ bits)
+          match bcastBinary step ta.shape da tb.shape db with
+          | some (shape, out) => mkOk id ta.kind shape (dataToStringNat out)
+          | none => mkErr id "broadcast or data length"
+      | _, _ => mkMalformed id "integer data"
+  | .rat =>
+      match parseRatData ta.dataTokens, parseRatData tb.dataTokens with
+      | some da, some db =>
+          let step : (Int × Nat) → (Int × Nat) → (Int × Nat) :=
+            fun a b => (a.1 * b.1, a.2 * b.2)
+          match bcastBinary step ta.shape da tb.shape db with
+          | some (shape, out) => mkOk id ta.kind shape (dataToStringRat out)
+          | none => mkErr id "broadcast or data length"
+      | _, _ => mkMalformed id "rat data"
+  | .f16 => mkUnsupported id "float16"
+  | .unsupported => mkUnsupported id "unsupported kind"
+
+def processLine (line : String) : String :=
+  let line := stripCR line
+  let fields := line.splitOn "\t"
+  match fields with
+  | [] => mkMalformed "" "empty"
+  | id :: rest =>
+      match rest with
+      | _attrs :: arityStr :: tensorStrs =>
+          match String.toNat? arityStr with
+          | none => mkMalformed id "arity"
+          | some arity =>
+              if arity != 2 then mkErr id "arity not supported"
+              else
+                match tensorStrs with
+                | [sa, sb] =>
+                    match parseTensorField sa, parseTensorField sb with
+                    | some ta, some tb =>
+                        let ka := parseKind ta.kind
+                        let kb := parseKind tb.kind
+                        match ka, kb with
+                        | .f16, _ => mkUnsupported id "float16"
+                        | _, .f16 => mkUnsupported id "float16"
+                        | .unsupported, _ =>
+                            mkUnsupported id ("unsupported kind " ++ ta.kind)
+                        | _, .unsupported =>
+                            mkUnsupported id ("unsupported kind " ++ tb.kind)
+                        | _, _ =>
+                            if ta.kind != tb.kind then mkErr id "type mismatch"
+                            else processTensor id ka ta tb
+                    | _, _ => mkMalformed id "tensor field"
+                | _ => mkMalformed id "tensor count"
+      | _ => mkMalformed id "fields"
+
+/-! ## Main -/
+
+def main : IO Unit := do
+  let input ← IO.FS.readFile "/dev/stdin"
+  let rawLines := input.splitOn "\n"
+  let lines :=
+    if input = "" then []
+    else if endsWithNewline input then dropLastList rawLines
+    else rawLines
+  for line in lines do
+    IO.println (processLine line)
+
+end MulRunner
+```

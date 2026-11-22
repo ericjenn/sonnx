@@ -322,8 +322,9 @@ The C stage, in order:
 
 1. **Render.** `generate_c` copies `FormalSpec.lean` to `c/CGenEmit.lean` and appends a
    generated `#eval` trailer that prints `SONNX-CGEN name=… binop=…` and writes
-   `c/sonnx_kernels.h` (prototypes) and `c/sonnx_kernels.c` (definitions) through
-   `CGen.headerFileFor` and `CGen.sourceFileFor`. It compiles that copy with `lake env lean`,
+   `c/sonnx_kernels.h` (the `sonnx_tensor` definition and the prototypes) and
+   `c/sonnx_kernels.c` (the definitions) through `CGen.headerFileFor` and
+   `CGen.sourceFileFor`. It compiles that copy with `lake env lean`,
    so the files are the descriptor's own rendering — not the model's. The accepted artifact is
    never modified. A name that is not the operator's entry, a binop outside `add`/`sub`/`mul`,
    or a compilation that fails is `unsupported` or `error` as described above; `Div` and `Mod`
@@ -331,8 +332,11 @@ The C stage, in order:
    which is the specified wrap for the first three and a different operation for division.
 2. **Test.** The C tester is given the document, the restriction files, the formal
    specification and both generated files, and answers one standalone C program: it includes
-   `"sonnx_kernels.h"`, defines `int main(void)`, and prints one `ok <case>` or
-   `FAIL <case>: expected …, got …` line per compared case. The expected values come from the
+   `"sonnx_kernels.h"`, defines `int main(void)`, builds a `sonnx_tensor` per operand (`void
+   *data`, `size_t ndim`, `const size_t *shape`), calls `void sonnx_<op>_<suffix>(const
+   sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c)`, and prints one `ok <case>` or
+   `FAIL <case>: expected …, got …` line per compared case. The tensors describe the same,
+   caller-owned shape; the kernel computes the element count from `c`. The expected values come from the
    document's boundaries and the specification's examples and relations and must be computed
    independently — an expectation read out of the kernel is not a check. The program must
    cover at least twelve cases across the four families the document carries — `f32`, `f64`,
@@ -357,7 +361,7 @@ The C stage, in order:
 The C the stage tests is the C the descriptor renders, so the stage's question is whether the
 descriptor is a faithful reading of the formal specification's element step — and the
 tester's program is what says so, in the document's own terms. It is a test, not a proof: it
-says nothing about an input the program does not construct, and the kernel's flat-array,
+says nothing about an input the program does not construct, and the kernel's `sonnx_tensor`,
 caller-broadcasts contract is the caller's to honour.
 
 ## What the loop guarantees, and what it cannot
@@ -1099,7 +1103,8 @@ a correct program passes with its checks counted, a wrong expectation fails with
 kept, and a program that does not compile or compares nothing is unusable.
 `test_cgen.py` covers the C generator in `lean/CGen/` (not part of the specification pipeline):
 the library and its two drivers build, the printer probes pass, the emitted translation unit is
-deterministic and carries the advertised signatures, and it compiles cleanly under
+deterministic, defines the tensor struct once and carries the advertised signatures, and it
+compiles cleanly under
 `-Wall -Wextra -Werror` and computes the specified wrap-around results; the split
 `sonnx_kernels.h`/`.c` rendering, its quoted include, its prototypes without bodies and its
 definitions without prototypes are checked in the same way, and the split pair is compiled,

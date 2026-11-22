@@ -4,17 +4,17 @@
   "op": "Mul",
   "opset": 14,
   "entry": "mul",
-  "spec_md5": "e273fab3a1434ad517852479f2424862",
+  "spec_md5": "07e1f247d67a12027ed6b87c56c03147",
   "library_sha256": "3162109b4c926c2fa5dd5f8bd2eb2d90fb17a0480eccc0216a4ea9bd2b43ffab",
   "formal_spec": "lean/FormalSpec.lean",
-  "formal_spec_sha256": "d952bd96ffd25392bd6bde9dbe1743d96a0c6a71d65772e4d9797d3374ad9d4a",
+  "formal_spec_sha256": "788eae73e6b857f82396304a1b6fae9c1ee210bf10d24e50c9a129a435082e2f",
   "runner": "lean/LeanConformance.lean",
-  "runner_sha256": "6768ae0eff6049ee0843706cb092df7ea7597ce214c82b669e0435ca234e9abe",
+  "runner_sha256": "587485c134f55f1d2074570b78ec3183d44020848edca80e1445a0eac6ad0201",
   "driver": "lean_conformance.py",
-  "driver_sha256": "b7e8f31a6fb93682f0cc42238e1c6242cbde0e52a60252ed999ef6f65fffd6e2",
+  "driver_sha256": "611501ca1ff9179509f28f429a9121d0e9dcafb4c508ae73ac15bb9b0f13626a",
   "corpus": "lean/cases.py",
-  "corpus_sha256": "fabf5c543b560c3c2b44c79fcf881450dc40e7b8e6ba97231276d85c3ba2cf88",
-  "corpus_source": "published",
+  "corpus_sha256": "02c13a179d1085217b800a313eebf5e5b8fb77cbd40ecb89320f916f11347bf0",
+  "corpus_source": "generated",
   "outputs": [
     "out"
   ],
@@ -34,5 +34,5 @@
   "compare": "bits",
   "ulp": 2,
   "relative": 1e-06,
-  "written": "2026-11-15T17:07:08"
+  "written": "2026-11-22T14:37:35"
 }

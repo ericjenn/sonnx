@@ -1,0 +1,622 @@
+# the answer stops in the middle of the module: '[' was never closed (<unknown>, line 619)
+
+```python
+"""The cases with which the **Mul** specification is checked.
+
+Read by `specloop.py`:
+
+  * ``cases()``   -- one labelled pair of operands per case.  Each case goes through a
+                     one-node Mul model (opset 14) and through the implementation, and
+                     the two results are compared bit for bit, the sign of a zero and
+                     the sign of an infinity included, because the document specifies
+                     them.
+  * ``sweeps()``  -- the bulk checks, which build their own ONNX Runtime calls because
+                     they must be batched into a single run: the domain of the integer
+                     types, the exact arithmetic of the float section (roundTiesToEven
+                     with an unbounded exponent range, computed with `Fraction` from the
+                     operands' exact values), the worked examples of every section, the
+                     real section (which has no ONNX type and is decided by exact
+                     rational arithmetic alone), and the document's declared types
+                     against the ONNX schema.
+  * ``COVERAGE``  -- the four section anchors of the document, each with the number of
+                     cases that exercise it.
+
+Every case of every section's formula is meant to appear here, and the case set is part
+of the loop: when a section is added to the document, its cases are added here before
+the next run.
+"""
+
+from __future__ import annotations
+
+from fractions import Fraction
+
+import numpy as np
+
+import onnxruntime as ort
+from onnx import helper
+
+OP = "Mul"
+OPSET = 14
+IR_VERSION = 10
+
+NODE_OUTPUTS = ("out",)
+
+ALL_FLOAT = [np.float16, np.float32, np.float64]
+SIGNED_INT = [np.int8, np.int16, np.int32, np.int64]
+UNSIGNED_INT = [np.uint8, np.uint16, np.uint32, np.uint64]
+ALL_INT = SIGNED_INT + UNSIGNED_INT
+UINT_OF_WIDTH = {2: np.uint16, 4: np.uint32, 8: np.uint64}
+
+
+# ---------------------------------------------------------------------------
+# ONNX Runtime, batched (the sweeps only; individual cases go through specloop)
+# ---------------------------------------------------------------------------
+
+
+def run_ort_batch(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """One Mul node over two arrays of the same type, in a single runtime call."""
+    proto = helper.np_dtype_to_tensor_dtype(a.dtype)
+    vi_a = helper.make_tensor_value_info("A", proto, list(a.shape))
+    vi_b = helper.make_tensor_value_info("B", proto, list(b.shape))
+    vi_c = helper.make_tensor_value_info("C", proto, None)
+    node = helper.make_node(OP, ["A", "B"], ["C"], name="mul0")
+    graph = helper.make_graph([node], "mul_graph", [vi_a, vi_b], [vi_c])
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", OPSET)],
+                              ir_version=IR_VERSION)
+    sess = ort.InferenceSession(model.SerializeToString(),
+                                providers=["CPUExecutionProvider"])
+    (c,) = sess.run(["C"], {"A": a, "B": b})
+    return c
+
+
+def _bits_equal(want: np.ndarray, got: np.ndarray) -> bool:
+    """Bit-for-bit equality, NaN equal to NaN, of two arrays of the same type.
+
+    The sign of a zero and the sign of an infinity are part of the bit pattern, so
+    +0.0 and -0.0 are different results here: the document specifies the sign of a
+    null result and of an infinite one.
+    """
+    if want.shape != got.shape or want.dtype != got.dtype:
+        return False
+    if want.dtype.kind == "f":
+        uint = UINT_OF_WIDTH[want.dtype.itemsize]
+        bw = np.ascontiguousarray(want).view(uint)
+        bg = np.ascontiguousarray(got).view(uint)
+        both_nan = np.isnan(want) & np.isnan(got)
+        return bool(np.all((bw == bg) | both_nan))
+    return bool(np.all(want == got))
+
+
+def _diff_indices(want: np.ndarray, got: np.ndarray, limit=5):
+    """Flat indices where two arrays differ (NaN equal to NaN); None on shape/type."""
+    if want.shape != got.shape or want.dtype != got.dtype:
+        return None
+    if want.dtype.kind == "f":
+        uint = UINT_OF_WIDTH[want.dtype.itemsize]
+        bw = np.ascontiguousarray(want).view(uint)
+        bg = np.ascontiguousarray(got).view(uint)
+        both_nan = np.isnan(want) & np.isnan(got)
+        mask = ~((bw == bg) | both_nan)
+    else:
+        mask = ~(want == got)
+    idx = [int(i) for i in np.nonzero(mask.ravel())[0]]
+    return idx if limit is None else idx[:limit]
+
+
+def _same_bits(want, got) -> bool:
+    return _bits_equal(np.asarray(want).ravel(), np.asarray(got).ravel())
+
+
+# ---------------------------------------------------------------------------
+# exact arithmetic: the reference the document itself states
+# ---------------------------------------------------------------------------
+#
+# The float formula is: NaN for a NaN or for a zero times an infinity; a signed
+# infinity for an infinity times a nonzero non-NaN; and otherwise round(A * B), the
+# exact real product rounded to the nearest value of the type with roundTiesToEven and
+# an unbounded exponent range.  That is computed here from the operands' exact values
+# (Fraction of the float, never of the decimal literal), independently of the
+# platform's library and of the runtime.
+
+
+def _pow2(e: int) -> Fraction:
+    return Fraction(2) ** e
+
+
+def _round_half_even(x: Fraction) -> int:
+    """roundTiesToEven of a non-negative rational to the nearest integer."""
+    q = x.numerator // x.denominator
+    r = x - q
+    half = Fraction(1, 2)
+    if r > half:
+        return q + 1
+    if r < half:
+        return q
+    return q if q % 2 == 0 else q + 1
+
+
+def _frac_round_to_type(value: Fraction, dtype):
+    """Round an exact rational to the nearest value of `dtype`, ties to even.
+
+    The exponent range is unbounded, as the document states: a magnitude whose nearest
+    value exceeds the largest finite value of the type gives an infinity of its sign,
+    and a magnitude below half the smallest subnormal gives a zero of its sign.
+    """
+    dt = np.dtype(dtype)
+    f = np.finfo(dt)
+    p = f.nmant + 1                       # significand bits, implicit bit included
+    emin = f.minexp                       # exponent of the smallest normal
+    max_finite = Fraction(float(f.max))
+    if value == 0:
+        return dt.type(0.0)
+    sign = -1.0 if value < 0 else 1.0
+    a = abs(value)
+    e = a.numerator.bit_length() - a.denominator.bit_length()
+    while _pow2(e) > a:
+        e -= 1
+    while _pow2(e + 1) <= a:
+        e += 1
+    if e < emin:
+        e = emin                          # the subnormal range: uniform spacing
+    spacing = _pow2(e - p + 1)
+    n = _round_half_even(a / spacing)
+    result = n * spacing
+    if result > max_finite:
+        return dt.type(sign * float("inf"))
+    if result == 0:
+        return dt.type(sign * 0.0)
+    return dt.type(sign * float(result))
+
+
+def _exact_float_result(x, y, dtype):
+    """C[i] of **Mul** (float, float), the document's three cases, in exact arithmetic."""
+    dt = np.dtype(dtype)
+    fx, fy = float(x), float(y)
+    if np.isnan(fx) or np.isnan(fy):
+        return dt.type(float("nan"))
+    if np.isinf(fx) or np.isinf(fy):
+        if fx == 0.0 or fy == 0.0:
+            return dt.type(float("nan"))          # the invalid operation of IEEE 7.2
+        sign = -1.0 if (np.signbit(fx) != np.signbit(fy)) else 1.0
+        return dt.type(sign * float("inf"))
+    p = Fraction(fx) * Fraction(fy)
+    if p == 0:
+        sign = -1.0 if (np.signbit(fx) != np.signbit(fy)) else 1.0
+        return dt.type(sign * 0.0)
+    return _frac_round_to_type(p, dt)
+
+
+# ---------------------------------------------------------------------------
+# the integer case analysis of the document, transcribed literally
+# ---------------------------------------------------------------------------
+#
+# C[i] is the value of the signed (resp. unsigned) n-bit type congruent to the exact
+# product modulo 2^n: u = product mod 2^n in [0, 2^n-1], then u - 2^n when the type is
+# signed and u >= 2^(n-1).  The transcription is a second, literal reading of the two
+# integer sections, independent of the implementation and of the runtime.
+
+
+def _doc_int_array(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    dt = a.dtype
+    n = dt.itemsize * 8
+    modulus = 2 ** n
+    if dt.itemsize <= 4:
+        prod = a.astype(np.int64) * b.astype(np.int64)
+        u = prod % modulus
+        if dt.kind == "i":
+            u = np.where(u >= 2 ** (n - 1), u - modulus, u)
+        return u.astype(dt)
+    flat = []
+    for x, y in zip(a.ravel().tolist(), b.ravel().tolist()):
+        u = (int(x) * int(y)) % modulus
+        if dt.kind == "i" and u >= 2 ** (n - 1):
+            u -= modulus
+        flat.append(u)
+    return np.array(flat, dtype=dt).reshape(a.shape)
+
+
+def _rand_values(rng, dt, n):
+    """n random values of `dt`, drawn uniformly over the whole bit patterns of the type."""
+    hi = rng.integers(0, 2 ** 32, size=n, dtype=np.uint64)
+    lo = rng.integers(0, 2 ** 32, size=n, dtype=np.uint64)
+    raw = (hi << np.uint64(32)) | lo
+    bits = dt.itemsize * 8
+    if bits < 64:
+        raw = raw & np.uint64((1 << bits) - 1)
+    return raw.astype(np.dtype("u%d" % dt.itemsize)).view(dt)
+
+
+# ---------------------------------------------------------------------------
+# cases()
+# ---------------------------------------------------------------------------
+
+F16 = np.float16
+F32 = np.float32
+F64 = np.float64
+
+
+def _float_cases():
+    out = []
+
+    out.append((
+        "float Example 1: 3.0 4.5 16.0 0.5 times 3.0 -2.0 0.25 4.0 = 9.0 -9.0 4.0 2.0",
+        [np.array([3.0, 4.5, 16.0, 0.5], dtype=F32),
+         np.array([3.0, -2.0, 0.25, 4.0], dtype=F32)]))
+
+    out.append((
+        "float Example 2: +0*+inf, +inf*-inf, +0*-3, -0*-2, -inf*+2, NaN*1",
+        [np.array([0.0, np.inf, 0.0, -0.0, -np.inf, np.nan], dtype=F32),
+         np.array([np.inf, -np.inf, -3.0, -2.0, 2.0, 1.0], dtype=F32)]))
+
+    out.append((
+        "float Example 3: 0.1*0.2 = 0.020000000000000004, 1e308*10 = +inf, "
+        "-1e-308*1e-308 = -0",
+        [np.array([0.1, 1e308, -1e-308], dtype=F64),
+         np.array([0.2, 10.0, 1e-308], dtype=F64)]))
+
+    out.append((
+        "float32 rule of signs: (+0,-0) times (+1,-1) and (+0,-0) times (+inf,-inf)",
+        [np.array([0.0, -0.0, 0.0, -0.0, 0.0, -0.0, 0.0, -0.0], dtype=F32),
+         np.array([1.0, 1.0, -1.0, -1.0, np.inf, np.inf, -np.inf, -np.inf],
+                  dtype=F32)]))
+
+    out.append((
+        "float64 rule of signs: (+0,-0) times (+1,-1) and (+0,-0) times (+inf,-inf)",
+        [np.array([0.0, -0.0, 0.0, -0.0, 0.0, -0.0], dtype=F64),
+         np.array([1.0, 1.0, -1.0, -1.0, np.inf, -np.inf], dtype=F64)]))
+
+    out.append((
+        "float16 NaN and the invalid operation: NaN*0, NaN*inf, +0*+inf, -0*-inf",
+        [np.array([np.nan, np.nan, 0.0, -0.0, np.inf, -np.inf, 1.0], dtype=F16),
+         np.array([0.0, np.inf, np.inf, -np.inf, 0.0, -0.0, np.nan], dtype=F16)]))
+
+    out.append((
+        "float32 infinities: +inf*+2, -inf*+2, +inf*-inf, +inf*+inf, -inf*-inf",
+        [np.array([np.inf, -np.inf, np.inf, np.inf, -np.inf], dtype=F32),
+         np.array([2.0, 2.0, -np.inf, np.inf, -np.inf], dtype=F32)]))
+
+    out.append((
+        "float16 rounding tie: 1.5 * (1+2^-10) is a midpoint, roundTiesToEven down",
+        [np.array([1.5], dtype=F16),
+         np.array([1.0 + 2.0 ** -10], dtype=F16)]))
+
+    out.append((
+        "float32 rounding tie: 1.5 * (1+2^-23) is a midpoint, roundTiesToEven",
+        [np.array([1.5], dtype=F32),
+         np.array([1.0 + 2.0 ** -23], dtype=F32)]))
+
+    out.append((
+        "float64 rounding tie: 1.5 * (1+2^-52) is a midpoint, roundTiesToEven",
+        [np.array([1.5], dtype=F64),
+         np.array([1.0 + 2.0 ** -52], dtype=F64)]))
+
+    out.append((
+        "float32 just above the tie: (1.5+2^-23) * (1+2^-23) rounds up",
+        [np.array([1.5 + 2.0 ** -23], dtype=F32),
+         np.array([1.0 + 2.0 ** -23], dtype=F32)]))
+
+    out.append((
+        "float32 underflow tie: 2^-75 * 2^-75 = 2^-150 is half the smallest subnormal -> +0",
+        [np.array([2.0 ** -75], dtype=F32),
+         np.array([2.0 ** -75], dtype=F32)]))
+
+    out.append((
+        "float32 underflow tie with a negative sign: -2^-75 * 2^-75 -> -0",
+        [np.array([-(2.0 ** -75)], dtype=F32),
+         np.array([2.0 ** -75], dtype=F32)]))
+
+    out.append((
+        "float32 overflow: max*2 = +inf, -max*2 = -inf, max*max = +inf",
+        [np.array([np.finfo(F32).max, -np.finfo(F32).max, np.finfo(F32).max],
+                  dtype=F32),
+         np.array([2.0, 2.0, np.finfo(F32).max], dtype=F32)]))
+
+    out.append((
+        "float64 overflow: max*2 = +inf, -max*-2 = +inf",
+        [np.array([np.finfo(F64).max, -np.finfo(F64).max], dtype=F64),
+         np.array([2.0, -2.0], dtype=F64)]))
+
+    out.append((
+        "float32 broadcasting: a rank-0 tensor times (2, 3)",
+        [np.array(2.0, dtype=F32),
+         np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=F32)]))
+
+    out.append((
+        "float32 broadcasting: (3, 1) times (1, 4)",
+        [np.array([[1.0], [2.0], [3.0]], dtype=F32),
+         np.array([[10.0, 20.0, 30.0, 40.0]], dtype=F32)]))
+
+    out.append((
+        "float64 broadcasting: (2, 1, 2) times (3, 1)",
+        [np.arange(4, dtype=F64).reshape(2, 1, 2) + 1.0,
+         np.array([[1.5], [2.5], [3.5]], dtype=F64)]))
+
+    out.append((
+        "float32 broadcasting: (3,) times a rank-0 tensor",
+        [np.array([1.0, 2.0, 4.0], dtype=F32),
+         np.array(0.5, dtype=F32)]))
+
+    out.append((
+        "float32 zero-sized dimension: (0, 3) times (1, 3)",
+        [np.zeros((0, 3), dtype=F32), np.ones((1, 3), dtype=F32)]))
+
+    out.append((
+        "float32 zero-sized dimension: (0,) times (1,)",
+        [np.zeros((0,), dtype=F32), np.ones((1,), dtype=F32)]))
+
+    return out
+
+
+def _int_cases():
+    out = []
+
+    out.append((
+        "int Example 1 (int8): -6 100 -100 100 times -3 100 100 3 = 18 16 -16 44",
+        [np.array([-6, 100, -100, 100], dtype=np.int8),
+         np.array([-3, 100, 100, 3], dtype=np.int8)]))
+
+    out.append((
+        "int8 boundary products: min*min, min*max, max*max, min*-1, max*2, 0*min",
+        [np.array([-128, -128, 127, -128, 127, 0, 1, -1], dtype=np.int8),
+         np.array([-128, 127, 127, -1, 2, -128, -128, -128], dtype=np.int8)]))
+
+    out.append((
+        "int16 boundary products",
+        [np.array([-32768, -32768, 32767, -32768, 32767, 0, 1], dtype=np.int16),
+         np.array([-32768, 32767, 32767, -1, 2, -32768, -32768], dtype=np.int16)]))
+
+    out.append((
+        "int32 boundary products",
+        [np.array([-2147483648, -2147483648, 2147483647, -2147483648, 2147483647, 0],
+                  dtype=np.int32),
+         np.array([-2147483648, 2147483647, 2147483647, -1, 2, -2147483648],
+                  dtype=np.int32)]))
+
+    out.append((
+        "int64 boundary products",
+        [np.array([-2 ** 63, -2 ** 63, 2 ** 63 - 1, -2 ** 63, 2 ** 63 - 1, 0],
+                  dtype=np.int64),
+         np.array([-2 ** 63, 2 ** 63 - 1, 2 ** 63 - 1, -1, 2, -2 ** 63],
+                  dtype=np.int64)]))
+
+    out.append((
+        "int32 broadcasting: (3, 1) times (1, 4)",
+        [np.array([[1], [-2], [3]], dtype=np.int32),
+         np.array([[10, 20, 30, 40]], dtype=np.int32)]))
+
+    out.append((
+        "int32 broadcasting: a rank-0 tensor times (2, 2)",
+        [np.array(-3, dtype=np.int32),
+         np.array([[1, 2], [3, 4]], dtype=np.int32)]))
+
+    out.append((
+        "int8 zero-sized dimension: (0, 2) times (1, 2)",
+        [np.zeros((0, 2), dtype=np.int8), np.ones((1, 2), dtype=np.int8)]))
+
+    return out
+
+
+def _uint_cases():
+    out = []
+
+    out.append((
+        "uint Example 1 (uint8): 6 200 35 16 times 3 100 5 16 = 18 32 175 0",
+        [np.array([6, 200, 35, 16], dtype=np.uint8),
+         np.array([3, 100, 5, 16], dtype=np.uint8)]))
+
+    out.append((
+        "uint8 boundary products: 255*255, 255*2, 128*2, 16*16, 0*255, 1*255, 200*100",
+        [np.array([255, 255, 128, 16, 0, 1, 200, 2], dtype=np.uint8),
+         np.array([255, 2, 2, 16, 255, 255, 100, 128], dtype=np.uint8)]))
+
+    out.append((
+        "uint16 boundary products",
+        [np.array([65535, 65535, 32768, 256, 0, 1], dtype=np.uint16),
+         np.array([65535, 2, 2, 256, 65535, 65535], dtype=np.uint16)]))
+
+    out.append((
+        "uint32 boundary products",
+        [np.array([4294967295, 4294967295, 2147483648, 65536, 0, 1],
+                  dtype=np.uint32),
+         np.array([4294967295, 2, 2, 65536, 4294967295, 4294967295],
+                  dtype=np.uint32)]))
+
+    out.append((
+        "uint64 boundary products",
+        [np.array([2 ** 64 - 1, 2 ** 64 - 1, 2 ** 63, 2 ** 32, 0, 1],
+                  dtype=np.uint64),
+         np.array([2 ** 64 - 1, 2, 2, 2 ** 32, 2 ** 64 - 1, 2 ** 64 - 1],
+                  dtype=np.uint64)]))
+
+    out.append((
+        "uint16 broadcasting: (3, 1) times (1, 2)",
+        [np.array([[1], [2], [255]], dtype=np.uint16),
+         np.array([[256, 257]], dtype=np.uint16)]))
+
+    out.append((
+        "uint8 broadcasting: a rank-0 tensor times (2, 3)",
+        [np.array(7, dtype=np.uint8),
+         np.array([[1, 2, 3], [4, 5, 6]], dtype=np.uint8)]))
+
+    out.append((
+        "uint32 zero-sized dimension: (0, 2) times (2,)",
+        [np.zeros((0, 2), dtype=np.uint32), np.array([1, 2], dtype=np.uint32)]))
+
+    return out
+
+
+_CASE_TABLE = (
+    [("float", label, arrays) for label, arrays in _float_cases()]
+    + [("int", label, arrays) for label, arrays in _int_cases()]
+    + [("uint", label, arrays) for label, arrays in _uint_cases()]
+)
+
+
+def cases():
+    """One labelled pair of operands per case, in the document's order."""
+    for _section, label, arrays in _CASE_TABLE:
+        yield (label, arrays)
+
+
+# ---------------------------------------------------------------------------
+# the real section: exact rationals, no ONNX type
+# ---------------------------------------------------------------------------
+
+
+def _real_examples():
+    """The real section's cases: exact rationals, no ONNX type, decided by Fraction."""
+    F = Fraction
+    return [
+        ("real Example 1: [1.5 9.5 35.5] * [2 3 -4] = [3 28.5 -142]",
+         np.array([F("1.5"), F("9.5"), F("35.5")], dtype=object),
+         np.array([F(2), F(3), F(-4)], dtype=object),
+         np.array([F(3), F("28.5"), F(-142)], dtype=object)),
+        ("real Example 2: a rank-1 tensor broadcast over a 3x2 matrix",
+         np.array([[F(3), F("4.5")], [F(16), F("0.5")], [F("25.5"), F(24)]],
+                  dtype=object),
+         np.array([F(2), F(-1)], dtype=object),
+         np.array([[F(6), F("-4.5")], [F(32), F("-0.5")], [F(51), F(-24)]],
+                  dtype=object)),
+        ("real: 1/3 * 3 = 1 and 1/10 * 10 = 1, exact in the reals",
+         np.array([F(1, 3), F(1, 10)], dtype=object),
+         np.array([F(3), F(10)], dtype=object),
+         np.array([F(1), F(1)], dtype=object)),
+        ("real: a rank-0 tensor broadcast to (2,)",
+         np.array(F(3, 7), dtype=object),
+         np.array([F(2, 5), F(1, 2)], dtype=object),
+         np.array([F(6, 35), F(3, 14)], dtype=object)),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# the document's worked examples
+# ---------------------------------------------------------------------------
+
+
+def _spec_examples():
+    """The worked examples of the float, the int and the uint sections, as documented."""
+    return [
+        ("float Example 1",
+         np.array([3.0, 4.5, 16.0, 0.5], dtype=F32),
+         np.array([3.0, -2.0, 0.25, 4.0], dtype=F32),
+         np.array([9.0, -9.0, 4.0, 2.0], dtype=F32)),
+        ("float Example 2",
+         np.array([0.0, np.inf, 0.0, -0.0, -np.inf, np.nan], dtype=F32),
+         np.array([np.inf, -np.inf, -3.0, -2.0, 2.0, 1.0], dtype=F32),
+         np.array([np.nan, -np.inf, -0.0, 0.0, -np.inf, np.nan], dtype=F32)),
+        ("float Example 3",
+         np.array([0.1, 1e308, -1e-308], dtype=F64),
+         np.array([0.2, 10.0, 1e-308], dtype=F64),
+         np.array([0.020000000000000004, np.inf, -0.0], dtype=F64)),
+        ("int Example 1",
+         np.array([-6, 100, -100, 100], dtype=np.int8),
+         np.array([-3, 100, 100, 3], dtype=np.int8),
+         np.array([18, 16, -16, 44], dtype=np.int8)),
+        ("uint Example 1",
+         np.array([6, 200, 35, 16], dtype=np.uint8),
+         np.array([3, 100, 5, 16], dtype=np.uint8),
+         np.array([18, 32, 175, 0], dtype=np.uint8)),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# sweeps
+# ---------------------------------------------------------------------------
+
+
+def sweep_int_domain(impl):
+    """The document's integer case analysis against ONNX Runtime and the implementation.
+
+    The two 8-bit types are covered exhaustively (all 65536 pairs each); the wider types
+    use their boundary values and a random sample, drawn over the whole bit patterns of
+    the type.  A disagreement between the document and ONNX Runtime is a defect of the
+    document, a disagreement between the document and the implementation a defect of the
+    implementation.
+    """
+    rng = np.random.default_rng(20261003)
+    rows, failures = [], []
+    for dtype in ALL_INT:
+        dt = np.dtype(dtype)
+        info = np.iinfo(dt)
+        exhaustive = dt.itemsize == 1
+        if exhaustive:
+            xs = np.arange(int(info.min), int(info.max) + 1, dtype=np.int64)
+            aa = np.repeat(xs, xs.size).astype(dt)
+            bb = np.tile(xs, xs.size).astype(dt)
+        else:
+            if dt.kind == "i":
+                edges = [int(info.min), int(info.min) + 1, -3, -2, -1, 0, 1, 2, 3,
+                         int(info.max) - 1, int(info.max)]
+            else:
+                edges = [0, 1, 2, 3, 4, int(info.max) // 2, int(info.max) - 1,
+                         int(info.max)]
+            pairs = [(x, y) for x in edges for y in edges]
+            n_rand = 300 if dt.itemsize <= 4 else 120
+            pairs += list(zip(_rand_values(rng, dt, n_rand).tolist(),
+                              _rand_values(rng, dt, n_rand).tolist()))
+            aa = np.array([p[0] for p in pairs], dtype=dt)
+            bb = np.array([p[1] for p in pairs], dtype=dt)
+
+        want = _doc_int_array(aa, bb)          # the document, literally
+        try:
+            got = np.asarray(impl.mul(aa, bb))
+        except Exception as exc:
+            failures.append({"type": dt.name, "who": "the implementation",
+                             "detail": "raised %s: %s" % (type(exc).__name__, exc)})
+            rows.append("%s: the implementation raised" % dt.name)
+            continue
+
+        bad = _diff_indices(want, got, limit=5)
+        if bad is None:
+            failures.append({"type": dt.name, "who": "the document vs the implementation",
+                             "detail": "shape %s or type %s differs from the document's "
+                                       "%s / %s" % (got.shape, got.dtype,
+                                                    want.shape, want.dtype)})
+        elif bad:
+            failures.append({
+                "type": dt.name, "who": "the document vs the implementation",
+                "detail": "; ".join("doc: %d * %d = %d, impl: %d"
+                                    % (int(aa.ravel()[i]), int(bb.ravel()[i]),
+                                       int(want.ravel()[i]), int(got.ravel()[i]))
+                                    for i in bad),
+            })
+
+        note = ""
+        try:
+            ref = run_ort_batch(aa, bb)
+        except Exception as exc:
+            note = "; ONNX Runtime refused the batch (%s: %s)" % (type(exc).__name__,
+                                                                  exc)
+        else:
+            bad_ref = _diff_indices(want, ref, limit=5)
+            if bad_ref is None:
+                failures.append({"type": dt.name, "who": "the document vs ONNX Runtime",
+                                 "detail": "shape %s or type %s differs from the "
+                                           "document's %s / %s"
+                                           % (ref.shape, ref.dtype, want.shape,
+                                              want.dtype)})
+            elif bad_ref:
+                failures.append({
+                    "type": dt.name, "who": "the document vs ONNX Runtime",
+                    "detail": "; ".join("doc: %d * %d = %d, ort: %d"
+                                        % (int(aa.ravel()[i]), int(bb.ravel()[i]),
+                                           int(want.ravel()[i]), int(ref.ravel()[i]))
+                                        for i in bad_ref),
+                })
+        rows.append("%s: %s%s"
+                    % (dt.name,
+                       "exhaustive (65536 pairs)" if exhaustive
+                       else "%d pairs" % int(aa.size), note))
+
+    return {"sweep": "int domain (document vs ONNX Runtime vs implementation)",
+            "summary": "%d types: %s" % (len(rows), ", ".join(rows)),
+            "failures": failures}
+
+
+def _float_probe(dt, rng):
+    """The operands of the exact float sweep: the special values and a random sample."""
+    f = np.finfo(dt)
+    maxf = float(f.max)
+    tiny = float(f.tiny)
+    small = float(np.nextafter(dt.type(0.0), dt.type(1.0)))
+    specials = [0.0, -0.0, 1.0, -1.0, 0.5, -0.5, 1.5, 2.

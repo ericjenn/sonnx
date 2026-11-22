@@ -1,0 +1,586 @@
+# Lean compiler: /run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:110:11: error: unexpected token 'at'; expected term
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:253:15: warning: Variable name `sa` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _sa
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:253:30: warning: Variable name `sb` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _sb
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:254:16: warning: Variable name `sa` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _sa
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:254:32: warning: Variable name `sb` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _sb
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:376:18: error(lean.invalidField): Invalid field `get?`: The environment does not contain `List.get?`, so it is not possible to project the field `get?` from an expression
+  dataA
+of type `List Nat`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:376:33: error(lean.invalidField): Invalid field `get?`: The environment does not contain `List.get?`, so it is not possible to project the field `get?` from an expression
+  dataB
+of type `List Nat`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:404:18: error(lean.invalidField): Invalid field `get?`: The environment does not contain `List.get?`, so it is not possible to project the field `get?` from an expression
+  dataA
+of type `List Nat`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:404:33: error(lean.invalidField): Invalid field `get?`: The environment does not contain `List.get?`, so it is not possible to project the field `get?` from an expression
+  dataB
+of type `List Nat`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:420:18: error(lean.invalidField): Invalid field `get?`: The environment does not contain `List.get?`, so it is not possible to project the field `get?` from an expression
+  dataA
+of type `List (Int × Int)`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:420:33: error(lean.invalidField): Invalid field `get?`: The environment does not contain `List.get?`, so it is not possible to project the field `get?` from an expression
+  dataB
+of type `List (Int × Int)`
+
+```lean
+import Sonnx
+
+namespace DivRunner
+
+/-! Basic helpers -/
+
+def pow2 (k : Nat) : Nat := 2 ^ k
+
+def shl (n k : Nat) : Nat := n * pow2 k
+
+def shr (n k : Nat) : Nat := n / pow2 k
+
+def joinWith (sep : String) : List String → String
+  | [] => ""
+  | x :: [] => x
+  | x :: xs => x ++ sep ++ joinWith sep xs
+
+def traverseOpt {α β : Type} (f : α → Option β) : List α → Option (List β)
+  | [] => some []
+  | x :: xs =>
+      match f x, traverseOpt f xs with
+      | some y, some ys => some (y :: ys)
+      | _, _ => none
+
+def digitVal (c : Char) : Option Nat :=
+  let v := c.toNat
+  if v >= 48 then
+    if v <= 57 then some (v - 48) else none
+  else none
+
+def parseNat (s : String) : Option Nat :=
+  if s.length = 0 then none
+  else
+    s.toList.foldl
+      (fun acc c =>
+        match acc, digitVal c with
+        | some n, some d => some (n * 10 + d)
+        | _, _ => none)
+      (some 0)
+
+def parseNatChars (cs : List Char) : Option Nat :=
+  if cs.length = 0 then none
+  else
+    cs.foldl
+      (fun acc c =>
+        match acc, digitVal c with
+        | some n, some d => some (n * 10 + d)
+        | _, _ => none)
+      (some 0)
+
+def parseSignedInt (s : String) : Option Int :=
+  let cs := s.toList
+  let neg := match cs with
+    | '-' :: _ => true
+    | _ => false
+  let digits := match cs with
+    | '-' :: rest => rest
+    | '+' :: rest => rest
+    | _ => cs
+  match parseNatChars digits with
+  | some n => some (if neg then -Int.ofNat n else Int.ofNat n)
+  | none => none
+
+def bitLen (n : Nat) : Nat :=
+  if n = 0 then 0 else Nat.log2 n + 1
+
+/-! Shapes and broadcasting -/
+
+def shapeSize (s : List Nat) : Nat :=
+  s.foldl (fun acc d => acc * d) 1
+
+def padLeft (n : Nat) (l : List Nat) : List Nat :=
+  List.replicate (n - l.length) 1 ++ l
+
+def bcastDim (x y : Nat) : Option Nat :=
+  if x = y then some x
+  else if x = 1 then some y
+  else if y = 1 then some x
+  else none
+
+def broadcastShape (a b : List Nat) : Option (List Nat) :=
+  let n := if a.length < b.length then b.length else a.length
+  let a' := padLeft n a
+  let b' := padLeft n b
+  let rec go (xs ys : List Nat) (acc : List Nat) : Option (List Nat) :=
+    match xs, ys with
+    | [], [] => some acc.reverse
+    | x :: xt, y :: yt =>
+        match bcastDim x y with
+        | none => none
+        | some z => go xt yt (z :: acc)
+    | _, _ => none
+  go a' b' []
+
+def unravel (shape : List Nat) (k : Nat) : List Nat :=
+  match shape with
+  | [] => []
+  | d :: rest =>
+      let stride := shapeSize rest
+      let idx := if d = 0 then 0 else if stride = 0 then 0 else (k / stride) % d
+      let k' := if stride = 0 then 0 else k % stride
+      idx :: unravel rest k'
+
+def bcastFlat (aShape cShape cIdx : List Nat) : Nat :=
+  let n := cShape.length
+  let a' := padLeft n aShape
+  let rec go (as_ is : List Nat) (acc : Nat) : Nat :=
+    match as_, is with
+    | [], [] => acc
+    | ad :: at, id :: it =>
+        let idx := if ad = 1 then 0 else id
+        go at it (acc * ad + idx)
+    | _, _ => acc
+  go a' cIdx 0
+
+/-! Integer arithmetic -/
+
+def signedValue (width : Nat) (bits : Nat) : Int :=
+  let half := pow2 (width - 1)
+  if bits < half then Int.ofNat bits
+  else Int.ofNat bits - Int.ofNat (pow2 width)
+
+def truncQuotInt (a b : Int) : Int :=
+  let m : Int := Int.ofNat (a.natAbs / b.natAbs)
+  let sa : Bool := decide (a < 0)
+  let sb : Bool := decide (b < 0)
+  if sa = sb then m else -m
+
+def intToBits (width : Nat) (q : Int) : Nat :=
+  let mod := pow2 width
+  if q >= 0 then q.toNat % mod
+  else
+    let a := (-q).toNat % mod
+    if a = 0 then 0 else mod - a
+
+/-! Floating-point bit-level division -/
+
+def floatBias (eBits : Nat) : Nat := pow2 (eBits - 1) - 1
+
+def signBit (eBits mBits : Nat) (sign : Bool) : Nat :=
+  if sign then pow2 (eBits + mBits) else 0
+
+def makeZero (eBits mBits : Nat) (sign : Bool) : Nat :=
+  signBit eBits mBits sign
+
+def makeInf (eBits mBits : Nat) (sign : Bool) : Nat :=
+  signBit eBits mBits sign + shl (pow2 eBits - 1) mBits
+
+def makeNaN (eBits mBits : Nat) : Nat :=
+  shl (pow2 eBits - 1) mBits + shl 1 (mBits - 1)
+
+def makeFinite (eBits mBits : Nat) (sign : Bool) (expField mant : Nat) : Nat :=
+  signBit eBits mBits sign + shl expField mBits + mant
+
+def floorLog2Ratio (N D : Nat) : Int :=
+  if N = 0 then 0
+  else if D = 0 then 0
+  else
+    let bN := bitLen N
+    let bD := bitLen D
+    let k : Int := Int.ofNat bN - Int.ofNat bD
+    let cond : Bool :=
+      if k >= 0 then
+        decide (N >= shl D k.toNat)
+      else
+        decide (shl N (-k).toNat >= D)
+    if cond then k else k - 1
+
+def roundDiv (A B : Nat) : Nat :=
+  if B = 0 then 0
+  else
+    let q := A / B
+    let r := A % B
+    let twoR := 2 * r
+    if twoR > B then q + 1
+    else if twoR = B then
+      if q % 2 = 1 then q + 1 else q
+    else q
+
+def roundScaled (N D : Nat) (E k : Int) : Nat :=
+  if N = 0 then 0
+  else if D = 0 then 0
+  else
+    let shift := E - k
+    if shift >= 0 then
+      roundDiv (shl N shift.toNat) D
+    else
+      roundDiv N (shl D (-shift).toNat)
+
+def floatBitsOfQuot (eBits mBits : Nat) (sign : Bool) (N D : Nat) (E : Int) : Nat :=
+  let biasNat := floatBias eBits
+  let bias : Int := Int.ofNat biasNat
+  let emin : Int := 1 - bias
+  let emax : Int := bias
+  let e : Int := E + floorLog2Ratio N D
+  if N = 0 then makeZero eBits mBits sign
+  else if D = 0 then makeZero eBits mBits sign
+  else if e > emax then makeInf eBits mBits sign
+  else if e < emin then
+    let k : Int := emin - Int.ofNat mBits
+    let q := roundScaled N D E k
+    if q = 0 then makeZero eBits mBits sign
+    else if q >= pow2 mBits then
+      let mant := q - pow2 mBits
+      makeFinite eBits mBits sign 1 mant
+    else
+      makeFinite eBits mBits sign 0 q
+  else
+    let k : Int := e - Int.ofNat mBits
+    let q := roundScaled N D E k
+    if q >= pow2 (mBits + 1) then
+      let e' := e + 1
+      if e' > emax then makeInf eBits mBits sign
+      else
+        let q' := q / 2
+        let expField := (e' + bias).toNat
+        let mant := q' - pow2 mBits
+        makeFinite eBits mBits sign expField mant
+    else
+      let expField := (e + bias).toNat
+      let mant := q - pow2 mBits
+      makeFinite eBits mBits sign expField mant
+
+inductive FClass where
+  | nan
+  | inf (sign : Bool)
+  | zero (sign : Bool)
+  | finite (sign : Bool) (sig : Nat) (e : Int)
+
+def classifyFloat (bits eBits mBits : Nat) : FClass :=
+  let width := 1 + eBits + mBits
+  let sign : Bool := decide ((shr bits (width - 1)) % 2 = 1)
+  let exp := (shr bits mBits) % pow2 eBits
+  let mant := bits % pow2 mBits
+  let maxExp := pow2 eBits - 1
+  let biasNat := floatBias eBits
+  if exp = maxExp then
+    if mant = 0 then FClass.inf sign else FClass.nan
+  else if exp = 0 then
+    if mant = 0 then FClass.zero sign
+    else FClass.finite sign mant (1 - Int.ofNat biasNat - Int.ofNat mBits)
+  else
+    let sig := pow2 mBits + mant
+    let e := Int.ofNat exp - Int.ofNat biasNat - Int.ofNat mBits
+    FClass.finite sign sig e
+
+def bxor (a b : Bool) : Bool := if a = b then false else true
+
+def divFloatBits (eBits mBits : Nat) (aBits bBits : Nat) : Nat :=
+  match classifyFloat aBits eBits mBits, classifyFloat bBits eBits mBits with
+  | FClass.nan, _ => makeNaN eBits mBits
+  | _, FClass.nan => makeNaN eBits mBits
+  | FClass.inf sa, FClass.inf sb => makeNaN eBits mBits
+  | FClass.zero sa, FClass.zero sb => makeNaN eBits mBits
+  | FClass.inf sa, FClass.zero sb => makeInf eBits mBits (bxor sa sb)
+  | FClass.zero sa, FClass.inf sb => makeZero eBits mBits (bxor sa sb)
+  | FClass.inf sa, FClass.finite sb _ _ => makeInf eBits mBits (bxor sa sb)
+  | FClass.finite sa _ _, FClass.inf sb => makeZero eBits mBits (bxor sa sb)
+  | FClass.finite sa _ _, FClass.zero sb => makeInf eBits mBits (bxor sa sb)
+  | FClass.zero sa, FClass.finite sb _ _ => makeZero eBits mBits (bxor sa sb)
+  | FClass.finite sa sigA eA, FClass.finite sb sigB eB =>
+      if sigA = 0 then makeNaN eBits mBits
+      else if sigB = 0 then makeNaN eBits mBits
+      else floatBitsOfQuot eBits mBits (bxor sa sb) sigA sigB (eA - eB)
+
+/-! Rational helpers -/
+
+def normRat (n d : Int) : Int × Int :=
+  if d = 0 then (0, 1)
+  else
+    let sign := if d < 0 then -1 else 1
+    let n' := n * sign
+    let d' := Int.ofNat d.natAbs
+    let g := Nat.gcd n'.natAbs d'.natAbs
+    if g = 0 then (0, 1)
+    else
+      let gInt := Int.ofNat g
+      (n' / gInt, d' / gInt)
+
+def parseRatStr (s : String) : Option (Int × Int) :=
+  match s.splitOn "/" with
+  | nStr :: dStr :: [] =>
+      match parseSignedInt nStr, parseSignedInt dStr with
+      | some n, some d => if d = 0 then none else some (normRat n d)
+      | _, _ => none
+  | _ => none
+
+def parseRatList (data : List String) : Option (List (Int × Int)) :=
+  traverseOpt parseRatStr data
+
+/-! Kinds and parsing -/
+
+inductive KindInfo where
+  | f16
+  | f32
+  | f64
+  | i (width : Nat)
+  | u (width : Nat)
+  | rat
+  | unknown
+
+def parseKind (s : String) : KindInfo :=
+  if s == "f16" || s == "float16" then KindInfo.f16
+  else if s == "f32" || s == "float32" then KindInfo.f32
+  else if s == "f64" || s == "float64" then KindInfo.f64
+  else if s == "i8" || s == "int8" then KindInfo.i 8
+  else if s == "i16" || s == "int16" then KindInfo.i 16
+  else if s == "i32" || s == "int32" then KindInfo.i 32
+  else if s == "i64" || s == "int64" then KindInfo.i 64
+  else if s == "u8" || s == "uint8" then KindInfo.u 8
+  else if s == "u16" || s == "uint16" then KindInfo.u 16
+  else if s == "u32" || s == "uint32" then KindInfo.u 32
+  else if s == "u64" || s == "uint64" then KindInfo.u 64
+  else if s == "rat" then KindInfo.rat
+  else KindInfo.unknown
+
+structure TensorField where
+  kind : String
+  shape : List Nat
+  data : List String
+
+structure Case where
+  id : String
+  attrs : String
+  arity : Nat
+  tensors : List TensorField
+
+def parseShape (s : String) : Option (List Nat) :=
+  if s = "-" then some []
+  else if s.length = 0 then none
+  else traverseOpt parseNat (s.splitOn ",")
+
+def parseTensor (s : String) : Option TensorField :=
+  match s.splitOn "|" with
+  | k :: sh :: da :: [] =>
+      match parseShape sh with
+      | some shape =>
+          let data := if da = "-" then [] else da.splitOn ","
+          some { kind := k, shape := shape, data := data }
+      | none => none
+  | _ => none
+
+def parseCase (line : String) : Option Case :=
+  match line.splitOn "\t" with
+  | id :: attrs :: arityStr :: rest =>
+      match parseNat arityStr with
+      | some ar =>
+          if rest.length = ar then
+            match traverseOpt parseTensor rest with
+            | some ts => some { id := id, attrs := attrs, arity := ar, tensors := ts }
+            | none => none
+          else none
+      | none => none
+  | _ => none
+
+def parseBitsList (width : Nat) (data : List String) : Option (List Nat) :=
+  traverseOpt
+    (fun s =>
+      match parseNat s with
+      | some n => if n < pow2 width then some n else none
+      | none => none)
+    data
+
+/-! Tensor execution -/
+
+def runIntTensor (signed : Bool) (width : Nat)
+    (shapeC shapeA shapeB : List Nat)
+    (dataA dataB : List Nat) : Except String (List Nat) :=
+  let size := shapeSize shapeC
+  let rec go (k : Nat) (acc : List Nat) : Except String (List Nat) :=
+    if k >= size then Except.ok acc.reverse
+    else
+      let idx := unravel shapeC k
+      let ia := bcastFlat shapeA shapeC idx
+      let ib := bcastFlat shapeB shapeC idx
+      match dataA.get? ia, dataB.get? ib with
+      | some ba, some bb =>
+          if signed then
+            let a := signedValue width ba
+            let b := signedValue width bb
+            if b = 0 then Except.error "division by zero"
+            else
+              let q := truncQuotInt a b
+              let bits := intToBits width q
+              go (k + 1) (bits :: acc)
+          else
+            if bb = 0 then Except.error "division by zero"
+            else
+              let q := ba / bb
+              go (k + 1) (q :: acc)
+      | _, _ => Except.error "data index out of range"
+  go 0 []
+
+def runFloatTensor (eBits mBits : Nat)
+    (shapeC shapeA shapeB : List Nat)
+    (dataA dataB : List Nat) : List Nat :=
+  let size := shapeSize shapeC
+  let rec go (k : Nat) (acc : List Nat) : List Nat :=
+    if k >= size then acc.reverse
+    else
+      let idx := unravel shapeC k
+      let ia := bcastFlat shapeA shapeC idx
+      let ib := bcastFlat shapeB shapeC idx
+      match dataA.get? ia, dataB.get? ib with
+      | some ba, some bb =>
+          let bits := divFloatBits eBits mBits ba bb
+          go (k + 1) (bits :: acc)
+      | _, _ => acc.reverse
+  go 0 []
+
+def runRatTensor (shapeC shapeA shapeB : List Nat)
+    (dataA dataB : List (Int × Int)) : Except String (List (Int × Int)) :=
+  let size := shapeSize shapeC
+  let rec go (k : Nat) (acc : List (Int × Int)) : Except String (List (Int × Int)) :=
+    if k >= size then Except.ok acc.reverse
+    else
+      let idx := unravel shapeC k
+      let ia := bcastFlat shapeA shapeC idx
+      let ib := bcastFlat shapeB shapeC idx
+      match dataA.get? ia, dataB.get? ib with
+      | some (na, da), some (nb, db) =>
+          if nb = 0 then Except.error "division by zero"
+          else
+            let n := na * db
+            let d := da * nb
+            let r := normRat n d
+            go (k + 1) (r :: acc)
+      | _, _ => Except.error "data index out of range"
+  go 0 []
+
+/-! Output formatting -/
+
+def formatShape (s : List Nat) : String :=
+  if s.length = 0 then "-" else joinWith "," (s.map toString)
+
+def formatData (xs : List String) : String :=
+  if xs.length = 0 then "-" else joinWith "," xs
+
+def okLine (id kind : String) (shape : List Nat) (data : List String) : String :=
+  id ++ "\tOK\t1\t" ++ kind ++ "|" ++ formatShape shape ++ "|" ++ formatData data
+
+def errLine (id msg : String) : String :=
+  id ++ "\tERR\t0\t" ++ msg
+
+def malformedLine (id msg : String) : String :=
+  id ++ "\tMALFORMED\t0\t" ++ msg
+
+def unsupportedLine (id reason : String) : String :=
+  id ++ "\tUNSUPPORTED\t0\t" ++ reason
+
+def dispatch (id kindStr : String) (k : KindInfo)
+    (ta tb : TensorField) (shapeC : List Nat) : String :=
+  match k with
+  | KindInfo.f32 =>
+      match parseBitsList 32 ta.data, parseBitsList 32 tb.data with
+      | some da, some db =>
+          let out := runFloatTensor 8 23 shapeC ta.shape tb.shape da db
+          okLine id kindStr shapeC (out.map toString)
+      | _, _ => malformedLine id "invalid float32 bits"
+  | KindInfo.f64 =>
+      match parseBitsList 64 ta.data, parseBitsList 64 tb.data with
+      | some da, some db =>
+          let out := runFloatTensor 11 52 shapeC ta.shape tb.shape da db
+          okLine id kindStr shapeC (out.map toString)
+      | _, _ => malformedLine id "invalid float64 bits"
+  | KindInfo.i width =>
+      match parseBitsList width ta.data, parseBitsList width tb.data with
+      | some da, some db =>
+          match runIntTensor true width shapeC ta.shape tb.shape da db with
+          | Except.ok out => okLine id kindStr shapeC (out.map toString)
+          | Except.error msg => errLine id msg
+      | _, _ => malformedLine id "invalid integer bits"
+  | KindInfo.u width =>
+      match parseBitsList width ta.data, parseBitsList width tb.data with
+      | some da, some db =>
+          match runIntTensor false width shapeC ta.shape tb.shape da db with
+          | Except.ok out => okLine id kindStr shapeC (out.map toString)
+          | Except.error msg => errLine id msg
+      | _, _ => malformedLine id "invalid integer bits"
+  | KindInfo.rat =>
+      match parseRatList ta.data, parseRatList tb.data with
+      | some da, some db =>
+          match runRatTensor shapeC ta.shape tb.shape da db with
+          | Except.ok out =>
+              okLine id kindStr shapeC
+                (out.map (fun p => toString p.1 ++ "/" ++ toString p.2))
+          | Except.error msg => errLine id msg
+      | _, _ => malformedLine id "invalid rational data"
+  | KindInfo.f16 => unsupportedLine id "float16 unsupported"
+  | KindInfo.unknown => unsupportedLine id ("unsupported kind: " ++ kindStr)
+
+def runCase (c : Case) : String :=
+  let id := c.id
+  if c.arity = 2 then
+    match c.tensors with
+    | ta :: tb :: [] =>
+        if ta.kind = tb.kind then
+          let k := parseKind ta.kind
+          match k with
+          | KindInfo.f16 => unsupportedLine id "float16 unsupported"
+          | KindInfo.unknown => unsupportedLine id ("unsupported kind: " ++ ta.kind)
+          | _ =>
+              if ta.data.length = shapeSize ta.shape then
+                if tb.data.length = shapeSize tb.shape then
+                  match broadcastShape ta.shape tb.shape with
+                  | none => errLine id "incompatible shapes"
+                  | some shapeC => dispatch id ta.kind k ta tb shapeC
+                else malformedLine id "data length does not match shape"
+              else malformedLine id "data length does not match shape"
+        else errLine id "type mismatch"
+    | _ => malformedLine id "tensor count does not match arity"
+  else malformedLine id "arity must be 2"
+
+def processLine (line : String) : String :=
+  match parseCase line with
+  | some c => runCase c
+  | none =>
+      let id := match line.splitOn "\t" with
+        | x :: _ => x
+        | _ => ""
+      malformedLine id "malformed line"
+
+def processInput (input : String) : List String :=
+  let rawLines := input.splitOn "\n"
+  let lines :=
+    match rawLines.reverse with
+    | x :: rest =>
+        if x = "" then rest.reverse else rawLines
+    | [] => rawLines
+  lines.map processLine
+
+end DivRunner
+
+open DivRunner
+
+def main : IO Unit := do
+  let stdin ← IO.getStdin
+  let input ← stdin.readToEnd
+  for line in processInput input do
+    IO.println line
+```

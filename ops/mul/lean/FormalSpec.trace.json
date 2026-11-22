@@ -1,205 +1,205 @@
 {
   "generated_by": "sonnx-lean-pipeline",
   "source": "ops/mul/mul.md",
-  "source_md5": "1f3d6ea0e8b35e2f2b4f86bece4123b1",
+  "source_md5": "07e1f247d67a12027ed6b87c56c03147",
   "requirements": [
     {
       "key": "E_MUL_REAL_FUNC_0010",
       "source": "ops/mul/mul.md",
       "start": 33,
-      "end": 58,
+      "end": 56,
       "anchor": "E_MUL_REAL_FUNC_0010",
-      "excerpt": "<a id=\"E_MUL_REAL_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_REAL_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise and stores the result in tensor $C$. Each element of $C$ is the product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\tilde{A}[i] \\cdot \\tilde{B}[i]\n$$\n\nwhere\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$,\n- $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$.\n\nThe multiplication is exact: $C[i]$ is the product in $\\mathbb{R}$ of the two elements, with no approximation.\n\n**The two operands play the same role.** The product in $\\mathbb{R}$ is commutative, so that the multiplication of $B$ by $A$ gives the same result as the multiplication of $A$ by $B$; the operands are named only to designate the tensors.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
+      "excerpt": "<a id=\"E_MUL_REAL_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_REAL_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise and stores the result in tensor $C$. Each element of $C$ is the product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\tilde{A}[i] * \\tilde{B}[i]\n$$\n\nwhere\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$,\n- $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$.\n\nThe multiplication is exact: $C[i]$ is the product in $\\mathbb{R}$ of the two elements, with no approximation, and it is defined for every pair of real numbers.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
     },
     {
       "key": "E_MUL_REAL_CONSTR_A_0010",
       "source": "ops/mul/mul.md",
-      "start": 116,
-      "end": 118,
+      "start": 121,
+      "end": 123,
       "anchor": "E_MUL_REAL_CONSTR_A_0010",
       "excerpt": "<a id=\"E_MUL_REAL_CONSTR_A_0010\"></a>\n- `[E_MUL_REAL_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting."
     },
     {
       "key": "E_MUL_REAL_CONSTR_B_0010",
       "source": "ops/mul/mul.md",
-      "start": 126,
-      "end": 127,
+      "start": 131,
+      "end": 132,
       "anchor": null,
       "excerpt": "- `[E_MUL_REAL_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_REAL_CONSTR_A_0010</span></b>](#E_MUL_REAL_CONSTR_A_0010) on tensor $A$."
     },
     {
       "key": "E_MUL_REAL_CONSTR_C_0010",
       "source": "ops/mul/mul.md",
-      "start": 137,
-      "end": 138,
+      "start": 142,
+      "end": 143,
       "anchor": null,
       "excerpt": "- `[E_MUL_REAL_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape."
     },
     {
       "key": "E_MUL_FLOAT_FUNC_0010",
       "source": "ops/mul/mul.md",
-      "start": 165,
-      "end": 214,
+      "start": 170,
+      "end": 208,
       "anchor": "E_MUL_FLOAT_FUNC_0010",
-      "excerpt": "<a id=\"E_MUL_FLOAT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_FLOAT_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise according to IEEE 754 floating-point semantics and stores the result in tensor $C$. Each element of $C$ is the floating-point product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\tilde{A}[i] \\cdot_{(\\text{f})} \\tilde{B}[i] =\n\\begin{cases}\n\\text{NaN} & \\text{if } \\tilde{A}[i] \\text{ or } \\tilde{B}[i] \\text{ is NaN, or if one of them is a zero and the other an infinity} \\\\\n\\tilde{A}[i] \\cdot \\tilde{B}[i] & \\text{if the exact product is representable in the type of } A \\text{ and } B \\\\\n\\text{round}(\\tilde{A}[i] \\cdot \\tilde{B}[i]) & \\text{otherwise}\n\\end{cases}\n$$\n\nwhere\n- $\\cdot_{(\\text{f})}$ is the multiplication of the floating-point type of $A$, $B$ and $C$, i.e. $\\cdot_{(\\text{f16})}$, $\\cdot_{(\\text{f32})}$ or $\\cdot_{(\\text{f64})}$ according to that type, whereas the $\\cdot$ of the second and the third case is the multiplication of $\\mathbb{R}$: there, $\\tilde{A}[i] \\cdot \\tilde{B}[i]$ is the exact product of the two elements,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $\\text{round}(x)$ is the value of $x$ rounded to the nearest value of the type of $A$ and $B$ using the roundTiesToEven attribute of IEEE 754, the exponent range of the type being unbounded: a magnitude whose nearest value exceeds the largest finite value of the type of $A$ and $B$ gives an infinity of the sign of $x$.\n\nIn the first case, an operand that is NaN is propagated, and the multiplication of a zero by an infinity is the invalid operation defined in IEEE 754 section 7.2; the result is NaN in both cases. The NaN of this case is a quiet NaN; its sign and its payload are not specified, whether the NaN comes from an operand or from the invalid operation, so that every quiet NaN of the type of $A$ and $B$ is a conforming result.\n\nIn the last case, the exact product is not representable in the type of $A$ and $B$: the result is that product rounded as defined above. The rounding may make the result subnormal, or, when the exact product is smaller in magnitude than half the smallest subnormal value of the type, zero.\n\nThe result takes the sign of the exact product in every case, zero and infinity included: the sign of $\\tilde{A}[i] \\cdot \\tilde{B}[i]$.\n\n**The sign of the result is the sign of the product, not of the operands.** IEEE 754 section 6.3 defines the sign of a product as the exclusive or of the signs of its operands, so that the sign of $C[i]$ is negative when exactly one of $\\tilde{A}[i]$ and $\\tilde{B}[i]$ is negative, and positive when both have the same sign; the operands may be swapped without changing the result. This applies to the special numbers as well:\n\n$$\n(+0) \\cdot_{(\\text{f})} (-5) = -0\n\\qquad\n(-0) \\cdot_{(\\text{f})} (-0) = +0\n\\qquad\n(-\\text{inf}) \\cdot_{(\\text{f})} (-2) = +\\text{inf}\n\\qquad\n(-\\text{inf}) \\cdot_{(\\text{f})} (+2) = -\\text{inf}\n$$\n\nA product whose exact value is null is thus $+0$ or $-0$ according to the signs of the operands: it is not always $+0$ as the null sum of two values of opposite signs is. A product that underflows to zero takes that sign too, as does a product that overflows to an infinity.\n\n**Values of the operands.** The operands may be any of the values of the type, including the special numbers $\\pm 0$, $\\pm\\text{inf}$ and NaN. The cases above give the result for every combination of them. The multiplication of an infinity by a finite non-zero value, or by an infinity, gives an infinity; the multiplication of a zero by a finite value gives a zero; the sign of both is the one defined above.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
+      "excerpt": "<a id=\"E_MUL_FLOAT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_FLOAT_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise according to IEEE 754 floating-point semantics and stores the result in tensor $C$. Each element of $C$ is the floating-point product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\tilde{A}[i] *_{(\\text{f})} \\tilde{B}[i] =\n\\begin{cases}\n\\text{NaN} & \\text{if } \\tilde{A}[i] \\text{ or } \\tilde{B}[i] \\text{ is NaN, or if one of them is a zero and the other an infinity} \\\\\n\\sigma \\cdot \\infty & \\text{if neither is NaN, one of them is an infinity, and the other is neither a zero nor NaN} \\\\\n\\text{round}(\\tilde{A}[i] * \\tilde{B}[i]) & \\text{otherwise}\n\\end{cases}\n$$\n\nwhere\n- $*_{(\\text{f})}$ is the multiplication of the floating-point type of $A$, $B$ and $C$, i.e. $*_{(\\text{f16})}$, $*_{(\\text{f32})}$ or $*_{(\\text{f64})}$ according to that type, whereas the $*$ of the third case is the multiplication of $\\mathbb{R}$: there, $\\tilde{A}[i] * \\tilde{B}[i]$ is the exact product of the two elements,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $\\sigma \\in \\{-1, +1\\}$ is the sign given by the rule of signs: $\\sigma = -1$ when the operands have opposite signs and $\\sigma = +1$ otherwise, the sign of an infinity and the sign of a zero being signs like any other,\n- $\\text{round}(x)$ is the value of $x$ rounded to the nearest value of the type of $A$ and $B$ using the roundTiesToEven attribute of IEEE 754, the exponent range of the type being unbounded: a magnitude whose nearest value exceeds the largest finite value of the type of $A$ and $B$ gives an infinity of the sign of $x$.\n\nIn the first case, an operand that is NaN is propagated, and the multiplication of a zero and an infinity is the invalid operation defined in IEEE 754 section 7.2; the result is NaN in both cases. The NaN of this case is a quiet NaN; its sign and its payload are not specified, whether the NaN comes from an operand or from the invalid operation, so that every quiet NaN of the type of $A$ and $B$ is a conforming result.\n\nIn the second case, the product of an infinity and a nonzero finite value, or of two infinities, is an infinity whose sign is given by the rule of signs; the result involves no rounding.\n\nIn the last case, both operands are finite, and the exact product is rounded as defined above. That product may be representable, in which case the result is that product and the multiplication is exact; it may be subnormal; and its magnitude may lie below the smallest subnormal value of the type of $A$ and $B$, in which case it rounds to a zero.\n\n**The sign of a null or infinite result.** The result is $-0$ or $-\\infty$ when the operands have opposite signs, and $+0$ or $+\\infty$ otherwise, the signs of $\\pm 0$ and $\\pm\\infty$ being taken into account. In particular the product of two zeros is $-0$ when one of them is $-0$ and the other $+0$, and $+0$ when the two zeros have the same sign; and a nonzero exact product whose magnitude rounds to zero gives a zero of the sign of that exact product, so that an underflow may produce $-0$.\n\n**Values of the operands.** The operands may be any of the values of the type, including the special numbers $\\pm 0$, $\\pm\\infty$ and NaN. The cases above give the result for every combination of them. Every finite value, zero and subnormal values included, is a possible operand and a possible result; the multiplication of two finite values never gives NaN.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
     },
     {
       "key": "E_MUL_FLOAT_CONSTR_A_0010",
       "source": "ops/mul/mul.md",
-      "start": 296,
-      "end": 298,
+      "start": 278,
+      "end": 280,
       "anchor": "E_MUL_FLOAT_CONSTR_A_0010",
       "excerpt": "<a id=\"E_MUL_FLOAT_CONSTR_A_0010\"></a>\n- `[E_MUL_FLOAT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting."
     },
     {
       "key": "E_MUL_FLOAT_CONSTR_A_0020",
       "source": "ops/mul/mul.md",
-      "start": 299,
-      "end": 301,
+      "start": 281,
+      "end": 283,
       "anchor": "E_MUL_FLOAT_CONSTR_A_0020",
-      "excerpt": "<a id=\"E_MUL_FLOAT_CONSTR_A_0020\"></a>\n- `[E_MUL_FLOAT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$, and $C$ have the same type."
+      "excerpt": "<a id=\"E_MUL_FLOAT_CONSTR_A_0020\"></a>\n- `[E_MUL_FLOAT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$ and $C$ have the same type."
     },
     {
       "key": "E_MUL_FLOAT_CONSTR_B_0010",
       "source": "ops/mul/mul.md",
-      "start": 309,
-      "end": 310,
+      "start": 291,
+      "end": 292,
       "anchor": null,
       "excerpt": "- `[E_MUL_FLOAT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_FLOAT_CONSTR_A_0010</span></b>](#E_MUL_FLOAT_CONSTR_A_0010) on tensor $A$."
     },
     {
       "key": "E_MUL_FLOAT_CONSTR_B_0020",
       "source": "ops/mul/mul.md",
-      "start": 311,
-      "end": 312,
+      "start": 293,
+      "end": 294,
       "anchor": null,
       "excerpt": "- `[E_MUL_FLOAT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_FLOAT_CONSTR_A_0020</span></b>](#E_MUL_FLOAT_CONSTR_A_0020) on tensor $A$."
     },
     {
       "key": "E_MUL_FLOAT_CONSTR_C_0010",
       "source": "ops/mul/mul.md",
-      "start": 322,
-      "end": 323,
+      "start": 304,
+      "end": 305,
       "anchor": null,
       "excerpt": "- `[E_MUL_FLOAT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape."
     },
     {
       "key": "E_MUL_FLOAT_CONSTR_C_0020",
       "source": "ops/mul/mul.md",
-      "start": 324,
-      "end": 325,
+      "start": 306,
+      "end": 307,
       "anchor": null,
       "excerpt": "- `[E_MUL_FLOAT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_FLOAT_CONSTR_A_0020</span></b>](#E_MUL_FLOAT_CONSTR_A_0020) on tensor $A$."
     },
     {
       "key": "E_MUL_INT_FUNC_0010",
       "source": "ops/mul/mul.md",
-      "start": 352,
-      "end": 382,
+      "start": 334,
+      "end": 366,
       "anchor": "E_MUL_INT_FUNC_0010",
-      "excerpt": "<a id=\"E_MUL_INT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_INT_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below. Tensors $A$, $B$ and $C$ have the same signed $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] \\equiv \\tilde{A}[i] \\cdot \\tilde{B}[i] \\pmod{2^n}, \\qquad C[i] \\text{ a value of the type of } A \\text{ and } B\n$$\n\nwhere\n- $\\tilde{A}[i] \\cdot \\tilde{B}[i]$ is the exact product of the two elements, the product in $\\mathbb{Z}$ of the two integers, before the reduction modulo $2^n$,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $n$ is the number of bits of the type of $A$ and $B$.\n\nThe values of an $n$-bit type are $2^n$ distinct integers no two of which are congruent modulo $2^n$: exactly one value of the type satisfies the congruence, and that value is $C[i]$. The congruence defines $C[i]$ and is the exact product reduced modulo $2^n$.\n\n**The reduction may be applied several times.** The values of an $n$-bit signed type lie in $[-2^{n-1}, 2^{n-1}-1]$, so that their exact product lies in $[-2^{2n-2}+2^{n-1}, 2^{2n-2}]$, a range of the order of the square of the range of the type: the lower bound is reached by $(-2^{n-1}) \\cdot (2^{n-1}-1)$, the smallest value times the largest, and the upper bound by $(-2^{n-1}) \\cdot (-2^{n-1})$, the smallest value times itself. Unlike the sum of two values of the type, whose magnitude is at most of the order of the range itself, the product may leave the range of the type by several multiples of $2^n$: for `int8`, the exact product $100 \\cdot 100 = 10000$ is $39 \\cdot 2^8 + 16$, and the result is $16$.\n\n**The sign of the result.** The reduction modulo $2^n$ does not preserve the sign of the exact product: the multiplication of two positive values may give a negative result, and conversely. For `int8`, $11 \\cdot 13 = 143$ exceeds the maximum value $2^7-1=127$ of the type, and the result is $143 - 2^8 = -113$, negative although both operands are positive. Tensors $A$, $B$ and $C$ have the same type and no wider type is used, so that the value of $C$ is that value of the type, sign included.\n\n**The result may be zero although both operands are non-zero.** For `int8`, $16 \\cdot 16 = 256$ is a multiple of $2^8$, so that the result is $0$.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
+      "excerpt": "<a id=\"E_MUL_INT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_INT_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below. Tensors $A$, $B$ and $C$ have the same signed $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] =\n\\begin{cases}\nu & \\text{if } u \\le 2^{n-1}-1 \\\\\nu - 2^n & \\text{if } u \\ge 2^{n-1}\n\\end{cases}\n\\qquad \\text{where } u = \\left(\\tilde{A}[i] * \\tilde{B}[i]\\right) \\bmod 2^n\n$$\n\nwhere\n- $\\tilde{A}[i] * \\tilde{B}[i]$ is the exact product of the two elements, the product in $\\mathbb{Z}$ of the two integers, before the reduction modulo $2^n$,\n- $x \\bmod 2^n$ is the remainder of the Euclidean division of $x$ by $2^n$, taken in $[0, 2^n-1]$, i.e. the unique integer $u \\in [0, 2^n-1]$ such that $x - u$ is a multiple of $2^n$,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $n$ is the number of bits of the type of $A$ and $B$.\n\nThe result is thus the unique value of the type of $A$ and $B$ that is congruent to the exact product modulo $2^n$: the $2^n$ values of an $n$-bit signed type form a complete set of residues modulo $2^n$, so that exactly one of them satisfies the condition. The exact product of two values of the type lies in $\\left[-2^{2n-2}+2^{n-1},\\, 2^{2n-2}\\right]$, and the reduction modulo $2^n$ is applied as many times as the magnitude of that product requires.\n\n**The result may differ from the exact product in magnitude and in sign.** The range of the type is not closed under multiplication, so that the product of two values of the type generally leaves it: for `int8`, $100 * 100$ gives $16$, $-100 * 100$ gives $-16$, and $100 * 3$ gives $44$. Tensors $A$, $B$ and $C$ have the same type and no wider type is used, so that the value of $C$ is that value of the type, sign included, and the multiplication is not monotonic on the signed integer types.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
     },
     {
       "key": "E_MUL_INT_CONSTR_A_0010",
       "source": "ops/mul/mul.md",
-      "start": 422,
-      "end": 424,
+      "start": 409,
+      "end": 411,
       "anchor": "E_MUL_INT_CONSTR_A_0010",
       "excerpt": "<a id=\"E_MUL_INT_CONSTR_A_0010\"></a>\n- `[E_MUL_INT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting."
     },
     {
       "key": "E_MUL_INT_CONSTR_A_0020",
       "source": "ops/mul/mul.md",
-      "start": 425,
-      "end": 427,
+      "start": 412,
+      "end": 414,
       "anchor": "E_MUL_INT_CONSTR_A_0020",
-      "excerpt": "<a id=\"E_MUL_INT_CONSTR_A_0020\"></a>\n- `[E_MUL_INT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$, and $C$ have the same type."
+      "excerpt": "<a id=\"E_MUL_INT_CONSTR_A_0020\"></a>\n- `[E_MUL_INT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$ and $C$ have the same type."
     },
     {
       "key": "E_MUL_INT_CONSTR_B_0010",
       "source": "ops/mul/mul.md",
-      "start": 435,
-      "end": 436,
+      "start": 422,
+      "end": 423,
       "anchor": null,
       "excerpt": "- `[E_MUL_INT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_INT_CONSTR_A_0010</span></b>](#E_MUL_INT_CONSTR_A_0010) on tensor $A$."
     },
     {
       "key": "E_MUL_INT_CONSTR_B_0020",
       "source": "ops/mul/mul.md",
-      "start": 437,
-      "end": 438,
+      "start": 424,
+      "end": 425,
       "anchor": null,
       "excerpt": "- `[E_MUL_INT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_INT_CONSTR_A_0020</span></b>](#E_MUL_INT_CONSTR_A_0020) on tensor $A$."
     },
     {
       "key": "E_MUL_INT_CONSTR_C_0010",
       "source": "ops/mul/mul.md",
-      "start": 448,
-      "end": 449,
+      "start": 435,
+      "end": 436,
       "anchor": null,
       "excerpt": "- `[E_MUL_INT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape."
     },
     {
       "key": "E_MUL_INT_CONSTR_C_0020",
       "source": "ops/mul/mul.md",
-      "start": 450,
-      "end": 451,
+      "start": 437,
+      "end": 438,
       "anchor": null,
       "excerpt": "- `[E_MUL_INT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_INT_CONSTR_A_0020</span></b>](#E_MUL_INT_CONSTR_A_0020) on tensor $A$."
     },
     {
       "key": "E_MUL_UINT_FUNC_0010",
       "source": "ops/mul/mul.md",
-      "start": 478,
-      "end": 508,
+      "start": 465,
+      "end": 492,
       "anchor": "E_MUL_UINT_FUNC_0010",
-      "excerpt": "<a id=\"E_MUL_UINT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_UINT_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below. Tensors $A$, $B$ and $C$ have the same unsigned $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] \\equiv \\tilde{A}[i] \\cdot \\tilde{B}[i] \\pmod{2^n}, \\qquad C[i] \\text{ a value of the type of } A \\text{ and } B\n$$\n\nwhere\n- $\\tilde{A}[i] \\cdot \\tilde{B}[i]$ is the exact product of the two elements, the product in $\\mathbb{Z}$ of the two integers, before the reduction modulo $2^n$,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $n$ is the number of bits of the type of $A$ and $B$.\n\nThe values of an $n$-bit type are $2^n$ distinct integers no two of which are congruent modulo $2^n$: exactly one value of the type satisfies the congruence, and that value is $C[i]$. The congruence defines $C[i]$ and is the exact product reduced modulo $2^n$.\n\n**The reduction may be applied several times.** The values of an $n$-bit unsigned type lie in $[0, 2^n-1]$, so that their exact product lies in $[0, 2^{2n}-2^{n+1}+1]$, a range of the order of the square of the range of the type. Unlike the sum of two values of the type, whose magnitude is at most of the order of the range itself, the product may leave the range of the type by several multiples of $2^n$: for `uint8`, the exact product $200 \\cdot 200 = 40000$ is $156 \\cdot 2^8 + 64$, and the result is $64$.\n\n**The result may be smaller than both operands.** The product of two non-negative integers is never smaller than either of them, whereas the result here is reduced modulo $2^n$: for `uint8`, $20 \\cdot 13 = 260$ exceeds the maximum value $2^8-1=255$, and the result is $260-2^8=4$, a value smaller than both operands. Tensors $A$, $B$ and $C$ have the same type and no wider type is used, so that the value of $C$ is that value of the type, and the multiplication is not monotonic on the unsigned types.\n\n**The result may be zero although both operands are non-zero.** For `uint8`, $16 \\cdot 16 = 256$ is a multiple of $2^8$, so that the result is $0$.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
+      "excerpt": "<a id=\"E_MUL_UINT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_UINT_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below. Tensors $A$, $B$ and $C$ have the same unsigned $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\left(\\tilde{A}[i] * \\tilde{B}[i]\\right) \\bmod 2^n\n$$\n\nwhere\n- $\\tilde{A}[i] * \\tilde{B}[i]$ is the exact product of the two elements, the product in $\\mathbb{Z}$ of the two integers, before the reduction modulo $2^n$,\n- $x \\bmod 2^n$ is the remainder of the Euclidean division of $x$ by $2^n$, taken in $[0, 2^n-1]$, i.e. the unique integer $u \\in [0, 2^n-1]$ such that $x - u$ is a multiple of $2^n$,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $n$ is the number of bits of the type of $A$ and $B$.\n\nThe result is thus the unique value of the type of $A$ and $B$ that is congruent to the exact product modulo $2^n$: the $2^n$ values of an $n$-bit unsigned type are exactly the residues modulo $2^n$, so that the condition determines the result. The exact product of two values of the type lies in $\\left[0,\\, (2^n-1)^2\\right]$, and the reduction modulo $2^n$ is applied as many times as the magnitude of that product requires.\n\n**The result may be smaller than both operands.** The product of two non-negative integers is at least as large as either of them when both are at least $1$, whereas the result here is reduced modulo $2^n$: for `uint8`, $200 * 100$ gives $32$, and $16 * 16$ gives $0$. Tensors $A$, $B$ and $C$ have the same type and no wider type is used, so that the value of $C$ is that value of the type, and the multiplication is not monotonic on the unsigned types.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
     },
     {
       "key": "E_MUL_UINT_CONSTR_A_0010",
       "source": "ops/mul/mul.md",
-      "start": 548,
-      "end": 550,
+      "start": 535,
+      "end": 537,
       "anchor": "E_MUL_UINT_CONSTR_A_0010",
       "excerpt": "<a id=\"E_MUL_UINT_CONSTR_A_0010\"></a>\n- `[E_MUL_UINT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting."
     },
     {
       "key": "E_MUL_UINT_CONSTR_A_0020",
       "source": "ops/mul/mul.md",
-      "start": 551,
-      "end": 553,
+      "start": 538,
+      "end": 540,
       "anchor": "E_MUL_UINT_CONSTR_A_0020",
-      "excerpt": "<a id=\"E_MUL_UINT_CONSTR_A_0020\"></a>\n- `[E_MUL_UINT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$, and $C$ have the same type."
+      "excerpt": "<a id=\"E_MUL_UINT_CONSTR_A_0020\"></a>\n- `[E_MUL_UINT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$ and $C$ have the same type."
     },
     {
       "key": "E_MUL_UINT_CONSTR_B_0010",
       "source": "ops/mul/mul.md",
-      "start": 561,
-      "end": 562,
+      "start": 548,
+      "end": 549,
       "anchor": null,
       "excerpt": "- `[E_MUL_UINT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_UINT_CONSTR_A_0010</span></b>](#E_MUL_UINT_CONSTR_A_0010) on tensor $A$."
     },
     {
       "key": "E_MUL_UINT_CONSTR_B_0020",
       "source": "ops/mul/mul.md",
-      "start": 563,
-      "end": 564,
+      "start": 550,
+      "end": 551,
       "anchor": null,
       "excerpt": "- `[E_MUL_UINT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_UINT_CONSTR_A_0020</span></b>](#E_MUL_UINT_CONSTR_A_0020) on tensor $A$."
     },
     {
       "key": "E_MUL_UINT_CONSTR_C_0010",
       "source": "ops/mul/mul.md",
-      "start": 574,
-      "end": 575,
+      "start": 561,
+      "end": 562,
       "anchor": null,
       "excerpt": "- `[E_MUL_UINT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape."
     },
     {
       "key": "E_MUL_UINT_CONSTR_C_0020",
       "source": "ops/mul/mul.md",
-      "start": 576,
-      "end": 577,
+      "start": 563,
+      "end": 564,
       "anchor": null,
       "excerpt": "- `[E_MUL_UINT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_UINT_CONSTR_A_0020</span></b>](#E_MUL_UINT_CONSTR_A_0020) on tensor $A$."
     }
@@ -208,66 +208,58 @@
     {
       "key": "real:example:1",
       "source": "ops/mul/mul.md",
-      "start": 62,
-      "end": 72,
+      "start": 60,
+      "end": 70,
       "anchor": null,
-      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 6.1 & 9.5 & 35.7 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & 3 & 4 \\end{bmatrix}\n$$\n\n$$\nC = A \\cdot B = \\begin{bmatrix} 12.2 & 28.5 & 142.8 \\end{bmatrix}\n$$"
+      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 1.5 & 9.5 & 35.5 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & 3 & -4 \\end{bmatrix}\n$$\n\n$$\nC = A * B = \\begin{bmatrix} 3 & 28.5 & -142 \\end{bmatrix}\n$$"
     },
     {
       "key": "real:example:2",
       "source": "ops/mul/mul.md",
-      "start": 74,
-      "end": 98,
+      "start": 72,
+      "end": 96,
       "anchor": null,
-      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix}\n  3.7 & 4.4 \\\\\n  16.2 & 0.5 \\\\\n  25.3 & 24.8\n\\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & 10 \\end{bmatrix}\n$$\n\n$$\nC = A \\cdot B = \\begin{bmatrix}\n  3.7 \\cdot 2 & 4.4 \\cdot 10 \\\\\n  16.2 \\cdot 2 & 0.5 \\cdot 10 \\\\\n  25.3 \\cdot 2 & 24.8 \\cdot 10\n\\end{bmatrix} = \\begin{bmatrix}\n  7.4 & 44.0 \\\\\n  32.4 & 5.0 \\\\\n  50.6 & 248.0\n\\end{bmatrix}\n$$\n\nTensor $B$ has rank $1$ and tensor $A$ has rank $2$; $B$ is broadcast to the shape of $A$, so that each column of $A$ is multiplied by the corresponding element of $B$."
+      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix}\n  3 & 4.5 \\\\\n  16 & 0.5 \\\\\n  25.5 & 24\n\\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & -1 \\end{bmatrix}\n$$\n\n$$\nC = A * B = \\begin{bmatrix}\n  3*2 & 4.5*(-1) \\\\\n  16*2 & 0.5*(-1) \\\\\n  25.5*2 & 24*(-1)\n\\end{bmatrix} = \\begin{bmatrix}\n  6 & -4.5 \\\\\n  32 & -0.5 \\\\\n  51 & -24\n\\end{bmatrix}\n$$\n\nTensor $B$ has rank $1$ and tensor $A$ has rank $2$; $B$ is broadcast to the shape of $A$, so that each column of $A$ is multiplied by the corresponding element of $B$."
     },
     {
       "key": "float:example:1",
       "source": "ops/mul/mul.md",
-      "start": 218,
-      "end": 230,
+      "start": 212,
+      "end": 224,
       "anchor": null,
-      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 3.0 & 4.5 \\\\ 16.0 & 1.0 \\\\ 25.5 & 24.25 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3.0 & 2.0 \\\\ 4.0 & 0.0 \\\\ 5.0 & 4.0 \\end{bmatrix}\n$$\n\n$$\nC = A \\cdot_{(\\text{f})} B = \\begin{bmatrix} 9.0 & 9.0 \\\\ 64.0 & 0.0 \\\\ 127.5 & 97.0 \\end{bmatrix}\n$$\n\nThe product of two numbers of a `float` type is not always exact; in this example every product is representable and $C$ is the exact result."
+      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 3.0 & 4.5 & 16.0 & 0.5 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3.0 & -2.0 & 0.25 & 4.0 \\end{bmatrix}\n$$\n\n$$\nC = A *_{(\\text{f})} B = \\begin{bmatrix} 9.0 & -9.0 & 4.0 & 2.0 \\end{bmatrix}\n$$\n\nThe product of two numbers of a `float` type is not always exact; in this example every product is representable and $C$ is the exact result."
     },
     {
       "key": "float:example:2",
       "source": "ops/mul/mul.md",
-      "start": 232,
-      "end": 244,
+      "start": 226,
+      "end": 238,
       "anchor": null,
-      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix} 1.0 & \\text{+inf} & \\text{-inf} & \\text{+0} & \\text{-0} & \\text{-0} \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 1.0 & \\text{+0} & \\text{-2.0} & \\text{-3.0} & \\text{+5.0} & \\text{-0} \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 1.0 & \\text{NaN} & \\text{+inf} & \\text{-0} & \\text{-0} & \\text{+0} \\end{bmatrix}\n$$\n\nThe product of an infinity by a zero is the invalid operation of IEEE 754 section 7.2 and yields NaN. The product of the two negative values $-\\text{inf}$ and $-2.0$ is the positive infinity. The three null products show the rule of the sign: $(+0) \\cdot (-3.0) = -0$ and $(-0) \\cdot (+5.0) = -0$, the sign of a null product being negative when exactly one operand is negative; and $(-0) \\cdot (-0) = +0$, since the two signs are equal."
+      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix} \\text{+0} & \\text{+inf} & \\text{+0} & \\text{-0} & \\text{-inf} & \\text{NaN} \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} \\text{+inf} & \\text{-inf} & \\text{-3.0} & \\text{-2.0} & \\text{+2.0} & \\text{1.0} \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} \\text{NaN} & \\text{-inf} & \\text{-0} & \\text{+0} & \\text{-inf} & \\text{NaN} \\end{bmatrix}\n$$\n\nThe product of the zero and the infinity of the first column is the invalid operation of IEEE 754 section 7.2 and yields NaN. The product of the two infinities of opposite signs is $-\\infty$, and so is the product of $-\\infty$ and the positive finite value. The product of $+0$ and the negative value is $-0$, and the product of $-0$ and the negative value is $+0$: the sign of a null result follows the rule of signs."
     },
     {
       "key": "float:example:3",
       "source": "ops/mul/mul.md",
-      "start": 246,
-      "end": 258,
+      "start": 240,
+      "end": 252,
       "anchor": null,
-      "excerpt": "### Example 3\n\n$$\nA = \\begin{bmatrix} 0.1 & 1.0 & 1.0\\text{e}308 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 0.2 & 3.0 & 1.0\\text{e}308 \\end{bmatrix}\n$$\n\n$$\nC \\approx \\begin{bmatrix} 0.020000000000000004 & 3.0 & \\text{+inf} \\end{bmatrix}\n$$\n\nThe exact product of the two `double` values $0.1$ and $0.2$ is not representable in `double`; the first element of $C$ is that product rounded to the nearest `double`. The exact product $1\\text{e}308 \\cdot 1\\text{e}308$ is beyond the largest finite value of `double`, so that the third element is the positive infinity, the sign of the exact product."
-    },
-    {
-      "key": "float:example:4",
-      "source": "ops/mul/mul.md",
-      "start": 260,
-      "end": 272,
-      "anchor": null,
-      "excerpt": "### Example 4\n\n$$\nA = \\begin{bmatrix} 2.2250738585072014\\text{e-}308 & -2.2250738585072014\\text{e-}308 & \\text{+0} & \\text{-0} \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 0.25 & 0.25 & \\text{-1.0} & \\text{-0} \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 5.562684646268003\\text{e-}309 & -5.562684646268003\\text{e-}309 & \\text{-0} & \\text{+0} \\end{bmatrix}\n$$\n\nThe first operand is the smallest positive normal value of `double`, whose exact half is not representable as a normal value: multiplied by $0.25$ it gives a subnormal value, the nearest value of the type, and the second element is the negative of that value. The last two elements are the null products of Example 2, $-0$ and $+0$; none of the four elements is rounded to zero, the exact products of the first two being representable as subnormal values."
+      "excerpt": "### Example 3\n\n$$\nA \\approx \\begin{bmatrix} 0.1 & 1 \\cdot 10^{308} & -1 \\cdot 10^{-308} \\end{bmatrix}\n\\quad\nB \\approx \\begin{bmatrix} 0.2 & 10 & 1 \\cdot 10^{-308} \\end{bmatrix}\n$$\n\n$$\nC \\approx \\begin{bmatrix} 0.020000000000000004 & \\text{+inf} & \\text{-0} \\end{bmatrix}\n$$\n\nThe three operands are `double` values. The exact product of $0.1$ and $0.2$ is not representable in `double`; the first element of $C$ is that product rounded to the nearest `double`. The exact product of $1 \\cdot 10^{308}$ and $10$ exceeds the largest finite value of `double`, and its nearest value with an unbounded exponent range lies beyond that value: the second element is an overflow, and its sign is the sign of the exact product. The exact product of the two subnormal values is negative and its magnitude lies below the smallest subnormal value of `double`: the third element is $-0$, the sign of the exact product preserved by the rounding."
     },
     {
       "key": "int:example:1",
       "source": "ops/mul/mul.md",
-      "start": 386,
-      "end": 400,
+      "start": 370,
+      "end": 384,
       "anchor": null,
-      "excerpt": "### Example 1\n\nFor the `int8` type:\n\n$$\nA = \\begin{bmatrix} -6 & 11 & 100 & 16 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} -3 & 13 & 100 & 16 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 18 & -113 & 16 & 0 \\end{bmatrix}\n$$\n\nThe product $-6 \\cdot (-3) = 18$ lies in $[-2^7, 2^7-1]$ and is its own reduction. The product $11 \\cdot 13 = 143$ is greater than the maximum value $127$ of `int8`, so that the result is $143-2^8=-113$: it is negative although both operands are positive. The product $100 \\cdot 100 = 10000$ is $39 \\cdot 2^8 + 16$, and the result is $16$, the reduction being applied more than once. The product $16 \\cdot 16 = 256$ is a multiple of $2^8$ and the result is $0$, although both operands are non-zero."
+      "excerpt": "### Example 1\n\nFor the `int8` type:\n\n$$\nA = \\begin{bmatrix} -6 & 100 & -100 & 100 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} -3 & 100 & 100 & 3 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 18 & 16 & -16 & 44 \\end{bmatrix}\n$$\n\nThe product $-6 * (-3) = 18$ lies in $[-2^7, 2^7-1]$ and is its own remainder modulo $2^8$. The product $100 * 100 = 10000$ leaves that range: its remainder modulo $2^8$ is $16$, which is at most $2^7-1=127$ and is the result. The product $-100 * 100 = -10000$ has the remainder $240$ modulo $2^8$, which is at least $2^7=128$, so the result is $240-256=-16$. The product $100 * 3 = 300$ has the remainder $44$ modulo $2^8$, which is the result. The result of the first product has the sign of the exact product, whereas the results of the other three do not."
     },
     {
       "key": "uint:example:1",
       "source": "ops/mul/mul.md",
-      "start": 512,
-      "end": 526,
+      "start": 496,
+      "end": 510,
       "anchor": null,
-      "excerpt": "### Example 1\n\nFor the `uint8` type:\n\n$$\nA = \\begin{bmatrix} 6 & 200 & 20 & 16 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3 & 200 & 13 & 16 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 18 & 64 & 4 & 0 \\end{bmatrix}\n$$\n\nThe product $6 \\cdot 3 = 18$ is at most $2^8-1=255$ and is its own reduction. The product $200 \\cdot 200 = 40000$ is $156 \\cdot 2^8 + 64$, and the result is $64$, the reduction being applied more than once. The product $20 \\cdot 13 = 260$ exceeds $255$, so that the result is $260-2^8=4$, smaller than both operands. The product $16 \\cdot 16 = 256$ is a multiple of $2^8$ and the result is $0$, although both operands are non-zero."
+      "excerpt": "### Example 1\n\nFor the `uint8` type:\n\n$$\nA = \\begin{bmatrix} 6 & 200 & 35 & 16 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3 & 100 & 5 & 16 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 18 & 32 & 175 & 0 \\end{bmatrix}\n$$\n\nThe products $6 * 3 = 18$ and $35 * 5 = 175$ are at most $2^8-1=255$ and are their own remainders modulo $2^8$. The product $200 * 100 = 20000$ leaves the range of the type: its remainder modulo $2^8$ is $32$, which is smaller than both operands. The product $16 * 16 = 256$ is a multiple of $2^8$ and its remainder is $0$."
     }
   ],
   "ok": true,
@@ -299,325 +291,315 @@
     "E_MUL_UINT_CONSTR_B_0020": "specified",
     "E_MUL_UINT_CONSTR_C_0010": "specified",
     "E_MUL_UINT_CONSTR_C_0020": "specified",
-    "real:example:1": "specified",
-    "real:example:2": "specified",
-    "float:example:1": "deferred",
-    "float:example:2": "deferred",
+    "real:example:1": "example_only",
+    "real:example:2": "example_only",
+    "float:example:1": "example_only",
+    "float:example:2": "example_only",
     "float:example:3": "deferred",
-    "float:example:4": "deferred",
-    "int:example:1": "specified",
-    "uint:example:1": "specified"
+    "int:example:1": "example_only",
+    "uint:example:1": "example_only"
   },
   "entries": [
-    {
-      "key": "E_MUL_REAL_FUNC_0010",
-      "status": "specified",
-      "declaration": "Sonnx.MulRealCorrect",
-      "limitation": "",
-      "source": "ops/mul/mul.md:L33-L58",
-      "excerpt": "<a id=\"E_MUL_REAL_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_REAL_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise and stores the result in tensor $C$. Each element of $C$ is the product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below.\n\nFor any [tensor index](./../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\tilde{A}[i] \\cdot \\tilde{B}[i]\n$$\n\nwhere\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$,\n- $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$.\n\nThe multiplication is exact: $C[i]$ is the product in $\\mathbb{R}$ of the two elements, with no approximation.\n\n**The two operands play the same role.** The product in $\\mathbb{R}$ is commutative, so that the multiplication of $B$ by $A$ gives the same result as the multiplication of $A$ by $B$; the operands are named only to designate the tensors.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
-      "line": 28
-    },
     {
       "key": "E_MUL_REAL_CONSTR_A_0010",
       "status": "specified",
       "declaration": "Sonnx.BroadcastCompatible",
       "limitation": "",
-      "source": "ops/mul/mul.md:L116-L118",
+      "source": "ops/mul/mul.md:L121-L123",
       "excerpt": "<a id=\"E_MUL_REAL_CONSTR_A_0010\"></a>\n- `[E_MUL_REAL_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting.",
-      "line": 63
+      "line": 57
     },
     {
       "key": "E_MUL_REAL_CONSTR_B_0010",
       "status": "specified",
       "declaration": "Sonnx.BroadcastCompatible",
       "limitation": "",
-      "source": "ops/mul/mul.md:L126-L127",
+      "source": "ops/mul/mul.md:L131-L132",
       "excerpt": "- `[E_MUL_REAL_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_REAL_CONSTR_A_0010</span></b>](#E_MUL_REAL_CONSTR_A_0010) on tensor $A$.",
-      "line": 75
+      "line": 69
     },
     {
       "key": "E_MUL_REAL_CONSTR_C_0010",
       "status": "specified",
       "declaration": "Sonnx.BroadcastShapeIs",
       "limitation": "",
-      "source": "ops/mul/mul.md:L137-L138",
+      "source": "ops/mul/mul.md:L142-L143",
       "excerpt": "- `[E_MUL_REAL_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape.",
-      "line": 85
+      "line": 79
     },
     {
-      "key": "E_MUL_FLOAT_FUNC_0010",
+      "key": "E_MUL_REAL_FUNC_0010",
       "status": "specified",
-      "declaration": "Sonnx.MulFloatCorrect",
+      "declaration": "Generated.Mul.RealMulRel",
       "limitation": "",
-      "source": "ops/mul/mul.md:L165-L214",
-      "excerpt": "<a id=\"E_MUL_FLOAT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_FLOAT_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise according to IEEE 754 floating-point semantics and stores the result in tensor $C$. Each element of $C$ is the floating-point product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below.\n\nFor any [tensor index](./../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\tilde{A}[i] \\cdot_{(\\text{f})} \\tilde{B}[i] =\n\\begin{cases}\n\\text{NaN} & \\text{if } \\tilde{A}[i] \\text{ or } \\tilde{B}[i] \\text{ is NaN, or if one of them is a zero and the other an infinity} \\\\\n\\tilde{A}[i] \\cdot \\tilde{B}[i] & \\text{if the exact product is representable in the type of } A \\text{ and } B \\\\\n\\text{round}(\\tilde{A}[i] \\cdot \\tilde{B}[i]) & \\text{otherwise}\n\\end{cases}\n$$\n\nwhere\n- $\\cdot_{(\\text{f})}$ is the multiplication of the floating-point type of $A$, $B$ and $C$, i.e. $\\cdot_{(\\text{f16})}$, $\\cdot_{(\\text{f32})}$ or $\\cdot_{(\\text{f64})}$ according to that type, whereas the $\\cdot$ of the second and the third case is the multiplication of $\\mathbb{R}$: there, $\\tilde{A}[i] \\cdot \\tilde{B}[i]$ is the exact product of the two elements,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $\\text{round}(x)$ is the value of $x$ rounded to the nearest value of the type of $A$ and $B$ using the roundTiesToEven attribute of IEEE 754, the exponent range of the type being unbounded: a magnitude whose nearest value exceeds the largest finite value of the type of $A$ and $B$ gives an infinity of the sign of $x$.\n\nIn the first case, an operand that is NaN is propagated, and the multiplication of a zero by an infinity is the invalid operation defined in IEEE 754 section 7.2; the result is NaN in both cases. The NaN of this case is a quiet NaN; its sign and its payload are not specified, whether the NaN comes from an operand or from the invalid operation, so that every quiet NaN of the type of $A$ and $B$ is a conforming result.\n\nIn the last case, the exact product is not representable in the type of $A$ and $B$: the result is that product rounded as defined above. The rounding may make the result subnormal, or, when the exact product is smaller in magnitude than half the smallest subnormal value of the type, zero.\n\nThe result takes the sign of the exact product in every case, zero and infinity included: the sign of $\\tilde{A}[i] \\cdot \\tilde{B}[i]$.\n\n**The sign of the result is the sign of the product, not of the operands.** IEEE 754 section 6.3 defines the sign of a product as the exclusive or of the signs of its operands, so that the sign of $C[i]$ is negative when exactly one of $\\tilde{A}[i]$ and $\\tilde{B}[i]$ is negative, and positive when both have the same sign; the operands may be swapped without changing the result. This applies to the special numbers as well:\n\n$$\n(+0) \\cdot_{(\\text{f})} (-5) = -0\n\\qquad\n(-0) \\cdot_{(\\text{f})} (-0) = +0\n\\qquad\n(-\\text{inf}) \\cdot_{(\\text{f})} (-2) = +\\text{inf}\n\\qquad\n(-\\text{inf}) \\cdot_{(\\text{f})} (+2) = -\\text{inf}\n$$\n\nA product whose exact value is null is thus $+0$ or $-0$ according to the signs of the operands: it is not always $+0$ as the null sum of two values of opposite signs is. A product that underflows to zero takes that sign too, as does a product that overflows to an infinity.\n\n**Values of the operands.** The operands may be any of the values of the type, including the special numbers $\\pm 0$, $\\pm\\text{inf}$ and NaN. The cases above give the result for every combination of them. The multiplication of an infinity by a finite non-zero value, or by an infinity, gives an infinity; the multiplication of a zero by a finite value gives a zero; the sign of both is the one defined above.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
-      "line": 95
+      "source": "ops/mul/mul.md:L33-L56",
+      "excerpt": "<a id=\"E_MUL_REAL_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_REAL_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise and stores the result in tensor $C$. Each element of $C$ is the product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\tilde{A}[i] * \\tilde{B}[i]\n$$\n\nwhere\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$,\n- $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$.\n\nThe multiplication is exact: $C[i]$ is the product in $\\mathbb{R}$ of the two elements, with no approximation, and it is defined for every pair of real numbers.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
+      "line": 90
+    },
+    {
+      "key": "real:example:1",
+      "status": "example_only",
+      "declaration": "Generated.Mul.realExample1",
+      "limitation": "",
+      "source": "ops/mul/mul.md:L60-L70",
+      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 1.5 & 9.5 & 35.5 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & 3 & -4 \\end{bmatrix}\n$$\n\n$$\nC = A * B = \\begin{bmatrix} 3 & 28.5 & -142 \\end{bmatrix}\n$$",
+      "line": 129
+    },
+    {
+      "key": "real:example:2",
+      "status": "example_only",
+      "declaration": "Generated.Mul.realExample2",
+      "limitation": "",
+      "source": "ops/mul/mul.md:L72-L96",
+      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix}\n  3 & 4.5 \\\\\n  16 & 0.5 \\\\\n  25.5 & 24\n\\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & -1 \\end{bmatrix}\n$$\n\n$$\nC = A * B = \\begin{bmatrix}\n  3*2 & 4.5*(-1) \\\\\n  16*2 & 0.5*(-1) \\\\\n  25.5*2 & 24*(-1)\n\\end{bmatrix} = \\begin{bmatrix}\n  6 & -4.5 \\\\\n  32 & -0.5 \\\\\n  51 & -24\n\\end{bmatrix}\n$$\n\nTensor $B$ has rank $1$ and tensor $A$ has rank $2$; $B$ is broadcast to the shape of $A$, so that each column of $A$ is multiplied by the corresponding element of $B$.",
+      "line": 159
     },
     {
       "key": "E_MUL_FLOAT_CONSTR_A_0010",
       "status": "specified",
       "declaration": "Sonnx.BroadcastCompatible",
       "limitation": "",
-      "source": "ops/mul/mul.md:L296-L298",
+      "source": "ops/mul/mul.md:L278-L280",
       "excerpt": "<a id=\"E_MUL_FLOAT_CONSTR_A_0010\"></a>\n- `[E_MUL_FLOAT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting.",
-      "line": 154
+      "line": 262
     },
     {
       "key": "E_MUL_FLOAT_CONSTR_A_0020",
       "status": "specified",
       "declaration": "Sonnx.TypeConsistent",
       "limitation": "",
-      "source": "ops/mul/mul.md:L299-L301",
-      "excerpt": "<a id=\"E_MUL_FLOAT_CONSTR_A_0020\"></a>\n- `[E_MUL_FLOAT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$, and $C$ have the same type.",
-      "line": 166
+      "source": "ops/mul/mul.md:L281-L283",
+      "excerpt": "<a id=\"E_MUL_FLOAT_CONSTR_A_0020\"></a>\n- `[E_MUL_FLOAT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$ and $C$ have the same type.",
+      "line": 274
     },
     {
       "key": "E_MUL_FLOAT_CONSTR_B_0010",
       "status": "specified",
       "declaration": "Sonnx.BroadcastCompatible",
       "limitation": "",
-      "source": "ops/mul/mul.md:L309-L310",
+      "source": "ops/mul/mul.md:L291-L292",
       "excerpt": "- `[E_MUL_FLOAT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_FLOAT_CONSTR_A_0010</span></b>](#E_MUL_FLOAT_CONSTR_A_0010) on tensor $A$.",
-      "line": 178
+      "line": 286
     },
     {
       "key": "E_MUL_FLOAT_CONSTR_B_0020",
       "status": "specified",
       "declaration": "Sonnx.TypeConsistent",
       "limitation": "",
-      "source": "ops/mul/mul.md:L311-L312",
+      "source": "ops/mul/mul.md:L293-L294",
       "excerpt": "- `[E_MUL_FLOAT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_FLOAT_CONSTR_A_0020</span></b>](#E_MUL_FLOAT_CONSTR_A_0020) on tensor $A$.",
-      "line": 188
+      "line": 296
     },
     {
       "key": "E_MUL_FLOAT_CONSTR_C_0010",
       "status": "specified",
       "declaration": "Sonnx.BroadcastShapeIs",
       "limitation": "",
-      "source": "ops/mul/mul.md:L322-L323",
+      "source": "ops/mul/mul.md:L304-L305",
       "excerpt": "- `[E_MUL_FLOAT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape.",
-      "line": 198
+      "line": 306
     },
     {
       "key": "E_MUL_FLOAT_CONSTR_C_0020",
       "status": "specified",
       "declaration": "Sonnx.TypeConsistent",
       "limitation": "",
-      "source": "ops/mul/mul.md:L324-L325",
+      "source": "ops/mul/mul.md:L306-L307",
       "excerpt": "- `[E_MUL_FLOAT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_FLOAT_CONSTR_A_0020</span></b>](#E_MUL_FLOAT_CONSTR_A_0020) on tensor $A$.",
-      "line": 208
+      "line": 316
     },
     {
-      "key": "E_MUL_INT_FUNC_0010",
+      "key": "E_MUL_FLOAT_FUNC_0010",
       "status": "specified",
-      "declaration": "Sonnx.MulIntCorrect",
+      "declaration": "Generated.Mul.FloatMulRel",
       "limitation": "",
-      "source": "ops/mul/mul.md:L352-L382",
-      "excerpt": "<a id=\"E_MUL_INT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_INT_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below. Tensors $A$, $B$ and $C$ have the same signed $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](./../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] \\equiv \\tilde{A}[i] \\cdot \\tilde{B}[i] \\pmod{2^n}, \\qquad C[i] \\text{ a value of the type of } A \\text{ and } B\n$$\n\nwhere\n- $\\tilde{A}[i] \\cdot \\tilde{B}[i]$ is the exact product of the two elements, the product in $\\mathbb{Z}$ of the two integers, before the reduction modulo $2^n$,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $n$ is the number of bits of the type of $A$ and $B$.\n\nThe values of an $n$-bit type are $2^n$ distinct integers no two of which are congruent modulo $2^n$: exactly one value of the type satisfies the congruence, and that value is $C[i]$. The congruence defines $C[i]$ and is the exact product reduced modulo $2^n$.\n\n**The reduction may be applied several times.** The values of an $n$-bit signed type lie in $[-2^{n-1}, 2^{n-1}-1]$, so that their exact product lies in $[-2^{2n-2}+2^{n-1}, 2^{2n-2}]$, a range of the order of the square of the range of the type: the lower bound is reached by $(-2^{n-1}) \\cdot (2^{n-1}-1)$, the smallest value times the largest, and the upper bound by $(-2^{n-1}) \\cdot (-2^{n-1})$, the smallest value times itself. Unlike the sum of two values of the type, whose magnitude is at most of the order of the range itself, the product may leave the range of the type by several multiples of $2^n$: for `int8`, the exact product $100 \\cdot 100 = 10000$ is $39 \\cdot 2^8 + 16$, and the result is $16$.\n\n**The sign of the result.** The reduction modulo $2^n$ does not preserve the sign of the exact product: the multiplication of two positive values may give a negative result, and conversely. For `int8`, $11 \\cdot 13 = 143$ exceeds the maximum value $2^7-1=127$ of the type, and the result is $143 - 2^8 = -113$, negative although both operands are positive. Tensors $A$, $B$ and $C$ have the same type and no wider type is used, so that the value of $C$ is that value of the type, sign included.\n\n**The result may be zero although both operands are non-zero.** For `int8`, $16 \\cdot 16 = 256$ is a multiple of $2^8$, so that the result is $0$.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
-      "line": 218
+      "source": "ops/mul/mul.md:L170-L208",
+      "excerpt": "<a id=\"E_MUL_FLOAT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_FLOAT_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise according to IEEE 754 floating-point semantics and stores the result in tensor $C$. Each element of $C$ is the floating-point product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\tilde{A}[i] *_{(\\text{f})} \\tilde{B}[i] =\n\\begin{cases}\n\\text{NaN} & \\text{if } \\tilde{A}[i] \\text{ or } \\tilde{B}[i] \\text{ is NaN, or if one of them is a zero and the other an infinity} \\\\\n\\sigma \\cdot \\infty & \\text{if neither is NaN, one of them is an infinity, and the other is neither a zero nor NaN} \\\\\n\\text{round}(\\tilde{A}[i] * \\tilde{B}[i]) & \\text{otherwise}\n\\end{cases}\n$$\n\nwhere\n- $*_{(\\text{f})}$ is the multiplication of the floating-point type of $A$, $B$ and $C$, i.e. $*_{(\\text{f16})}$, $*_{(\\text{f32})}$ or $*_{(\\text{f64})}$ according to that type, whereas the $*$ of the third case is the multiplication of $\\mathbb{R}$: there, $\\tilde{A}[i] * \\tilde{B}[i]$ is the exact product of the two elements,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $\\sigma \\in \\{-1, +1\\}$ is the sign given by the rule of signs: $\\sigma = -1$ when the operands have opposite signs and $\\sigma = +1$ otherwise, the sign of an infinity and the sign of a zero being signs like any other,\n- $\\text{round}(x)$ is the value of $x$ rounded to the nearest value of the type of $A$ and $B$ using the roundTiesToEven attribute of IEEE 754, the exponent range of the type being unbounded: a magnitude whose nearest value exceeds the largest finite value of the type of $A$ and $B$ gives an infinity of the sign of $x$.\n\nIn the first case, an operand that is NaN is propagated, and the multiplication of a zero and an infinity is the invalid operation defined in IEEE 754 section 7.2; the result is NaN in both cases. The NaN of this case is a quiet NaN; its sign and its payload are not specified, whether the NaN comes from an operand or from the invalid operation, so that every quiet NaN of the type of $A$ and $B$ is a conforming result.\n\nIn the second case, the product of an infinity and a nonzero finite value, or of two infinities, is an infinity whose sign is given by the rule of signs; the result involves no rounding.\n\nIn the last case, both operands are finite, and the exact product is rounded as defined above. That product may be representable, in which case the result is that product and the multiplication is exact; it may be subnormal; and its magnitude may lie below the smallest subnormal value of the type of $A$ and $B$, in which case it rounds to a zero.\n\n**The sign of a null or infinite result.** The result is $-0$ or $-\\infty$ when the operands have opposite signs, and $+0$ or $+\\infty$ otherwise, the signs of $\\pm 0$ and $\\pm\\infty$ being taken into account. In particular the product of two zeros is $-0$ when one of them is $-0$ and the other $+0$, and $+0$ when the two zeros have the same sign; and a nonzero exact product whose magnitude rounds to zero gives a zero of the sign of that exact product, so that an underflow may produce $-0$.\n\n**Values of the operands.** The operands may be any of the values of the type, including the special numbers $\\pm 0$, $\\pm\\infty$ and NaN. The cases above give the result for every combination of them. Every finite value, zero and subnormal values included, is a possible operand and a possible result; the multiplication of two finite values never gives NaN.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
+      "line": 348
+    },
+    {
+      "key": "float:example:1",
+      "status": "example_only",
+      "declaration": "Generated.Mul.floatExample1",
+      "limitation": "",
+      "source": "ops/mul/mul.md:L212-L224",
+      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 3.0 & 4.5 & 16.0 & 0.5 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3.0 & -2.0 & 0.25 & 4.0 \\end{bmatrix}\n$$\n\n$$\nC = A *_{(\\text{f})} B = \\begin{bmatrix} 9.0 & -9.0 & 4.0 & 2.0 \\end{bmatrix}\n$$\n\nThe product of two numbers of a `float` type is not always exact; in this example every product is representable and $C$ is the exact result.",
+      "line": 402
+    },
+    {
+      "key": "float:example:2",
+      "status": "example_only",
+      "declaration": "Generated.Mul.floatExample2",
+      "limitation": "",
+      "source": "ops/mul/mul.md:L226-L238",
+      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix} \\text{+0} & \\text{+inf} & \\text{+0} & \\text{-0} & \\text{-inf} & \\text{NaN} \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} \\text{+inf} & \\text{-inf} & \\text{-3.0} & \\text{-2.0} & \\text{+2.0} & \\text{1.0} \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} \\text{NaN} & \\text{-inf} & \\text{-0} & \\text{+0} & \\text{-inf} & \\text{NaN} \\end{bmatrix}\n$$\n\nThe product of the zero and the infinity of the first column is the invalid operation of IEEE 754 section 7.2 and yields NaN. The product of the two infinities of opposite signs is $-\\infty$, and so is the product of $-\\infty$ and the positive finite value. The product of $+0$ and the negative value is $-0$, and the product of $-0$ and the negative value is $+0$: the sign of a null result follows the rule of signs.",
+      "line": 441
+    },
+    {
+      "key": "float:example:3",
+      "status": "deferred",
+      "declaration": "",
+      "limitation": "The third element of the example requires the smallest subnormal of the format to be known, which the profile does not expose: Sonnx.FloatFormat carries only precision and maxFinite. The rounding formalised in RoundMagNearest follows the document's literal unbounded-exponent rule, so it yields a tiny nonzero value there instead of -0; the first two elements (rounded product and overflow to +inf) are covered.",
+      "source": "ops/mul/mul.md:L240-L252",
+      "excerpt": "### Example 3\n\n$$\nA \\approx \\begin{bmatrix} 0.1 & 1 \\cdot 10^{308} & -1 \\cdot 10^{-308} \\end{bmatrix}\n\\quad\nB \\approx \\begin{bmatrix} 0.2 & 10 & 1 \\cdot 10^{-308} \\end{bmatrix}\n$$\n\n$$\nC \\approx \\begin{bmatrix} 0.020000000000000004 & \\text{+inf} & \\text{-0} \\end{bmatrix}\n$$\n\nThe three operands are `double` values. The exact product of $0.1$ and $0.2$ is not representable in `double`; the first element of $C$ is that product rounded to the nearest `double`. The exact product of $1 \\cdot 10^{308}$ and $10$ exceeds the largest finite value of `double`, and its nearest value with an unbounded exponent range lies beyond that value: the second element is an overflow, and its sign is the sign of the exact product. The exact product of the two subnormal values is negative and its magnitude lies below the smallest subnormal value of `double`: the third element is $-0$, the sign of the exact product preserved by the rounding.",
+      "line": 481
     },
     {
       "key": "E_MUL_INT_CONSTR_A_0010",
       "status": "specified",
       "declaration": "Sonnx.BroadcastCompatible",
       "limitation": "",
-      "source": "ops/mul/mul.md:L422-L424",
+      "source": "ops/mul/mul.md:L409-L411",
       "excerpt": "<a id=\"E_MUL_INT_CONSTR_A_0010\"></a>\n- `[E_MUL_INT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting.",
-      "line": 258
+      "line": 509
     },
     {
       "key": "E_MUL_INT_CONSTR_A_0020",
       "status": "specified",
       "declaration": "Sonnx.TypeConsistent",
       "limitation": "",
-      "source": "ops/mul/mul.md:L425-L427",
-      "excerpt": "<a id=\"E_MUL_INT_CONSTR_A_0020\"></a>\n- `[E_MUL_INT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$, and $C$ have the same type.",
-      "line": 270
+      "source": "ops/mul/mul.md:L412-L414",
+      "excerpt": "<a id=\"E_MUL_INT_CONSTR_A_0020\"></a>\n- `[E_MUL_INT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$ and $C$ have the same type.",
+      "line": 521
     },
     {
       "key": "E_MUL_INT_CONSTR_B_0010",
       "status": "specified",
       "declaration": "Sonnx.BroadcastCompatible",
       "limitation": "",
-      "source": "ops/mul/mul.md:L435-L436",
+      "source": "ops/mul/mul.md:L422-L423",
       "excerpt": "- `[E_MUL_INT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_INT_CONSTR_A_0010</span></b>](#E_MUL_INT_CONSTR_A_0010) on tensor $A$.",
-      "line": 282
+      "line": 533
     },
     {
       "key": "E_MUL_INT_CONSTR_B_0020",
       "status": "specified",
       "declaration": "Sonnx.TypeConsistent",
       "limitation": "",
-      "source": "ops/mul/mul.md:L437-L438",
+      "source": "ops/mul/mul.md:L424-L425",
       "excerpt": "- `[E_MUL_INT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_INT_CONSTR_A_0020</span></b>](#E_MUL_INT_CONSTR_A_0020) on tensor $A$.",
-      "line": 292
+      "line": 543
     },
     {
       "key": "E_MUL_INT_CONSTR_C_0010",
       "status": "specified",
       "declaration": "Sonnx.BroadcastShapeIs",
       "limitation": "",
-      "source": "ops/mul/mul.md:L448-L449",
+      "source": "ops/mul/mul.md:L435-L436",
       "excerpt": "- `[E_MUL_INT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape.",
-      "line": 302
+      "line": 553
     },
     {
       "key": "E_MUL_INT_CONSTR_C_0020",
       "status": "specified",
       "declaration": "Sonnx.TypeConsistent",
       "limitation": "",
-      "source": "ops/mul/mul.md:L450-L451",
+      "source": "ops/mul/mul.md:L437-L438",
       "excerpt": "- `[E_MUL_INT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_INT_CONSTR_A_0020</span></b>](#E_MUL_INT_CONSTR_A_0020) on tensor $A$.",
-      "line": 312
+      "line": 563
     },
     {
-      "key": "E_MUL_UINT_FUNC_0010",
+      "key": "E_MUL_INT_FUNC_0010",
       "status": "specified",
-      "declaration": "Sonnx.MulUIntCorrect",
+      "declaration": "Generated.Mul.IntMulRel",
       "limitation": "",
-      "source": "ops/mul/mul.md:L478-L508",
-      "excerpt": "<a id=\"E_MUL_UINT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_UINT_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below. Tensors $A$, $B$ and $C$ have the same unsigned $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](./../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] \\equiv \\tilde{A}[i] \\cdot \\tilde{B}[i] \\pmod{2^n}, \\qquad C[i] \\text{ a value of the type of } A \\text{ and } B\n$$\n\nwhere\n- $\\tilde{A}[i] \\cdot \\tilde{B}[i]$ is the exact product of the two elements, the product in $\\mathbb{Z}$ of the two integers, before the reduction modulo $2^n$,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $n$ is the number of bits of the type of $A$ and $B$.\n\nThe values of an $n$-bit type are $2^n$ distinct integers no two of which are congruent modulo $2^n$: exactly one value of the type satisfies the congruence, and that value is $C[i]$. The congruence defines $C[i]$ and is the exact product reduced modulo $2^n$.\n\n**The reduction may be applied several times.** The values of an $n$-bit unsigned type lie in $[0, 2^n-1]$, so that their exact product lies in $[0, 2^{2n}-2^{n+1}+1]$, a range of the order of the square of the range of the type. Unlike the sum of two values of the type, whose magnitude is at most of the order of the range itself, the product may leave the range of the type by several multiples of $2^n$: for `uint8`, the exact product $200 \\cdot 200 = 40000$ is $156 \\cdot 2^8 + 64$, and the result is $64$.\n\n**The result may be smaller than both operands.** The product of two non-negative integers is never smaller than either of them, whereas the result here is reduced modulo $2^n$: for `uint8`, $20 \\cdot 13 = 260$ exceeds the maximum value $2^8-1=255$, and the result is $260-2^8=4$, a value smaller than both operands. Tensors $A$, $B$ and $C$ have the same type and no wider type is used, so that the value of $C$ is that value of the type, and the multiplication is not monotonic on the unsigned types.\n\n**The result may be zero although both operands are non-zero.** For `uint8`, $16 \\cdot 16 = 256$ is a multiple of $2^8$, so that the result is $0$.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
-      "line": 322
+      "source": "ops/mul/mul.md:L334-L366",
+      "excerpt": "<a id=\"E_MUL_INT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_INT_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below. Tensors $A$, $B$ and $C$ have the same signed $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] =\n\\begin{cases}\nu & \\text{if } u \\le 2^{n-1}-1 \\\\\nu - 2^n & \\text{if } u \\ge 2^{n-1}\n\\end{cases}\n\\qquad \\text{where } u = \\left(\\tilde{A}[i] * \\tilde{B}[i]\\right) \\bmod 2^n\n$$\n\nwhere\n- $\\tilde{A}[i] * \\tilde{B}[i]$ is the exact product of the two elements, the product in $\\mathbb{Z}$ of the two integers, before the reduction modulo $2^n$,\n- $x \\bmod 2^n$ is the remainder of the Euclidean division of $x$ by $2^n$, taken in $[0, 2^n-1]$, i.e. the unique integer $u \\in [0, 2^n-1]$ such that $x - u$ is a multiple of $2^n$,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $n$ is the number of bits of the type of $A$ and $B$.\n\nThe result is thus the unique value of the type of $A$ and $B$ that is congruent to the exact product modulo $2^n$: the $2^n$ values of an $n$-bit signed type form a complete set of residues modulo $2^n$, so that exactly one of them satisfies the condition. The exact product of two values of the type lies in $\\left[-2^{2n-2}+2^{n-1},\\, 2^{2n-2}\\right]$, and the reduction modulo $2^n$ is applied as many times as the magnitude of that product requires.\n\n**The result may differ from the exact product in magnitude and in sign.** The range of the type is not closed under multiplication, so that the product of two values of the type generally leaves it: for `int8`, $100 * 100$ gives $16$, $-100 * 100$ gives $-16$, and $100 * 3$ gives $44$. Tensors $A$, $B$ and $C$ have the same type and no wider type is used, so that the value of $C$ is that value of the type, sign included, and the multiplication is not monotonic on the signed integer types.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
+      "line": 574
+    },
+    {
+      "key": "int:example:1",
+      "status": "example_only",
+      "declaration": "Generated.Mul.intExample1",
+      "limitation": "",
+      "source": "ops/mul/mul.md:L370-L384",
+      "excerpt": "### Example 1\n\nFor the `int8` type:\n\n$$\nA = \\begin{bmatrix} -6 & 100 & -100 & 100 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} -3 & 100 & 100 & 3 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 18 & 16 & -16 & 44 \\end{bmatrix}\n$$\n\nThe product $-6 * (-3) = 18$ lies in $[-2^7, 2^7-1]$ and is its own remainder modulo $2^8$. The product $100 * 100 = 10000$ leaves that range: its remainder modulo $2^8$ is $16$, which is at most $2^7-1=127$ and is the result. The product $-100 * 100 = -10000$ has the remainder $240$ modulo $2^8$, which is at least $2^7=128$, so the result is $240-256=-16$. The product $100 * 3 = 300$ has the remainder $44$ modulo $2^8$, which is the result. The result of the first product has the sign of the exact product, whereas the results of the other three do not.",
+      "line": 625
     },
     {
       "key": "E_MUL_UINT_CONSTR_A_0010",
       "status": "specified",
       "declaration": "Sonnx.BroadcastCompatible",
       "limitation": "",
-      "source": "ops/mul/mul.md:L548-L550",
+      "source": "ops/mul/mul.md:L535-L537",
       "excerpt": "<a id=\"E_MUL_UINT_CONSTR_A_0010\"></a>\n- `[E_MUL_UINT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting.",
-      "line": 362
+      "line": 663
     },
     {
       "key": "E_MUL_UINT_CONSTR_A_0020",
       "status": "specified",
       "declaration": "Sonnx.TypeConsistent",
       "limitation": "",
-      "source": "ops/mul/mul.md:L551-L553",
-      "excerpt": "<a id=\"E_MUL_UINT_CONSTR_A_0020\"></a>\n- `[E_MUL_UINT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$, and $C$ have the same type.",
-      "line": 374
+      "source": "ops/mul/mul.md:L538-L540",
+      "excerpt": "<a id=\"E_MUL_UINT_CONSTR_A_0020\"></a>\n- `[E_MUL_UINT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$ and $C$ have the same type.",
+      "line": 675
     },
     {
       "key": "E_MUL_UINT_CONSTR_B_0010",
       "status": "specified",
       "declaration": "Sonnx.BroadcastCompatible",
       "limitation": "",
-      "source": "ops/mul/mul.md:L561-L562",
+      "source": "ops/mul/mul.md:L548-L549",
       "excerpt": "- `[E_MUL_UINT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_UINT_CONSTR_A_0010</span></b>](#E_MUL_UINT_CONSTR_A_0010) on tensor $A$.",
-      "line": 386
+      "line": 687
     },
     {
       "key": "E_MUL_UINT_CONSTR_B_0020",
       "status": "specified",
       "declaration": "Sonnx.TypeConsistent",
       "limitation": "",
-      "source": "ops/mul/mul.md:L563-L564",
+      "source": "ops/mul/mul.md:L550-L551",
       "excerpt": "- `[E_MUL_UINT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_UINT_CONSTR_A_0020</span></b>](#E_MUL_UINT_CONSTR_A_0020) on tensor $A$.",
-      "line": 396
+      "line": 697
     },
     {
       "key": "E_MUL_UINT_CONSTR_C_0010",
       "status": "specified",
       "declaration": "Sonnx.BroadcastShapeIs",
       "limitation": "",
-      "source": "ops/mul/mul.md:L574-L575",
+      "source": "ops/mul/mul.md:L561-L562",
       "excerpt": "- `[E_MUL_UINT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape.",
-      "line": 406
+      "line": 707
     },
     {
       "key": "E_MUL_UINT_CONSTR_C_0020",
       "status": "specified",
       "declaration": "Sonnx.TypeConsistent",
       "limitation": "",
-      "source": "ops/mul/mul.md:L576-L577",
+      "source": "ops/mul/mul.md:L563-L564",
       "excerpt": "- `[E_MUL_UINT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_MUL_UINT_CONSTR_A_0020</span></b>](#E_MUL_UINT_CONSTR_A_0020) on tensor $A$.",
-      "line": 416
+      "line": 717
     },
     {
-      "key": "real:example:1",
+      "key": "E_MUL_UINT_FUNC_0010",
       "status": "specified",
-      "declaration": "Generated.Mul.realExample1",
+      "declaration": "Generated.Mul.UintMulRel",
       "limitation": "",
-      "source": "ops/mul/mul.md:L62-L72",
-      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 6.1 & 9.5 & 35.7 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & 3 & 4 \\end{bmatrix}\n$$\n\n$$\nC = A \\cdot B = \\begin{bmatrix} 12.2 & 28.5 & 142.8 \\end{bmatrix}\n$$",
-      "line": 443
-    },
-    {
-      "key": "real:example:2",
-      "status": "specified",
-      "declaration": "Generated.Mul.realExample2",
-      "limitation": "",
-      "source": "ops/mul/mul.md:L74-L98",
-      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix}\n  3.7 & 4.4 \\\\\n  16.2 & 0.5 \\\\\n  25.3 & 24.8\n\\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & 10 \\end{bmatrix}\n$$\n\n$$\nC = A \\cdot B = \\begin{bmatrix}\n  3.7 \\cdot 2 & 4.4 \\cdot 10 \\\\\n  16.2 \\cdot 2 & 0.5 \\cdot 10 \\\\\n  25.3 \\cdot 2 & 24.8 \\cdot 10\n\\end{bmatrix} = \\begin{bmatrix}\n  7.4 & 44.0 \\\\\n  32.4 & 5.0 \\\\\n  50.6 & 248.0\n\\end{bmatrix}\n$$\n\nTensor $B$ has rank $1$ and tensor $A$ has rank $2$; $B$ is broadcast to the shape of $A$, so that each column of $A$ is multiplied by the corresponding element of $B$.",
-      "line": 481
-    },
-    {
-      "key": "float:example:1",
-      "status": "deferred",
-      "declaration": "",
-      "limitation": "No concrete Lean claim is supplied: the example is stated for the floating-point family without fixing a FloatFormat, so a faithful format-specific FVal claim is not supplied in this module.",
-      "source": "ops/mul/mul.md:L218-L230",
-      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 3.0 & 4.5 \\\\ 16.0 & 1.0 \\\\ 25.5 & 24.25 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3.0 & 2.0 \\\\ 4.0 & 0.0 \\\\ 5.0 & 4.0 \\end{bmatrix}\n$$\n\n$$\nC = A \\cdot_{(\\text{f})} B = \\begin{bmatrix} 9.0 & 9.0 \\\\ 64.0 & 0.0 \\\\ 127.5 & 97.0 \\end{bmatrix}\n$$\n\nThe product of two numbers of a `float` type is not always exact; in this example every product is representable and $C$ is the exact result.",
-      "line": 527
-    },
-    {
-      "key": "float:example:2",
-      "status": "deferred",
-      "declaration": "",
-      "limitation": "No concrete Lean claim is supplied: the special-value example is stated for the floating-point family without fixing a FloatFormat, so a faithful format-specific FVal claim is not supplied in this module.",
-      "source": "ops/mul/mul.md:L232-L244",
-      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix} 1.0 & \\text{+inf} & \\text{-inf} & \\text{+0} & \\text{-0} & \\text{-0} \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 1.0 & \\text{+0} & \\text{-2.0} & \\text{-3.0} & \\text{+5.0} & \\text{-0} \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 1.0 & \\text{NaN} & \\text{+inf} & \\text{-0} & \\text{-0} & \\text{+0} \\end{bmatrix}\n$$\n\nThe product of an infinity by a zero is the invalid operation of IEEE 754 section 7.2 and yields NaN. The product of the two negative values $-\\text{inf}$ and $-2.0$ is the positive infinity. The three null products show the rule of the sign: $(+0) \\cdot (-3.0) = -0$ and $(-0) \\cdot (+5.0) = -0$, the sign of a null product being negative when exactly one operand is negative; and $(-0) \\cdot (-0) = +0$, since the two signs are equal.",
-      "line": 548
-    },
-    {
-      "key": "float:example:3",
-      "status": "deferred",
-      "declaration": "",
-      "limitation": "No concrete Lean claim is supplied: the rounding and overflow example is stated for the floating-point family without fixing a FloatFormat, so a faithful format-specific FVal claim is not supplied in this module.",
-      "source": "ops/mul/mul.md:L246-L258",
-      "excerpt": "### Example 3\n\n$$\nA = \\begin{bmatrix} 0.1 & 1.0 & 1.0\\text{e}308 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 0.2 & 3.0 & 1.0\\text{e}308 \\end{bmatrix}\n$$\n\n$$\nC \\approx \\begin{bmatrix} 0.020000000000000004 & 3.0 & \\text{+inf} \\end{bmatrix}\n$$\n\nThe exact product of the two `double` values $0.1$ and $0.2$ is not representable in `double`; the first element of $C$ is that product rounded to the nearest `double`. The exact product $1\\text{e}308 \\cdot 1\\text{e}308$ is beyond the largest finite value of `double`, so that the third element is the positive infinity, the sign of the exact product.",
-      "line": 569
-    },
-    {
-      "key": "float:example:4",
-      "status": "deferred",
-      "declaration": "",
-      "limitation": "No concrete Lean claim is supplied: the subnormal example is stated for the floating-point family without fixing a FloatFormat, so a faithful format-specific FVal claim is not supplied in this module.",
-      "source": "ops/mul/mul.md:L260-L272",
-      "excerpt": "### Example 4\n\n$$\nA = \\begin{bmatrix} 2.2250738585072014\\text{e-}308 & -2.2250738585072014\\text{e-}308 & \\text{+0} & \\text{-0} \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 0.25 & 0.25 & \\text{-1.0} & \\text{-0} \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 5.562684646268003\\text{e-}309 & -5.562684646268003\\text{e-}309 & \\text{-0} & \\text{+0} \\end{bmatrix}\n$$\n\nThe first operand is the smallest positive normal value of `double`, whose exact half is not representable as a normal value: multiplied by $0.25$ it gives a subnormal value, the nearest value of the type, and the second element is the negative of that value. The last two elements are the null products of Example 2, $-0$ and $+0$; none of the four elements is rounded to zero, the exact products of the first two being representable as subnormal values.",
-      "line": 590
-    },
-    {
-      "key": "int:example:1",
-      "status": "specified",
-      "declaration": "Generated.Mul.intExample1",
-      "limitation": "",
-      "source": "ops/mul/mul.md:L386-L400",
-      "excerpt": "### Example 1\n\nFor the `int8` type:\n\n$$\nA = \\begin{bmatrix} -6 & 11 & 100 & 16 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} -3 & 13 & 100 & 16 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 18 & -113 & 16 & 0 \\end{bmatrix}\n$$\n\nThe product $-6 \\cdot (-3) = 18$ lies in $[-2^7, 2^7-1]$ and is its own reduction. The product $11 \\cdot 13 = 143$ is greater than the maximum value $127$ of `int8`, so that the result is $143-2^8=-113$: it is negative although both operands are positive. The product $100 \\cdot 100 = 10000$ is $39 \\cdot 2^8 + 16$, and the result is $16$, the reduction being applied more than once. The product $16 \\cdot 16 = 256$ is a multiple of $2^8$ and the result is $0$, although both operands are non-zero.",
-      "line": 635
+      "source": "ops/mul/mul.md:L465-L492",
+      "excerpt": "<a id=\"E_MUL_UINT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_MUL_UINT_FUNC_0010]</br></span>\n\nOperator **Mul** multiplies tensor $A$ by tensor $B$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the product of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below. Tensors $A$, $B$ and $C$ have the same unsigned $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\left(\\tilde{A}[i] * \\tilde{B}[i]\\right) \\bmod 2^n\n$$\n\nwhere\n- $\\tilde{A}[i] * \\tilde{B}[i]$ is the exact product of the two elements, the product in $\\mathbb{Z}$ of the two integers, before the reduction modulo $2^n$,\n- $x \\bmod 2^n$ is the remainder of the Euclidean division of $x$ by $2^n$, taken in $[0, 2^n-1]$, i.e. the unique integer $u \\in [0, 2^n-1]$ such that $x - u$ is a multiple of $2^n$,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $n$ is the number of bits of the type of $A$ and $B$.\n\nThe result is thus the unique value of the type of $A$ and $B$ that is congruent to the exact product modulo $2^n$: the $2^n$ values of an $n$-bit unsigned type are exactly the residues modulo $2^n$, so that the condition determines the result. The exact product of two values of the type lies in $\\left[0,\\, (2^n-1)^2\\right]$, and the reduction modulo $2^n$ is applied as many times as the magnitude of that product requires.\n\n**The result may be smaller than both operands.** The product of two non-negative integers is at least as large as either of them when both are at least $1$, whereas the result here is reduced modulo $2^n$: for `uint8`, $200 * 100$ gives $32$, and $16 * 16$ gives $0$. Tensors $A$, $B$ and $C$ have the same type and no wider type is used, so that the value of $C$ is that value of the type, and the multiplication is not monotonic on the unsigned types.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the product of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
+      "line": 728
     },
     {
       "key": "uint:example:1",
-      "status": "specified",
+      "status": "example_only",
       "declaration": "Generated.Mul.uintExample1",
       "limitation": "",
-      "source": "ops/mul/mul.md:L512-L526",
-      "excerpt": "### Example 1\n\nFor the `uint8` type:\n\n$$\nA = \\begin{bmatrix} 6 & 200 & 20 & 16 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3 & 200 & 13 & 16 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 18 & 64 & 4 & 0 \\end{bmatrix}\n$$\n\nThe product $6 \\cdot 3 = 18$ is at most $2^8-1=255$ and is its own reduction. The product $200 \\cdot 200 = 40000$ is $156 \\cdot 2^8 + 64$, and the result is $64$, the reduction being applied more than once. The product $20 \\cdot 13 = 260$ exceeds $255$, so that the result is $260-2^8=4$, smaller than both operands. The product $16 \\cdot 16 = 256$ is a multiple of $2^8$ and the result is $0$, although both operands are non-zero.",
-      "line": 684
+      "source": "ops/mul/mul.md:L496-L510",
+      "excerpt": "### Example 1\n\nFor the `uint8` type:\n\n$$\nA = \\begin{bmatrix} 6 & 200 & 35 & 16 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3 & 100 & 5 & 16 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 18 & 32 & 175 & 0 \\end{bmatrix}\n$$\n\nThe products $6 * 3 = 18$ and $35 * 5 = 175$ are at most $2^8-1=255$ and are their own remainders modulo $2^8$. The product $200 * 100 = 20000$ leaves the range of the type: its remainder modulo $2^8$ is $32$, which is smaller than both operands. The product $16 * 16 = 256$ is a multiple of $2^8$ and its remainder is $0$.",
+      "line": 773
     }
   ],
-  "artifact_sha256": "d952bd96ffd25392bd6bde9dbe1743d96a0c6a71d65772e4d9797d3374ad9d4a",
-  "library_sha256": "245e9e643502252878cb83d2b2658e26f6dae9070802500971dc7a1817a7f1fe",
+  "artifact_sha256": "788eae73e6b857f82396304a1b6fae9c1ee210bf10d24e50c9a129a435082e2f",
+  "library_sha256": "3162109b4c926c2fa5dd5f8bd2eb2d90fb17a0480eccc0216a4ea9bd2b43ffab",
   "compiler": {
     "ok": true,
     "returncode": 0,
-    "stdout": "Generated.Mul.intExample1 : Prop\nGenerated.Mul.realExample1 : Prop\nGenerated.Mul.realExample2 : Prop\nGenerated.Mul.uintExample1 : Prop\n@Sonnx.BroadcastCompatible : {\u03b1 : Type} \u2192 Sonnx.Tensor \u03b1 \u2192 Sonnx.Tensor \u03b1 \u2192 Prop\n@Sonnx.BroadcastShapeIs : {\u03b1 : Type} \u2192 Sonnx.Tensor \u03b1 \u2192 Sonnx.Tensor \u03b1 \u2192 Sonnx.Tensor \u03b1 \u2192 Prop\nSonnx.MulFloatCorrect : Sonnx.FloatFormat \u2192\n  Sonnx.Tensor Sonnx.FVal \u2192 Sonnx.Tensor Sonnx.FVal \u2192 Sonnx.Tensor Sonnx.FVal \u2192 Prop\nSonnx.MulIntCorrect : (n : Nat) \u2192\n  Sonnx.Tensor (Sonnx.SIntN n) \u2192 Sonnx.Tensor (Sonnx.SIntN n) \u2192 Sonnx.Tensor (Sonnx.SIntN n) \u2192 Prop\nSonnx.MulRealCorrect : Sonnx.Tensor Rat \u2192 Sonnx.Tensor Rat \u2192 Sonnx.Tensor Rat \u2192 Prop\nSonnx.MulUIntCorrect : (n : Nat) \u2192\n  Sonnx.Tensor (Sonnx.UIntN n) \u2192 Sonnx.Tensor (Sonnx.UIntN n) \u2192 Sonnx.Tensor (Sonnx.UIntN n) \u2192 Prop\n@Sonnx.TypeConsistent : {\u03b1 : Type} \u2192 \u03b1 \u2192 \u03b1 \u2192 \u03b1 \u2192 Prop",
+    "stdout": "Generated.Mul.FloatMulRel : Sonnx.FloatFormat \u2192\n  Sonnx.Tensor Sonnx.FVal \u2192 Sonnx.Tensor Sonnx.FVal \u2192 Sonnx.Tensor Sonnx.FVal \u2192 Prop\nGenerated.Mul.IntMulRel : Nat \u2192 Sonnx.Tensor Int \u2192 Sonnx.Tensor Int \u2192 Sonnx.Tensor Int \u2192 Prop\nGenerated.Mul.RealMulRel : Sonnx.Tensor Rat \u2192 Sonnx.Tensor Rat \u2192 Sonnx.Tensor Rat \u2192 Prop\nGenerated.Mul.UintMulRel : Nat \u2192 Sonnx.Tensor Int \u2192 Sonnx.Tensor Int \u2192 Sonnx.Tensor Int \u2192 Prop\nGenerated.Mul.floatExample1 : Sonnx.FloatFormat \u2192 Prop\nGenerated.Mul.floatExample2 : Sonnx.FloatFormat \u2192 Prop\nGenerated.Mul.intExample1 : Prop\nGenerated.Mul.realExample1 : Prop\nGenerated.Mul.realExample2 : Prop\nGenerated.Mul.uintExample1 : Prop\n@Sonnx.BroadcastCompatible : {\u03b1 : Type} \u2192 Sonnx.Tensor \u03b1 \u2192 Sonnx.Tensor \u03b1 \u2192 Prop\n@Sonnx.BroadcastShapeIs : {\u03b1 : Type} \u2192 Sonnx.Tensor \u03b1 \u2192 Sonnx.Tensor \u03b1 \u2192 Sonnx.Tensor \u03b1 \u2192 Prop\n@Sonnx.TypeConsistent : {\u03b1 : Type} \u2192 \u03b1 \u2192 \u03b1 \u2192 \u03b1 \u2192 Prop",
     "command": [
       "/home/eric/.elan/bin/lake",
       "env",
       "lean",
-      "/run/media/eric/Work1/Work/gits/sonnx/agents/runs/Mul/lean/attempt-001.lean"
+      "/run/media/eric/Work1/Work/gits/sonnx/ops/mul/lean/attempt-001.lean"
     ]
   }
 }

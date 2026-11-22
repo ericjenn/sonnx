@@ -1,0 +1,48 @@
+{
+  "spec": "/run/media/eric/Work1/Work/gits/sonnx/ops/div/div.md",
+  "op": "Div",
+  "opset": 14,
+  "impl": "/run/media/eric/Work1/Work/gits/sonnx/ops/div/loop/iter-001-impl.py",
+  "entry": "div",
+  "generated": "2026-11-22T13:58:33Z",
+  "cases": {
+    "total": 41,
+    "passed": 41,
+    "mismatched": [],
+    "open": [],
+    "nan_payload": []
+  },
+  "sweeps": [
+    {
+      "sweep": "int domain (document vs ORT vs implementation)",
+      "summary": "8 types: int8: exhaustive (65280 operand pairs), int16: 310 operand pairs, int32: 309 operand pairs; (-2147483648, -1) not sent to the runtime (SIGFPE); the document's value is -2147483648, by exact arithmetic, int64: 309 operand pairs; (-9223372036854775808, -1) not sent to the runtime (SIGFPE); the document's value is -9223372036854775808, by exact arithmetic, uint8: exhaustive (65280 operand pairs), uint16: 230 operand pairs, uint32: 230 operand pairs, uint64: 230 operand pairs",
+      "failures": []
+    },
+    {
+      "sweep": "the float formula against exact arithmetic (Fraction)",
+      "summary": "2052 operand pairs: float16: 684 operand pairs, float32: 684 operand pairs, float64: 684 operand pairs; the float16 departures that are the same quotient rounded through float32 are recorded, not required (0 recorded)",
+      "failures": []
+    },
+    {
+      "sweep": "the document's worked examples",
+      "summary": "6 examples, as documented vs ORT vs implementation",
+      "failures": []
+    },
+    {
+      "sweep": "the document's types against the ONNX schema",
+      "summary": "11 declared types, checked against the schema of Div-14; the schema also admits tensor(bfloat16), which the document does not specify",
+      "failures": []
+    },
+    {
+      "sweep": "the real section (exact rational arithmetic, no ONNX Runtime)",
+      "summary": "5 real cases checked against Fraction arithmetic",
+      "failures": [
+        {
+          "who": "real: a null dividend over a non-null divisor",
+          "detail": "documented shape (1, 2), exact shape (2,)"
+        }
+      ]
+    }
+  ],
+  "ok": false
+}

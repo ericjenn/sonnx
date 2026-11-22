@@ -62,10 +62,22 @@ def probeCases : List (String × String × String) :=
     renderExpr 0 (rhs .mul (.int 16 false)), "(uint16_t)(a[i] * b[i])"),
    ("a float kernel applies the operator directly",
     renderExpr 0 (rhs .add (.float 64)), "a[i] + b[i]"),
+   ("the tensor struct",
+    renderDecl tensorStruct,
+    "typedef struct {\n  void *data;\n  size_t ndim;\n  const size_t *shape;\n} " ++
+      "sonnx_tensor;"),
    ("a whole kernel",
     renderFun (kernel ⟨"add", .add⟩ (.float 32)),
-    "void sonnx_add_f32(const float *a, const float *b, float *c, size_t n) {\n" ++
-      "  for (size_t i = 0; i < n; i++) {\n    c[i] = a[i] + b[i];\n  }\n}"),
+    "void sonnx_add_f32(const sonnx_tensor *a, const sonnx_tensor *b, " ++
+      "sonnx_tensor *c) {\n" ++
+      "  const float *A = (const float *)a->data;\n" ++
+      "  const float *B = (const float *)b->data;\n" ++
+      "  float *C = (float *)c->data;\n" ++
+      "  size_t n = 1;\n" ++
+      "  for (size_t d = 0; d < c->ndim; d++) {\n" ++
+      "    n = n * c->shape[d];\n" ++
+      "  }\n" ++
+      "  for (size_t i = 0; i < n; i++) {\n    C[i] = A[i] + B[i];\n  }\n}"),
    ("a quoted include stays local",
     renderIncludes ["\"sonnx_kernels.h\""], "#include \"sonnx_kernels.h\"\n"),
    ("a bare include is a system header",
@@ -73,17 +85,26 @@ def probeCases : List (String × String × String) :=
    ("binOpName names the element operation", binOpName .sub, "sub"),
    ("the header declares the kernel",
     toString (hasSub headerText
-      "void sonnx_sub_f32(const float *a, const float *b, float *c, size_t n);"), "true"),
+      ("void sonnx_sub_f32(const sonnx_tensor *a, const sonnx_tensor *b, " ++
+        "sonnx_tensor *c);")), "true"),
+   ("the header defines the tensor struct",
+    toString (hasSub headerText "} sonnx_tensor;"), "true"),
    ("the header defines no kernel",
-    toString (!hasSub headerText "c[i] ="), "true"),
+    toString (!hasSub headerText "C[i] ="), "true"),
    ("the source includes its header",
     toString (hasSub sourceText "#include \"sonnx_kernels.h\""), "true"),
+   ("the source does not redefine the tensor struct",
+    toString (!hasSub sourceText "} sonnx_tensor;"), "true"),
    ("the source defines the kernel",
     toString (hasSub sourceText
-      "void sonnx_sub_f32(const float *a, const float *b, float *c, size_t n) {"), "true"),
+      ("void sonnx_sub_f32(const sonnx_tensor *a, const sonnx_tensor *b, " ++
+        "sonnx_tensor *c) {")), "true"),
+   ("the source computes the element count from the output shape",
+    toString (hasSub sourceText "n = n * c->shape[d];"), "true"),
    ("the source carries no prototype",
     toString (!hasSub sourceText
-      "void sonnx_sub_f32(const float *a, const float *b, float *c, size_t n);"), "true")]
+      ("void sonnx_sub_f32(const sonnx_tensor *a, const sonnx_tensor *b, " ++
+        "sonnx_tensor *c);")), "true")]
 
 /-- Run every probe; print the failures and return 1 if any case differs. -/
 def main : IO UInt32 := do

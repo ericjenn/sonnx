@@ -1,0 +1,43 @@
+{
+  "generated_by": "sonnx-c-stage",
+  "protocol": "sonnx-c/1",
+  "op": "Mul",
+  "opset": 14,
+  "entry": "mul",
+  "spec_md5": "07e1f247d67a12027ed6b87c56c03147",
+  "lean": "/run/media/eric/Work1/Work/gits/sonnx/ops/mul/lean/FormalSpec.lean",
+  "lean_sha256": "788eae73e6b857f82396304a1b6fae9c1ee210bf10d24e50c9a129a435082e2f",
+  "header": "/run/media/eric/Work1/Work/gits/sonnx/ops/mul/c/sonnx_kernels.h",
+  "header_sha256": "f904f0691c496254e2609b94e2f791edda15a14775e9e27cfcf72b3349969c33",
+  "source": "/run/media/eric/Work1/Work/gits/sonnx/ops/mul/c/sonnx_kernels.c",
+  "source_sha256": "e1050101257fb43b9332df7f6ead1f3d90876e4140117bbce559a1201e594db5",
+  "test": "/run/media/eric/Work1/Work/gits/sonnx/ops/mul/c/c_tests-attempt-001.c",
+  "test_sha256": "a416f940b3c51191f3ffd769384e471690c0915dd10c8d96e07cb66272a18037",
+  "cc": "cc",
+  "command": [
+    "cc",
+    "-std=c11",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-O2",
+    "/run/media/eric/Work1/Work/gits/sonnx/ops/mul/c/sonnx_kernels.c",
+    "/run/media/eric/Work1/Work/gits/sonnx/ops/mul/c/c_tests-attempt-001.c",
+    "-o",
+    "/run/media/eric/Work1/Work/gits/sonnx/ops/mul/c/c_tests",
+    "-lm"
+  ],
+  "stage": "run",
+  "returncode": 0,
+  "checks": {
+    "total": 21,
+    "passed": 21,
+    "failed": 0
+  },
+  "failures": [],
+  "ok": true,
+  "error": "",
+  "stdout": "ok f32 example 1 (exact products)\nok f32 example 2 (zero, inf, nan, signed zeros)\nok f32 shape 2x3 (negative, cancelling, signed zero)\nok f32 zero-sized dimension writes nothing\nok f32 underflow to signed zeros and subnormals\nok f32 overflow to signed infinities\nok f32 NaN propagation and inf*inf rule of signs\nok f32 rank-0 tensor is one element\nok f64 example 3 (rounded, overflow, underflow)\nok f64 special values and signed zeros\nok f64 exact products and subnormal underflow\nok i8 example 1 (18, 16, -16, 44)\nok i8 boundary products wrap modulo 256\nok i16 boundaries and 2x3 shape\nok i32 boundary products wrap modulo 2^32\nok i64 boundary products wrap modulo 2^64\nok u8 example 1 (18, 32, 175, 0)\nok u8 boundary products wrap modulo 256\nok u16 boundary products wrap modulo 2^16\nok u32 boundary products wrap modulo 2^32\nok u64 boundary products wrap modulo 2^64\n",
+  "stderr": "",
+  "written": "2026-11-22T14:51:51"
+}

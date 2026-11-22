@@ -1,0 +1,46 @@
+{
+  "ok": true,
+  "findings": [],
+  "checks": [
+    {
+      "probe": "valid arity 2",
+      "ok": true,
+      "status": "OK"
+    },
+    {
+      "probe": "unsupported kind",
+      "ok": true,
+      "status": "UNSUPPORTED"
+    },
+    {
+      "probe": "malformed line",
+      "ok": true,
+      "status": "MALFORMED"
+    },
+    {
+      "probe": "survives malformed input",
+      "ok": true,
+      "status": "OK"
+    }
+  ],
+  "lean": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": "/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:362:9: warning: Variable name `sa` is not explicitly referenced.\n\nHint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:\n  [apply] _sa\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:362:18: warning: Variable name `sb` is not explicitly referenced.\n\nHint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:\n  [apply] _sb\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:363:10: warning: Variable name `sa` is not explicitly referenced.\n\nHint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:\n  [apply] _sa\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:363:20: warning: Variable name `sb` is not explicitly referenced.\n\nHint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:\n  [apply] _sb\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:551:14: warning: `String.trim` has been deprecated: Use `String.trimAscii` instead\n\nNote: The updated constant has a different type:\n  String \u2192 String.Slice\ninstead of\n  String \u2192 String\n1\tOK\t1\tf32|2|2143289344,2143289344\n2\tUNSUPPORTED\t0\tfloat16 is not representable\n\tMALFORMED\t0\tbad field count\n3\tOK\t1\tf32|2|2143289344,2143289344\n",
+    "stderr": "",
+    "command": [
+      "/home/eric/.elan/bin/lake",
+      "env",
+      "lean",
+      "--run",
+      "/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean"
+    ],
+    "seconds": 0.64
+  },
+  "probes": [
+    "valid arity 2",
+    "unsupported kind",
+    "malformed line",
+    "survives malformed input"
+  ]
+}

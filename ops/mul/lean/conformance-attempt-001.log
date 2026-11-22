@@ -1,0 +1,36 @@
+/run/media/eric/Work1/Work/gits/sonnx/ops/mul/lean/conformance-attempt-001.lean:29:20: warning: `String.mk` has been deprecated: Use `String.ofList` instead
+/run/media/eric/Work1/Work/gits/sonnx/ops/mul/lean/conformance-attempt-001.lean:82:27: warning: `String.mk` has been deprecated: Use `String.ofList` instead
+/run/media/eric/Work1/Work/gits/sonnx/ops/mul/lean/conformance-attempt-001.lean:132:4: warning: Variable name `d` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _d
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/run/media/eric/Work1/Work/gits/sonnx/ops/mul/lean/conformance-attempt-001.lean:164:10: error: fail to show termination for
+  MulRunner.bcastFlatIndex.go
+with errors
+failed to infer structural recursion:
+Not considering parameter R of MulRunner.bcastFlatIndex.go:
+  it is unchanged in the recursive calls
+Not considering parameter S of MulRunner.bcastFlatIndex.go:
+  it is unchanged in the recursive calls
+Not considering parameter flat of MulRunner.bcastFlatIndex.go:
+  it is unchanged in the recursive calls
+Not considering parameter rank of MulRunner.bcastFlatIndex.go:
+  it is unchanged in the recursive calls
+Not considering parameter st of MulRunner.bcastFlatIndex.go:
+  it is unchanged in the recursive calls
+Cannot use parameter i:
+  failed to eliminate recursive application
+    bcastFlatIndex.go R S flat rank st (i + 1) (acc * dimS + coordS)
+Cannot use parameter acc:
+  failed to eliminate recursive application
+    bcastFlatIndex.go R S flat rank st (i + 1) (acc * dimS + coordS)
+
+
+Could not find a decreasing measure.
+The basic measures relate at each recursive call as follows:
+(<, ≤, =: relation proved, ? all proofs failed, _: no proof attempted)
+            i acc
+1) 172:6-38 ?   ?
+Please use `termination_by` to specify a decreasing measure.

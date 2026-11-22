@@ -88,30 +88,46 @@ a path must exist. `lake build CGen` also builds the two driver modules, which t
 does not import because both define `main`.
 
 `operatorsFile` generates, for every operator (`add`, `sub`, `mul`) and every element type, a
-prototype and a kernel of the form
+prototype and a kernel over the generated tensor struct:
 
 ```c
-void sonnx_sub_i8(const int8_t *a, const int8_t *b, int8_t *c, size_t n) {
+typedef struct {
+  void *data;
+  size_t ndim;
+  const size_t *shape;
+} sonnx_tensor;
+
+void sonnx_sub_i8(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c) {
+  const int8_t *A = (const int8_t *)a->data;
+  const int8_t *B = (const int8_t *)b->data;
+  int8_t *C = (int8_t *)c->data;
+  size_t n = 1;
+  for (size_t d = 0; d < c->ndim; d++) {
+    n = n * c->shape[d];
+  }
   for (size_t i = 0; i < n; i++) {
-    c[i] = (int8_t)((uint8_t)a[i] - (uint8_t)b[i]);
+    C[i] = (int8_t)((uint8_t)A[i] - (uint8_t)B[i]);
   }
 }
 ```
 
 The element types are `float32`, `float64` (`f32`, `f64`) and the signed and unsigned fixed-width
 integers from 8 to 64 bits (`i8`…`i64`, `u8`…`u64`); `float16` is omitted because C has no
-standard type for it. The kernels assume contiguous row-major arrays of one length `n`: the
-broadcast shape and the strides are the caller's business. Integer kernels wrap modulo
-`2 ^ bits` — a signed result is computed in the unsigned type of the same width and converted
-back — matching `Sonnx.uintWrap` and `Sonnx.sintWrap`; the banner of the generated file states
-the whole contract.
+standard type for it. `data` points at the caller's contiguous row-major array; `ndim` and
+`shape` are its dimensions, owned by the caller. The kernel name selects the element type, so
+the kernel casts `data` back to it. The kernel computes the element count from `c->shape` and
+`c->ndim` — a rank-0 tensor has one element, a zero-sized dimension none — and `a`, `b` and `c`
+must describe the same, already-broadcast shape: broadcasting is the caller's business.
+Integer kernels wrap modulo `2 ^ bits` — a signed result is computed in the unsigned type of
+the same width and converted back — matching `Sonnx.uintWrap` and `Sonnx.sintWrap`; the banner
+of the generated file states the whole contract.
 
 `operatorsFileFor ops dtypes` takes the operator table and the element types, so a caller can
 render a subset; `operatorsFile` is the library's own table. The split forms render the same
 kernels as a header and a source file: `headerFileFor` writes `sonnx_kernels.h` (the standard
-includes, the banner and the 30 prototypes, no bodies) and `sourceFileFor` writes
-`sonnx_kernels.c` (the banner, the quoted `#include "sonnx_kernels.h"` and the 30 definitions,
-no repeated standard includes). `headerName` is that quoted name, and `renderIncludes` leaves an
+includes, the banner, the `sonnx_tensor` definition and the 30 prototypes, no bodies) and
+`sourceFileFor` writes `sonnx_kernels.c` (the banner, the quoted `#include "sonnx_kernels.h"`
+and the 30 definitions, no repeated standard includes or struct). `headerName` is that quoted name, and `renderIncludes` leaves an
 entry that is already delimited (`"…"` or `<…>`) unchanged, so the source's include is
 reproduced as written. `binOpName` renders an operator as the string a reader sees (`add`,
 `sub`, `mul`) rather than as a Lean constructor.
@@ -152,6 +168,9 @@ ops/<op>/c/sonnx_kernels.c           the rendered definitions
 ops/<op>/c/c_tests.c                 the accepted C test program
 ops/<op>/c/c-report.json             its checks, hashes and failing lines
 ```
+
+The C files kept under `ops/{add,sub}/c` predate the `sonnx_tensor` contract (they were
+generated over flat arrays); the next C stage renders and tests them again with the struct.
 
 A run with an explicit `--run-dir` keeps them there until `--publish` validates the Lean
 artifact and conformance and copies the set into `ops/<op>/lean/`. The pipeline invokes:

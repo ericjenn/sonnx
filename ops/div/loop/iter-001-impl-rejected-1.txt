@@ -1,0 +1,149 @@
+# the answer is not Python: invalid syntax (<unknown>, line 146)
+
+```python
+"""Implementation of the ONNX ``Div`` operator, version 14, as specified.
+
+The specification has four type-specific sections:
+
+- ``real``: [E_DIV_REAL_FUNC_0010]
+- ``float16``, ``float``, ``double``: [E_DIV_FLOAT_FUNC_0010]
+- ``int8``, ``int16``, ``int32``, ``int64``: [E_DIV_INT_FUNC_0010]
+- ``uint8``, ``uint16``, ``uint32``, ``uint64``: [E_DIV_UINT_FUNC_0010]
+
+The operator has no attributes.
+"""
+
+import numpy as np
+
+
+def div(A, B):
+    """
+    Compute ``C = Div(A, B)`` element-wise.
+
+    The specification's four type sections give the value of ``C[i]`` as
+    follows.
+
+    Real, [E_DIV_REAL_FUNC_0010]::
+
+        "C[i] = A~[i] / B~[i]"
+
+    where "the quotient is the quotient in R of the two elements", and
+    "The division is exact: C[i] is the quotient in R, with no
+    approximation."
+
+    Floating-point, [E_DIV_FLOAT_FUNC_0010]::
+
+        "C[i] = A~[i] /_(f) B~[i]"
+
+    with the IEEE 754 cases for NaN operands, invalid operation
+    (``inf/inf`` and ``0/0``), division by zero, and null quotients.
+
+    Signed integer, [E_DIV_INT_FUNC_0010]::
+
+        "Each element of C is the quotient of the elements of A and B
+        ... truncated toward zero."
+
+    The result is a value of the signed ``n``-bit type; the document states
+    that only the quotient ``2^{n-1}`` leaves the range of the type, and
+    that its result is ``2^{n-1} - 2^n = -2^{n-1}``.
+
+    Unsigned integer, [E_DIV_UINT_FUNC_0010]::
+
+        "C[i] = floor(A~[i] / B~[i])"
+
+    and "The result never leaves the range of the type."
+
+    In every section, for tensors of different shapes::
+
+        "Tensors A and B are broadcast to the shape of C following the
+        multidirectional (Numpy-style) broadcasting rules: the shapes are
+        aligned on their last dimension; a dimension that one operand does
+        not have, including the leading dimensions missing from the operand
+        with the smaller rank, is treated as a dimension of size 1; and a
+        dimension of size 1 is extended to the size of the corresponding
+        dimension of the other operand. Tensor C has the resulting shape."
+
+    A rank-0 tensor "is broadcast to the shape of the other operand, so
+    that each element of C is the quotient of the two operands and C has
+    the shape of the other operand."  Zero-sized dimensions obey the same
+    Numpy-style broadcasting; an empty ``C`` forms no quotient.
+
+    Parameters
+    ----------
+    A : array_like
+        The dividend, tensor ``A``.
+    B : array_like
+        The divisor, tensor ``B``.
+
+    Returns
+    -------
+    numpy.ndarray
+        Tensor ``C``, the element-wise result of the division of ``A`` by
+        ``B``.
+    """
+    A = np.asarray(A)
+    B = np.asarray(B)
+
+    # DECISION: The specification separates the operator into four sections
+    # by type ("real", "float", "int", "uint") but does not say how an
+    # implementation is to map concrete input dtypes onto those sections.
+    # I dispatch on the numpy dtype kind: signed integer -> int section,
+    # unsigned integer -> uint section, floating -> float section, and
+    # anything else -> real section.
+    if np.issubdtype(A.dtype, np.signedinteger) and np.issubdtype(B.dtype, np.signedinteger):
+        return _div_signed_integer(A, B)
+    if np.issubdtype(A.dtype, np.unsignedinteger) and np.issubdtype(B.dtype, np.unsignedinteger):
+        return _div_unsigned_integer(A, B)
+    if np.issubdtype(A.dtype, np.floating) and np.issubdtype(B.dtype, np.floating):
+        # DECISION: For the floating-point types the document prescribes
+        # IEEE 754 division of the type (float16, float, double).  The
+        # document does not prescribe an algorithm.  I delegate to numpy's
+        # divide on the input floating dtype, which is the available
+        # IEEE-754 implementation for that dtype.  NaN sign and payload are
+        # explicitly unspecified by the document and are whatever numpy
+        # produces.
+        return np.divide(A, B)
+
+    # DECISION: The "real" section says the quotient is exact in R.  For
+    # dtypes not covered by the integer or floating sections (for example
+    # object arrays of Fraction), numpy's true division invokes the element
+    # type's division.  The document says nothing about such concrete dtypes
+    # or about how to dispatch to the real section.
+    return np.divide(A, B)
+
+
+def _div_signed_integer(A, B):
+    """
+    Signed ``n``-bit integer branch of ``Div``.
+
+    Implements [E_DIV_INT_FUNC_0010]::
+
+        "C[i] = trunc(A~[i] / B~[i])"
+        if -2^{n-1} <= trunc(A~[i] / B~[i]) <= 2^{n-1}-1,
+
+        "C[i] = trunc(A~[i] / B~[i]) - 2^n"
+        otherwise.
+
+    The document defines ``trunc`` as the quotient truncated toward zero:
+    "trunc(x) = floor(x) when x >= 0 and trunc(x) = ceil(x) when x < 0".
+    It also states that the quotient is "the unique integer q such that
+    a = q * b + r, with |r| < |b| and with r null or of the sign of a."
+
+    For the overflow case, the document says: "Only the value 2^{n-1}
+    leaves the range of the type ... the result is then 2^{n-1} - 2^n =
+    -2^{n-1}."
+
+    A null divisor makes the exact quotient undefined; the document says
+    the result is undetermined and that an implementation may raise a
+    division-by-zero exception.  This implementation uses Python integer
+    division on object arrays, which raises ``ZeroDivisionError`` exactly
+    when such an element is actually divided.
+    """
+    Ab, Bb = np.broadcast_arrays(A, B)
+    a = Ab.astype(object)
+    b = Bb.astype(object)
+
+    # Python's // is floor division.  The document wants truncation toward
+    # zero.  For a non-zero remainder and opposite signs, the floor is one
+    # too low, so add one.
+    q = a //

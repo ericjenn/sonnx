@@ -1,0 +1,340 @@
+# the answer stops in the middle of the module: '[' was never closed (<unknown>, line 337)
+
+```python
+"""The cases with which the **Div** specification is checked.
+
+Read by `specloop.py`:
+
+  * ``cases()``   -- one labelled pair of operands per case.  Each case goes through a
+                     one-node Div model (opset 14) and through the implementation, and
+                     the two results are compared bit for bit, the sign of a zero
+                     included, because the document specifies it.
+  * ``sweeps()``  -- the bulk checks, which build their own ONNX Runtime calls because
+                     they must be batched into a single run: the domain of the integer
+                     types, the exact arithmetic of the float section, the worked
+                     examples of every section of the document, the document's declared
+                     types against the ONNX schema, and the real section, which has no
+                     ONNX type and is checked against exact rational arithmetic instead.
+  * ``COVERAGE``  -- the four section anchors of the document, each with the number of
+                     cases that exercise it.
+
+Two measurements of 2026-11-22 are respected here: the runtime's signed 32- and 64-bit
+Div kernel dies with SIGFPE on the pair (INT_MIN, -1), so that pair never reaches ONNX
+Runtime -- not through a case, not through a sweep array, and not through ``impl``,
+which in the Lean conformance replay *is* ONNX Runtime; its value is stated from exact
+arithmetic in the int sweep's summary.  And no negative Python literal is handed to an
+unsigned ``dtype=`` constructor: every unsigned array is built from values that are
+already non-negative.
+
+The real section's sweep takes the shape of a result from the document's broadcasting
+sentence -- "Tensor C has the shape of A and B broadcast to a common shape" -- computed
+from the two operand shapes by `numpy.broadcast_shapes`, never from what the
+implementation happened to return.
+"""
+
+from __future__ import annotations
+
+from fractions import Fraction
+
+import numpy as np
+
+import onnxruntime as ort
+from onnx import helper
+
+OP = "Div"
+OPSET = 14
+IR_VERSION = 10
+
+NODE_OUTPUTS = ("out",)
+
+ALL_FLOAT = [np.float16, np.float32, np.float64]
+SIGNED_INT = [np.int8, np.int16, np.int32, np.int64]
+UNSIGNED_INT = [np.uint8, np.uint16, np.uint32, np.uint64]
+ALL_INT = SIGNED_INT + UNSIGNED_INT
+UINT_OF_WIDTH = {2: np.uint16, 4: np.uint32, 8: np.uint64}
+
+# The signed widths whose Div kernel lets the process die on (INT_MIN, -1).
+ORT_SIGFPE_DTYPES = (np.dtype(np.int32), np.dtype(np.int64))
+
+
+# ---------------------------------------------------------------------------
+# ONNX Runtime, batched (the sweeps only; individual cases go through specloop)
+# ---------------------------------------------------------------------------
+
+
+def run_ort_batch(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """One Div node over two arrays of the same type, in a single runtime call."""
+    proto = helper.np_dtype_to_tensor_dtype(a.dtype)
+    vi_a = helper.make_tensor_value_info("A", proto, list(a.shape))
+    vi_b = helper.make_tensor_value_info("B", proto, list(b.shape))
+    vi_c = helper.make_tensor_value_info("C", proto, None)
+    node = helper.make_node(OP, ["A", "B"], ["C"], name="div0")
+    graph = helper.make_graph([node], "div_graph", [vi_a, vi_b], [vi_c])
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", OPSET)],
+                              ir_version=IR_VERSION)
+    sess = ort.InferenceSession(model.SerializeToString(),
+                                providers=["CPUExecutionProvider"])
+    (c,) = sess.run(["C"], {"A": a, "B": b})
+    return c
+
+
+def _bits_equal(want: np.ndarray, got: np.ndarray) -> bool:
+    """Bit-for-bit equality, NaN equal to NaN, of two arrays of the same type."""
+    if want.shape != got.shape or want.dtype != got.dtype:
+        return False
+    if want.dtype.kind == "f":
+        uint = UINT_OF_WIDTH[want.dtype.itemsize]
+        bw = np.ascontiguousarray(want).view(uint)
+        bg = np.ascontiguousarray(got).view(uint)
+        both_nan = np.isnan(want) & np.isnan(got)
+        return bool(np.all((bw == bg) | both_nan))
+    return bool(np.all(want == got))
+
+
+def _diff_indices(want: np.ndarray, got: np.ndarray, limit=5):
+    """Flat indices where two arrays differ (NaN equal to NaN); None on shape/type."""
+    if want.shape != got.shape or want.dtype != got.dtype:
+        return None
+    if want.dtype.kind == "f":
+        uint = UINT_OF_WIDTH[want.dtype.itemsize]
+        bw = np.ascontiguousarray(want).view(uint)
+        bg = np.ascontiguousarray(got).view(uint)
+        both_nan = np.isnan(want) & np.isnan(got)
+        mask = ~((bw == bg) | both_nan)
+    else:
+        mask = ~(want == got)
+    return [int(i) for i in np.nonzero(mask.ravel())[0][:limit]]
+
+
+def _same_bits(want, got) -> bool:
+    return _bits_equal(np.asarray(want).ravel(), np.asarray(got).ravel())
+
+
+def _show(arr):
+    """A short readable rendering of an array, for the summary and the failures."""
+    return np.asarray(arr).tolist()
+
+
+# ---------------------------------------------------------------------------
+# exact arithmetic: the reference the document itself states
+# ---------------------------------------------------------------------------
+#
+# The float formula of the document is round(A / B): the exact quotient in the reals,
+# rounded to the nearest value of the type with roundTiesToEven and an unbounded
+# exponent range (overflow gives an infinity, underflow a zero, both of the sign of the
+# exact quotient).  It is computed here from the operands' exact values -- Fraction of
+# the float, never of the decimal literal -- independently of the runtime and of the
+# platform's library.
+
+
+def _pow2(e: int) -> Fraction:
+    return Fraction(2) ** e
+
+
+def _round_half_even(x: Fraction) -> int:
+    """roundTiesToEven of a non-negative rational to the nearest integer."""
+    q = x.numerator // x.denominator
+    r = x - q
+    half = Fraction(1, 2)
+    if r > half:
+        return q + 1
+    if r < half:
+        return q
+    return q if q % 2 == 0 else q + 1
+
+
+def _frac_round_to_type(value: Fraction, dtype):
+    """Round an exact rational to the nearest value of `dtype`, ties to even.
+
+    The exponent range is unbounded, as the document states: a magnitude whose nearest
+    value exceeds the largest finite value of the type gives an infinity of its sign.
+    The rounded value is a value of the type, hence exactly representable in a Python
+    float, so the narrowing below is exact and not a second rounding.
+    """
+    dt = np.dtype(dtype)
+    f = np.finfo(dt)
+    p = f.nmant + 1                       # significand bits, implicit bit included
+    emin = f.minexp                       # exponent of the smallest normal
+    max_finite = Fraction(float(f.max))
+    if value == 0:
+        return dt.type(0.0)
+    sign = -1.0 if value < 0 else 1.0
+    a = abs(value)
+    e = a.numerator.bit_length() - a.denominator.bit_length()
+    while _pow2(e) > a:
+        e -= 1
+    while _pow2(e + 1) <= a:
+        e += 1
+    if e < emin:
+        e = emin                          # the subnormal range: uniform spacing
+    spacing = _pow2(e - p + 1)
+    n = _round_half_even(a / spacing)
+    result = n * spacing
+    if result > max_finite:
+        return dt.type(sign * float("inf"))
+    return dt.type(sign * float(result))
+
+
+def _exact_float_div(x, y, dtype):
+    """C[i] of **Div** (float, float): the document's case analysis, in exact terms."""
+    dt = np.dtype(dtype)
+    fx, fy = float(x), float(y)
+    nan = dt.type(float("nan"))
+    inf = float("inf")
+    if np.isnan(fx) or np.isnan(fy):
+        return nan                                   # the first case: propagation
+    if np.isinf(fx) and np.isinf(fy):
+        return nan                                   # the invalid operation, inf/inf
+    if fx == 0.0 and fy == 0.0:
+        return nan                                   # the invalid operation, 0/0
+    sign = -1.0 if (np.signbit(fx) != np.signbit(fy)) else 1.0
+    if fy == 0.0:
+        return dt.type(sign * inf)                   # division by zero
+    if np.isinf(fx):
+        return dt.type(sign * inf)                   # an infinity over a finite non-null
+    if fx == 0.0 or np.isinf(fy):
+        return dt.type(sign * 0.0)                   # a null quotient, signed
+    return _frac_round_to_type(Fraction(fx) / Fraction(fy), dt)
+
+
+def _double_rounded_float16(x, y):
+    """The same quotient computed in float32 and narrowed, or None where it does not
+    apply.  A kernel that divides float16 operands in float32 rounds twice; on the rare
+    pair whose exact quotient sits a hair from a float16 midpoint that differs from the
+    single rounding the document states.  It is recorded, not required."""
+    fx, fy = float(x), float(y)
+    if (np.isnan(fx) or np.isnan(fy) or np.isinf(fx) or np.isinf(fy) or fy == 0.0):
+        return None
+    with np.errstate(all="ignore"):
+        q = np.float32(fx) / np.float32(fy)
+    return np.float16(q)
+
+
+# ---------------------------------------------------------------------------
+# the integer case analysis of the document, transcribed literally
+# ---------------------------------------------------------------------------
+
+
+def _trunc_div(x: int, y: int) -> int:
+    """trunc(x / y): the integer part, rounded toward zero, of two integers."""
+    q = abs(x) // abs(y)
+    return q if ((x < 0) == (y < 0)) else -q
+
+
+def doc_int_div(x: int, y: int, n: int) -> int:
+    """The case analysis of **Div** (int, int), in exact arithmetic."""
+    q = _trunc_div(x, y)
+    lo, hi = -(2 ** (n - 1)), 2 ** (n - 1) - 1
+    if q > hi:
+        return q - 2 ** n
+    if q < lo:
+        return q + 2 ** n
+    return q
+
+
+def doc_uint_div(x: int, y: int) -> int:
+    """The formula of **Div** (uint, uint): the floor, which is the truncation."""
+    return x // y
+
+
+def _doc_int_array(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    dt = a.dtype
+    n = dt.itemsize * 8
+    signed = dt.kind == "i"
+    xs = a.ravel().tolist()
+    ys = b.ravel().tolist()
+    if signed:
+        vals = [doc_int_div(int(x), int(y), n) for x, y in zip(xs, ys)]
+    else:
+        vals = [doc_uint_div(int(x), int(y)) for x, y in zip(xs, ys)]
+    return np.array(vals, dtype=dt).reshape(a.shape)
+
+
+def _rand_values(rng, dt, n):
+    """n random values of `dt`, drawn uniformly over the whole bit patterns of the type."""
+    bits = dt.itemsize * 8
+    hi = rng.integers(0, 1 << 32, size=n, dtype=np.uint64)
+    lo = rng.integers(0, 1 << 32, size=n, dtype=np.uint64)
+    raw = (hi << np.uint64(32)) | lo
+    if bits < 64:
+        raw = raw & np.uint64((1 << bits) - 1)
+    return raw.astype(np.dtype("u%d" % dt.itemsize)).view(dt)
+
+
+# ---------------------------------------------------------------------------
+# the cases
+# ---------------------------------------------------------------------------
+
+
+def _float_cases():
+    f16 = np.float16
+    f32 = np.float32
+    f64 = np.float64
+    inf = float("inf")
+    nan = float("nan")
+    f16max = float(np.finfo(np.float16).max)
+    f16tiny = float(np.finfo(np.float16).tiny)
+    f16sub = float(np.nextafter(np.float16(0.0), np.float16(1.0)))
+    f32max = float(np.finfo(np.float32).max)
+    f32tiny = float(np.finfo(np.float32).tiny)
+    f32sub = float(np.nextafter(np.float32(0.0), np.float32(1.0)))
+    f64max = float(np.finfo(np.float64).max)
+    f64sub = float(np.nextafter(np.float64(0.0), np.float64(1.0)))
+
+    out = []
+    out.append(("float16 Example 1 (every quotient representable)",
+                [np.array([6.0, -9.0, 1.0], dtype=f16),
+                 np.array([3.0, 4.0, 8.0], dtype=f16)]))
+    out.append(("float32 Example 1",
+                [np.array([6.0, -9.0, 1.0], dtype=f32),
+                 np.array([3.0, 4.0, 8.0], dtype=f32)]))
+    out.append(("double Example 3 (three rounded quotients)",
+                [np.array([1.0, 10.0, -10.0], dtype=f64),
+                 np.array([3.0, 3.0, 3.0], dtype=f64)]))
+    out.append(("float32 Example 2 (the special values, as documented)",
+                [np.array([1.0, -1.0, inf, inf, 0.0, -0.0, 0.0, nan], dtype=f32),
+                 np.array([0.0, 0.0, inf, 4.0, 4.0, 4.0, 0.0, 1.0], dtype=f32)]))
+    out.append(("float16 Example 2 (the special values, as documented)",
+                [np.array([1.0, -1.0, inf, inf, 0.0, -0.0, 0.0, nan], dtype=f16),
+                 np.array([0.0, 0.0, inf, 4.0, 4.0, 4.0, 0.0, 1.0], dtype=f16)]))
+    out.append(("double Example 2 (the special values, as documented)",
+                [np.array([1.0, -1.0, inf, inf, 0.0, -0.0, 0.0, nan], dtype=f64),
+                 np.array([0.0, 0.0, inf, 4.0, 4.0, 4.0, 0.0, 1.0], dtype=f64)]))
+    out.append(("a NaN operand in every position (float32)",
+                [np.array([nan, 1.0, nan, -inf, 0.0], dtype=f32),
+                 np.array([1.0, nan, 0.0, inf, nan], dtype=f32)]))
+    out.append(("signed null quotients, a zero over a finite non-null (float32)",
+                [np.array([0.0, -0.0, 0.0, -0.0], dtype=f32),
+                 np.array([2.0, 2.0, -2.0, -2.0], dtype=f32)]))
+    out.append(("signed null quotients, a finite dividend over an infinity (float32)",
+                [np.array([1.0, -1.0, 0.0, -0.0], dtype=f32),
+                 np.array([inf, -inf, inf, -inf], dtype=f32)]))
+    out.append(("an infinity over a finite non-null divisor (float32)",
+                [np.array([inf, -inf, inf, -inf], dtype=f32),
+                 np.array([2.0, 2.0, -2.0, -2.0], dtype=f32)]))
+    out.append(("division by zero, both signs of the divisor (float32)",
+                [np.array([1.0, -1.0, 1.0, -1.0], dtype=f32),
+                 np.array([0.0, 0.0, -0.0, -0.0], dtype=f32)]))
+    out.append(("overflow to an infinity (float32)",
+                [np.array([f32max, -f32max, f32max], dtype=f32),
+                 np.array([f32sub, f32sub, 0.5], dtype=f32)]))
+    out.append(("underflow to a signed zero and to a subnormal (float32)",
+                [np.array([f32sub, -f32sub, 3.0 * f32sub, f32tiny], dtype=f32),
+                 np.array([2.0, 2.0, 2.0, 2.0], dtype=f32)]))
+    out.append(("overflow and underflow in double",
+                [np.array([f64max, -f64max, f64sub, -f64sub], dtype=f64),
+                 np.array([f64sub, 0.5, 2.0, 2.0], dtype=f64)]))
+    out.append(("float16 range limits",
+                [np.array([f16max, -f16max, f16sub, -f16sub, f16tiny], dtype=f16),
+                 np.array([f16sub, 2.0, 2.0, 2.0, 2.0], dtype=f16)]))
+    out.append(("quotients rounded to the type (float32)",
+                [np.array([1.0, 1.0, 7.0, -7.0], dtype=f32),
+                 np.array([3.0, 10.0, 2.0, 2.0], dtype=f32)]))
+    out.append(("broadcast a rank-1 divisor over a 2x2 dividend (float32)",
+                [np.array([[4.0, 9.0], [16.0, 25.0]], dtype=f32),
+                 np.array([2.0, 5.0], dtype=f32)]))
+    out.append(("rank-0 dividend broadcast over a rank-1 divisor (float32)",
+                [np.array(6.0, dtype=f32),
+                 np.array([2.0, 3.0, 4.0], dtype=f32)]))
+    out.append(("rank-0 divisor broadcast over a rank-2 dividend (double)",
+                [np.array([[1.

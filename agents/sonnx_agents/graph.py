@@ -2056,9 +2056,9 @@ def _c_source_problem(source: str) -> str:
     """Why an answer is not a usable C test program, or "" when it is one.
 
     The textual checks are the ones a compiler will not make: the program must be one
-    standalone translation unit that includes the generated header and exercises the four
-    families the document carries.  Whether it compiles and what it measures are decided
-    by running it.
+    standalone translation unit that includes the generated header, constructs the
+    generated `sonnx_tensor` values, and exercises the four families the document carries.
+    Whether it compiles and what it measures are decided by running it.
     """
     if not source.strip():
         return "the answer is empty"
@@ -2066,6 +2066,8 @@ def _c_source_problem(source: str) -> str:
         return "the program defines no `int main(void)`"
     if _CGEN_TEST_HEADER not in source:
         return 'the program does not include "sonnx_kernels.h"'
+    if "sonnx_tensor" not in source:
+        return "the program does not use the generated `sonnx_tensor` type"
     suffixes = set(_CGEN_KERNEL.findall(source))
     missing = [suffix for suffix in ("f32", "f64") if suffix not in suffixes]
     if not any(suffix.startswith("i") for suffix in suffixes):

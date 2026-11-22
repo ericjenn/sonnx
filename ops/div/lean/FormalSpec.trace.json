@@ -1,0 +1,623 @@
+{
+  "generated_by": "sonnx-lean-pipeline",
+  "source": "ops/div/div.md",
+  "source_md5": "717593cc5df1428b5b3043ffd98a3f2d",
+  "requirements": [
+    {
+      "key": "E_DIV_REAL_FUNC_0010",
+      "source": "ops/div/div.md",
+      "start": 33,
+      "end": 59,
+      "anchor": "E_DIV_REAL_FUNC_0010",
+      "excerpt": "<a id=\"E_DIV_REAL_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_DIV_REAL_FUNC_0010]</br></span>\n\nOperator **Div** divides tensor $A$ by tensor $B$ element-wise and stores the result in tensor $C$. Each element of $C$ is the quotient of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\frac{\\tilde{A}[i]}{\\tilde{B}[i]}\n$$\n\nwhere\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$,\n- $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- the quotient is the quotient in $\\mathbb{R}$ of the two elements.\n\nThe division is exact: $C[i]$ is the quotient in $\\mathbb{R}$, with no approximation.\n\n**Domain.** The quotient of two real numbers exists only when the divisor is non-null. The domain of the operator is therefore the set of pairs of real tensors whose divisor has no null element, i.e. $\\forall i,\\ \\tilde{B}[i] \\neq 0$; that condition is the precondition stated by constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_REAL_CONSTR_B_0010</span></b>](#E_DIV_REAL_CONSTR_B_0010) on tensor $B$. For every pair of tensors that satisfies it, the result is the one given above.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the quotient of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty. No quotient is formed for an empty result, so that the domain condition bears on the elements of $\\tilde{B}$ only.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
+    },
+    {
+      "key": "E_DIV_REAL_CONSTR_A_0010",
+      "source": "ops/div/div.md",
+      "start": 113,
+      "end": 115,
+      "anchor": "E_DIV_REAL_CONSTR_A_0010",
+      "excerpt": "<a id=\"E_DIV_REAL_CONSTR_A_0010\"></a>\n- `[E_DIV_REAL_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting."
+    },
+    {
+      "key": "E_DIV_REAL_CONSTR_B_0010",
+      "source": "ops/div/div.md",
+      "start": 123,
+      "end": 126,
+      "anchor": "E_DIV_REAL_CONSTR_B_0010",
+      "excerpt": "<a id=\"E_DIV_REAL_CONSTR_B_0010\"></a>\n- `[E_DIV_REAL_CONSTR_B_0010]` Non-null divisor\n  - Statement: Every element of $\\tilde{B}$, the divisor broadcast to the shape of $C$, is non-null, i.e. $\\forall i,\\ \\tilde{B}[i] \\neq 0$.\n  - Rationale: The quotient of two real numbers exists only when the divisor is non-null; the condition is the domain of the operator, stated in [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_REAL_FUNC_0010</span></b>](#E_DIV_REAL_FUNC_0010)."
+    },
+    {
+      "key": "E_DIV_REAL_CONSTR_B_0020",
+      "source": "ops/div/div.md",
+      "start": 127,
+      "end": 128,
+      "anchor": null,
+      "excerpt": "- `[E_DIV_REAL_CONSTR_B_0020]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_REAL_CONSTR_A_0010</span></b>](#E_DIV_REAL_CONSTR_A_0010) on tensor $A$."
+    },
+    {
+      "key": "E_DIV_REAL_CONSTR_C_0010",
+      "source": "ops/div/div.md",
+      "start": 138,
+      "end": 139,
+      "anchor": null,
+      "excerpt": "- `[E_DIV_REAL_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape."
+    },
+    {
+      "key": "E_DIV_FLOAT_FUNC_0010",
+      "source": "ops/div/div.md",
+      "start": 166,
+      "end": 206,
+      "anchor": "E_DIV_FLOAT_FUNC_0010",
+      "excerpt": "<a id=\"E_DIV_FLOAT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_DIV_FLOAT_FUNC_0010]</br></span>\n\nOperator **Div** divides tensor $A$ by tensor $B$ element-wise according to IEEE 754 floating-point semantics and stores the result in tensor $C$. Each element of $C$ is the floating-point quotient of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below. No element of $B$ is excluded: every combination of operands of the type, including the special numbers, has a result of the type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\tilde{A}[i] /_{(\\text{f})} \\tilde{B}[i] =\n\\begin{cases}\n\\text{NaN} & \\text{if } \\tilde{A}[i] \\text{ or } \\tilde{B}[i] \\text{ is NaN} \\\\\n\\text{NaN} & \\text{if } \\tilde{A}[i] \\text{ and } \\tilde{B}[i] \\text{ are both } \\pm\\infty, \\text{ or both } \\pm 0 \\\\\n\\pm\\infty & \\text{if } \\tilde{A}[i] \\text{ is finite and non-null and } \\tilde{B}[i] \\text{ is } \\pm 0, \\text{ or } \\tilde{A}[i] \\text{ is } \\pm\\infty \\text{ and } \\tilde{B}[i] \\text{ is finite and non-null} \\\\\n\\pm 0 & \\text{if } \\tilde{A}[i] \\text{ is } \\pm 0 \\text{ and } \\tilde{B}[i] \\text{ is finite and non-null, or } \\tilde{A}[i] \\text{ is finite and } \\tilde{B}[i] \\text{ is } \\pm\\infty \\\\\n\\text{round}\\!\\left(\\tilde{A}[i] / \\tilde{B}[i]\\right) & \\text{otherwise}\n\\end{cases}\n$$\n\nwhere\n- $/_{(\\text{f})}$ is the division of the floating-point type of $A$, $B$ and $C$, i.e. $/_{(\\text{f16})}$, $/_{(\\text{f32})}$ or $/_{(\\text{f64})}$ according to that type, whereas the $/$ of the last case is the division of $\\mathbb{R}$: there, $\\tilde{A}[i] / \\tilde{B}[i]$ is the exact quotient of the two elements,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $\\pm$ in the third and fourth cases is the sign of the exact quotient: $+$ when the two operands have the same sign and $-$ when they have opposite signs,\n- $\\text{round}(x)$ is the value of $x$ rounded to the nearest value of the type of $A$ and $B$ using the roundTiesToEven attribute of IEEE 754, the exponent range of the type being unbounded when deciding an overflow: a magnitude whose rounded value exceeds the largest finite value of the type gives an infinity of the sign of $x$, and a magnitude below the smallest subnormal value of the type gives a zero of the sign of $x$.\n\n**Operands that are NaN.** The first case propagates the NaN: a NaN operand gives a NaN result, whatever the other operand is. The NaN of this case is a quiet NaN; its sign and its payload are not specified, so that every quiet NaN of the type of $A$ and $B$ is a conforming result.\n\n**Invalid operation.** The second case is the invalid operation of IEEE 754 section 7.2 for division: the quotient $\\infty/\\infty$ and the quotient $0/0$ have no value in the extended reals, and the result is NaN, again any quiet NaN of the type.\n\n**Division by zero.** The third case is the division-by-zero exception of IEEE 754: a finite non-null dividend divided by a zero gives an infinity whose sign is the sign of the exact quotient, so that $1.0/(+0)$ gives $+\\infty$ and $-1.0/(+0)$ gives $-\\infty$. The division of an infinity by a finite non-null value also gives an infinity, of the sign of the exact quotient; that case is not an exception of the standard, the result being the limit of the quotients of the finite values.\n\n**Null quotients.** The fourth case gives a null result whose sign is the sign of the exact quotient: $\\tilde{A}[i] / \\tilde{B}[i]$ is null when the dividend is null and the divisor is finite non-null, and when the divisor is infinite and the dividend is finite. The signs of the operands then decide the sign of the zero: $(+0)/2.0$ gives $+0$ and $(-0)/2.0$ gives $-0$, while $(+0)/(-2.0)$ gives $-0$. A null dividend divided by a null divisor is not a null quotient: it falls in the second case and gives NaN. The last case also produces a null result when a non-null exact quotient is so small that it rounds to zero; its sign is then the sign of that exact quotient as well.\n\n**Finite operands.** In the last case both operands are finite and the divisor is non-null, so that the exact quotient is a non-null real number. The result is that quotient rounded as defined above. When the exact quotient is representable in the type, no rounding takes place; otherwise the result is the nearest value of the type, and it may be a subnormal value, a zero, or an infinity when the exponent of the exact quotient exceeds the largest exponent of the type.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the quotient of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
+    },
+    {
+      "key": "E_DIV_FLOAT_CONSTR_A_0010",
+      "source": "ops/div/div.md",
+      "start": 275,
+      "end": 277,
+      "anchor": "E_DIV_FLOAT_CONSTR_A_0010",
+      "excerpt": "<a id=\"E_DIV_FLOAT_CONSTR_A_0010\"></a>\n- `[E_DIV_FLOAT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting."
+    },
+    {
+      "key": "E_DIV_FLOAT_CONSTR_A_0020",
+      "source": "ops/div/div.md",
+      "start": 278,
+      "end": 280,
+      "anchor": "E_DIV_FLOAT_CONSTR_A_0020",
+      "excerpt": "<a id=\"E_DIV_FLOAT_CONSTR_A_0020\"></a>\n- `[E_DIV_FLOAT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$ and $C$ have the same type."
+    },
+    {
+      "key": "E_DIV_FLOAT_CONSTR_B_0010",
+      "source": "ops/div/div.md",
+      "start": 288,
+      "end": 289,
+      "anchor": null,
+      "excerpt": "- `[E_DIV_FLOAT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_FLOAT_CONSTR_A_0010</span></b>](#E_DIV_FLOAT_CONSTR_A_0010) on tensor $A$."
+    },
+    {
+      "key": "E_DIV_FLOAT_CONSTR_B_0020",
+      "source": "ops/div/div.md",
+      "start": 290,
+      "end": 291,
+      "anchor": null,
+      "excerpt": "- `[E_DIV_FLOAT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_FLOAT_CONSTR_A_0020</span></b>](#E_DIV_FLOAT_CONSTR_A_0020) on tensor $A$."
+    },
+    {
+      "key": "E_DIV_FLOAT_CONSTR_C_0010",
+      "source": "ops/div/div.md",
+      "start": 301,
+      "end": 302,
+      "anchor": null,
+      "excerpt": "- `[E_DIV_FLOAT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape."
+    },
+    {
+      "key": "E_DIV_FLOAT_CONSTR_C_0020",
+      "source": "ops/div/div.md",
+      "start": 303,
+      "end": 304,
+      "anchor": null,
+      "excerpt": "- `[E_DIV_FLOAT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_FLOAT_CONSTR_A_0020</span></b>](#E_DIV_FLOAT_CONSTR_A_0020) on tensor $A$."
+    },
+    {
+      "key": "E_DIV_INT_FUNC_0010",
+      "source": "ops/div/div.md",
+      "start": 331,
+      "end": 366,
+      "anchor": "E_DIV_INT_FUNC_0010",
+      "excerpt": "<a id=\"E_DIV_INT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_DIV_INT_FUNC_0010]</br></span>\n\nOperator **Div** divides tensor $A$ by tensor $B$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the quotient of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below, truncated toward zero. Tensors $A$, $B$ and $C$ have the same signed $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] =\n\\begin{cases}\n\\operatorname{trunc}\\!\\left(\\tilde{A}[i] / \\tilde{B}[i]\\right) & \\text{if } -2^{n-1} \\le \\operatorname{trunc}\\!\\left(\\tilde{A}[i] / \\tilde{B}[i]\\right) \\le 2^{n-1}-1 \\\\[4pt]\n\\operatorname{trunc}\\!\\left(\\tilde{A}[i] / \\tilde{B}[i]\\right) - 2^n & \\text{if } \\operatorname{trunc}\\!\\left(\\tilde{A}[i] / \\tilde{B}[i]\\right) \\notin [-2^{n-1},\\, 2^{n-1}-1]\n\\end{cases}\n$$\n\nwhere\n- $\\tilde{A}[i] / \\tilde{B}[i]$ is the exact quotient of the two elements, the quotient in $\\mathbb{Q}$ of two integers whose divisor is non-null,\n- $\\operatorname{trunc}(x)$ is the integer part of $x$, i.e. $x$ rounded toward zero: $\\operatorname{trunc}(x) = \\lfloor x \\rfloor$ when $x \\ge 0$ and $\\operatorname{trunc}(x) = \\lceil x \\rceil$ when $x < 0$, so that $\\operatorname{trunc}(3.5) = 3$ and $\\operatorname{trunc}(-3.5) = -3$,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $n$ is the number of bits of the type of $A$ and $B$.\n\nThe second case is the complement of the first: exactly one of the two cases applies to every pair of operands whose divisor is non-null, and the result is then determined.\n\n**Truncating division.** The quotient $\\operatorname{trunc}(a/b)$ is the unique integer $q$ such that $a = q \\cdot b + r$, with $|r| < |b|$ and with $r$ null or of the sign of $a$. It is the quotient ONNX prescribes for the integer types, and it differs from the floor: for `int8`, $7/2 = 3$ and $-7/2 = -3$, whereas the floor of $-3.5$ is $-4$. The sign of the result is the sign of the exact quotient: the quotient of two operands of the same sign is non-negative, and the quotient of two operands of opposite signs is non-positive, so that a null result is the neutral value $0$ of the type, with no sign.\n\n**The one quotient outside the range.** The values of an $n$-bit signed type lie in $[-2^{n-1}, 2^{n-1}-1]$, so that the quotient of two of its values, truncated toward zero, lies in $[-2^{n-1}, 2^{n-1}]$: the lower bound is reached by $(-2^{n-1})/1 = -2^{n-1}$, and the upper bound only by $(-2^{n-1})/(-1) = 2^{n-1}$. Only the value $2^{n-1}$ leaves the range of the type, so that the second case of the definition is the case $\\operatorname{trunc}(\\tilde{A}[i]/\\tilde{B}[i]) = 2^{n-1}$, reached by that single pair of operands; the result is then $2^{n-1} - 2^n = -2^{n-1}$. For `int8`, $-128 / -1$ gives $-128$; the exact quotient $128$ is represented by the value of the type that is congruent to it modulo $2^8$.\n\n**A null divisor.** No element of $B$ is excluded, so that a null element of $B$ makes the exact quotient undefined and the result of the operator undetermined; the condition is described in the \"Error conditions\" section. Every other pair of operands falls in one of the two cases above, and the result is fully determined.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the quotient of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty. No quotient is formed for an empty result, so that a null element of $B$ in an empty tensor raises no condition.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
+    },
+    {
+      "key": "E_DIV_INT_CONSTR_A_0010",
+      "source": "ops/div/div.md",
+      "start": 408,
+      "end": 410,
+      "anchor": "E_DIV_INT_CONSTR_A_0010",
+      "excerpt": "<a id=\"E_DIV_INT_CONSTR_A_0010\"></a>\n- `[E_DIV_INT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting."
+    },
+    {
+      "key": "E_DIV_INT_CONSTR_A_0020",
+      "source": "ops/div/div.md",
+      "start": 411,
+      "end": 413,
+      "anchor": "E_DIV_INT_CONSTR_A_0020",
+      "excerpt": "<a id=\"E_DIV_INT_CONSTR_A_0020\"></a>\n- `[E_DIV_INT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$ and $C$ have the same type."
+    },
+    {
+      "key": "E_DIV_INT_CONSTR_B_0010",
+      "source": "ops/div/div.md",
+      "start": 421,
+      "end": 422,
+      "anchor": null,
+      "excerpt": "- `[E_DIV_INT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_INT_CONSTR_A_0010</span></b>](#E_DIV_INT_CONSTR_A_0010) on tensor $A$."
+    },
+    {
+      "key": "E_DIV_INT_CONSTR_B_0020",
+      "source": "ops/div/div.md",
+      "start": 423,
+      "end": 424,
+      "anchor": null,
+      "excerpt": "- `[E_DIV_INT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_INT_CONSTR_A_0020</span></b>](#E_DIV_INT_CONSTR_A_0020) on tensor $A$."
+    },
+    {
+      "key": "E_DIV_INT_CONSTR_C_0010",
+      "source": "ops/div/div.md",
+      "start": 434,
+      "end": 435,
+      "anchor": null,
+      "excerpt": "- `[E_DIV_INT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape."
+    },
+    {
+      "key": "E_DIV_INT_CONSTR_C_0020",
+      "source": "ops/div/div.md",
+      "start": 436,
+      "end": 437,
+      "anchor": null,
+      "excerpt": "- `[E_DIV_INT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_INT_CONSTR_A_0020</span></b>](#E_DIV_INT_CONSTR_A_0020) on tensor $A$."
+    },
+    {
+      "key": "E_DIV_UINT_FUNC_0010",
+      "source": "ops/div/div.md",
+      "start": 464,
+      "end": 490,
+      "anchor": "E_DIV_UINT_FUNC_0010",
+      "excerpt": "<a id=\"E_DIV_UINT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_DIV_UINT_FUNC_0010]</br></span>\n\nOperator **Div** divides tensor $A$ by tensor $B$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the quotient of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below, truncated toward zero. Tensors $A$, $B$ and $C$ have the same unsigned $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\left\\lfloor \\frac{\\tilde{A}[i]}{\\tilde{B}[i]} \\right\\rfloor\n$$\n\nwhere\n- $\\tilde{A}[i] / \\tilde{B}[i]$ is the exact quotient of the two elements, the quotient in $\\mathbb{Q}$ of two integers whose divisor is non-null,\n- $\\lfloor \\cdot \\rfloor$ is the floor, which for two non-negative operands is the quotient truncated toward zero,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$.\n\n**The result never leaves the range of the type.** The operands are non-negative, so that their exact quotient is non-negative and its floor is at most the dividend: $0 \\le \\lfloor a/b \\rfloor \\le a \\le 2^n-1$ for every $b \\ge 1$. The result of a division by a non-null element is therefore the floor itself, with no reduction modulo $2^n$ and no overflow, and it is exact in the type. For `uint8`, $200/3$ gives $66$ and $255/255$ gives $1$. The truncation and the floor coincide on the unsigned types, so that the distinction between them, which the signed types make visible, has no effect here.\n\n**A null divisor.** No element of $B$ is excluded, so that a null element of $B$ makes the exact quotient undefined and the result of the operator undetermined; the condition is described in the \"Error conditions\" section, and it is the only condition under which the result is not the value given above.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the quotient of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty. No quotient is formed for an empty result, so that a null element of $B$ in an empty tensor raises no condition.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>"
+    },
+    {
+      "key": "E_DIV_UINT_CONSTR_A_0010",
+      "source": "ops/div/div.md",
+      "start": 532,
+      "end": 534,
+      "anchor": "E_DIV_UINT_CONSTR_A_0010",
+      "excerpt": "<a id=\"E_DIV_UINT_CONSTR_A_0010\"></a>\n- `[E_DIV_UINT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting."
+    },
+    {
+      "key": "E_DIV_UINT_CONSTR_A_0020",
+      "source": "ops/div/div.md",
+      "start": 535,
+      "end": 537,
+      "anchor": "E_DIV_UINT_CONSTR_A_0020",
+      "excerpt": "<a id=\"E_DIV_UINT_CONSTR_A_0020\"></a>\n- `[E_DIV_UINT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$ and $C$ have the same type."
+    },
+    {
+      "key": "E_DIV_UINT_CONSTR_B_0010",
+      "source": "ops/div/div.md",
+      "start": 545,
+      "end": 546,
+      "anchor": null,
+      "excerpt": "- `[E_DIV_UINT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_UINT_CONSTR_A_0010</span></b>](#E_DIV_UINT_CONSTR_A_0010) on tensor $A$."
+    },
+    {
+      "key": "E_DIV_UINT_CONSTR_B_0020",
+      "source": "ops/div/div.md",
+      "start": 547,
+      "end": 548,
+      "anchor": null,
+      "excerpt": "- `[E_DIV_UINT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_UINT_CONSTR_A_0020</span></b>](#E_DIV_UINT_CONSTR_A_0020) on tensor $A$."
+    },
+    {
+      "key": "E_DIV_UINT_CONSTR_C_0010",
+      "source": "ops/div/div.md",
+      "start": 558,
+      "end": 559,
+      "anchor": null,
+      "excerpt": "- `[E_DIV_UINT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape."
+    },
+    {
+      "key": "E_DIV_UINT_CONSTR_C_0020",
+      "source": "ops/div/div.md",
+      "start": 560,
+      "end": 561,
+      "anchor": null,
+      "excerpt": "- `[E_DIV_UINT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_UINT_CONSTR_A_0020</span></b>](#E_DIV_UINT_CONSTR_A_0020) on tensor $A$."
+    }
+  ],
+  "examples": [
+    {
+      "key": "real:example:1",
+      "source": "ops/div/div.md",
+      "start": 63,
+      "end": 75,
+      "anchor": null,
+      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 7 & -9 & 1 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & 4 & 3 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} \\frac{7}{2} & -\\frac{9}{4} & \\frac{1}{3} \\end{bmatrix}\n$$\n\nThe three quotients are given exactly, as the quotients of real numbers: $1/3$ has no finite decimal expansion and is not approximated."
+    },
+    {
+      "key": "real:example:2",
+      "source": "ops/div/div.md",
+      "start": 77,
+      "end": 89,
+      "anchor": null,
+      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix} 4 & 9 \\\\ 16 & 25 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & 5 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} \\frac{4}{2} & \\frac{9}{5} \\\\[2pt] \\frac{16}{2} & \\frac{25}{5} \\end{bmatrix} = \\begin{bmatrix} 2 & \\frac{9}{5} \\\\[2pt] 8 & 5 \\end{bmatrix}\n$$\n\nTensor $B$ has rank $1$ and tensor $A$ has rank $2$; $B$ is broadcast to the shape of $A$, so that each column of $A$ is divided by the corresponding element of $B$."
+    },
+    {
+      "key": "float:example:1",
+      "source": "ops/div/div.md",
+      "start": 210,
+      "end": 222,
+      "anchor": null,
+      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 6.0 & -9.0 & 1.0 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3.0 & 4.0 & 8.0 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 2.0 & -2.25 & 0.125 \\end{bmatrix}\n$$\n\nThe quotient of two numbers of a floating-point type is not always exact; in this example every quotient is representable and $C$ is the exact result."
+    },
+    {
+      "key": "float:example:2",
+      "source": "ops/div/div.md",
+      "start": 224,
+      "end": 236,
+      "anchor": null,
+      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix} 1.0 & -1.0 & \\text{+inf} & \\text{+inf} & \\text{+0} & \\text{-0} & \\text{+0} & \\text{NaN} \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} \\text{+0} & \\text{+0} & \\text{+inf} & 4.0 & 4.0 & 4.0 & \\text{+0} & 1.0 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} \\text{+inf} & \\text{-inf} & \\text{NaN} & \\text{+inf} & \\text{+0} & \\text{-0} & \\text{NaN} & \\text{NaN} \\end{bmatrix}\n$$\n\nThe first two elements are divisions by zero: the dividend is finite and non-null and the divisor is $+0$, so the result is an infinity whose sign is the sign of the exact quotient, positive for $1.0$ and negative for $-1.0$. The third element is the invalid operation $\\infty/\\infty$, which yields NaN. The fourth is the division of an infinity by a finite non-null value, which gives the infinity of the sign of the quotient. The fifth and the sixth elements are divisions of a zero by a finite non-null value: the exact quotient is null, and its sign, positive when the operands have the same sign and negative otherwise, is the sign of the result. The seventh element is the invalid operation $0/0$. The eighth is the propagation of a NaN operand."
+    },
+    {
+      "key": "float:example:3",
+      "source": "ops/div/div.md",
+      "start": 238,
+      "end": 250,
+      "anchor": null,
+      "excerpt": "### Example 3\n\n$$\nA = \\begin{bmatrix} 1.0 & 10.0 & -10.0 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3.0 & 3.0 & 3.0 \\end{bmatrix}\n$$\n\n$$\nC \\approx \\begin{bmatrix} 0.3333333333333333 & 3.3333333333333335 & -3.3333333333333335 \\end{bmatrix}\n$$\n\nNone of the three exact quotients is representable in `double`: each element of $C$ is the exact quotient rounded to the nearest `double`, which is the value displayed. The departure of an implementation from these values is the subject of the profile's accuracy guidelines."
+    },
+    {
+      "key": "int:example:1",
+      "source": "ops/div/div.md",
+      "start": 370,
+      "end": 384,
+      "anchor": null,
+      "excerpt": "### Example 1\n\nFor the `int8` type:\n\n$$\nA = \\begin{bmatrix} 7 & -7 & 7 & -7 & -128 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & 2 & -2 & -2 & -1 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 3 & -3 & -3 & 3 & -128 \\end{bmatrix}\n$$\n\nThe first four quotients are $3.5$, $-3.5$, $-3.5$ and $3.5$: each is truncated toward zero, which gives $3$, $-3$, $-3$ and $3$, and not the floors $-3.5 \\to -4$. The last quotient is $(-128)/(-1) = 128$, which exceeds the maximum value $127$ of `int8`: the second case of the definition applies and the result is $128 - 2^8 = -128$, the value of the type congruent to $128$ modulo $2^8$."
+    },
+    {
+      "key": "uint:example:1",
+      "source": "ops/div/div.md",
+      "start": 494,
+      "end": 508,
+      "anchor": null,
+      "excerpt": "### Example 1\n\nFor the `uint8` type:\n\n$$\nA = \\begin{bmatrix} 7 & 200 & 255 & 6 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & 3 & 255 & 6 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 3 & 66 & 1 & 1 \\end{bmatrix}\n$$\n\nThe quotient $7/2 = 3.5$ is truncated toward zero and gives $3$; $200/3 = 66.67$ gives $66$; $255/255 = 1$ and $6/6 = 1$ are exact. Each of the four results lies in the range $[0, 255]$ of `uint8`, as every quotient of the type does."
+    }
+  ],
+  "ok": true,
+  "complete": true,
+  "findings": [],
+  "coverage": {
+    "E_DIV_REAL_FUNC_0010": "specified",
+    "E_DIV_REAL_CONSTR_A_0010": "specified",
+    "E_DIV_REAL_CONSTR_B_0010": "specified",
+    "E_DIV_REAL_CONSTR_B_0020": "specified",
+    "E_DIV_REAL_CONSTR_C_0010": "specified",
+    "E_DIV_FLOAT_FUNC_0010": "specified",
+    "E_DIV_FLOAT_CONSTR_A_0010": "specified",
+    "E_DIV_FLOAT_CONSTR_A_0020": "specified",
+    "E_DIV_FLOAT_CONSTR_B_0010": "specified",
+    "E_DIV_FLOAT_CONSTR_B_0020": "specified",
+    "E_DIV_FLOAT_CONSTR_C_0010": "specified",
+    "E_DIV_FLOAT_CONSTR_C_0020": "specified",
+    "E_DIV_INT_FUNC_0010": "specified",
+    "E_DIV_INT_CONSTR_A_0010": "specified",
+    "E_DIV_INT_CONSTR_A_0020": "specified",
+    "E_DIV_INT_CONSTR_B_0010": "specified",
+    "E_DIV_INT_CONSTR_B_0020": "specified",
+    "E_DIV_INT_CONSTR_C_0010": "specified",
+    "E_DIV_INT_CONSTR_C_0020": "specified",
+    "E_DIV_UINT_FUNC_0010": "specified",
+    "E_DIV_UINT_CONSTR_A_0010": "specified",
+    "E_DIV_UINT_CONSTR_A_0020": "specified",
+    "E_DIV_UINT_CONSTR_B_0010": "specified",
+    "E_DIV_UINT_CONSTR_B_0020": "specified",
+    "E_DIV_UINT_CONSTR_C_0010": "specified",
+    "E_DIV_UINT_CONSTR_C_0020": "specified",
+    "real:example:1": "example_only",
+    "real:example:2": "example_only",
+    "float:example:1": "example_only",
+    "float:example:2": "example_only",
+    "float:example:3": "example_only",
+    "int:example:1": "example_only",
+    "uint:example:1": "example_only"
+  },
+  "entries": [
+    {
+      "key": "E_DIV_REAL_CONSTR_B_0010",
+      "status": "specified",
+      "declaration": "Generated.Div.realDivElem",
+      "limitation": "",
+      "source": "ops/div/div.md:L123-L126",
+      "excerpt": "<a id=\"E_DIV_REAL_CONSTR_B_0010\"></a>\n- `[E_DIV_REAL_CONSTR_B_0010]` Non-null divisor\n  - Statement: Every element of $\\tilde{B}$, the divisor broadcast to the shape of $C$, is non-null, i.e. $\\forall i,\\ \\tilde{B}[i] \\neq 0$.\n  - Rationale: The quotient of two real numbers exists only when the divisor is non-null; the condition is the domain of the operator, stated in [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_REAL_FUNC_0010</span></b>](#E_DIV_REAL_FUNC_0010).",
+      "line": 60
+    },
+    {
+      "key": "E_DIV_REAL_CONSTR_A_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/div/div.md:L113-L115",
+      "excerpt": "<a id=\"E_DIV_REAL_CONSTR_A_0010\"></a>\n- `[E_DIV_REAL_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting.",
+      "line": 76
+    },
+    {
+      "key": "E_DIV_REAL_CONSTR_B_0020",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/div/div.md:L127-L128",
+      "excerpt": "- `[E_DIV_REAL_CONSTR_B_0020]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_REAL_CONSTR_A_0010</span></b>](#E_DIV_REAL_CONSTR_A_0010) on tensor $A$.",
+      "line": 88
+    },
+    {
+      "key": "E_DIV_REAL_CONSTR_C_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastShapeIs",
+      "limitation": "",
+      "source": "ops/div/div.md:L138-L139",
+      "excerpt": "- `[E_DIV_REAL_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape.",
+      "line": 98
+    },
+    {
+      "key": "E_DIV_REAL_FUNC_0010",
+      "status": "specified",
+      "declaration": "Generated.Div.realDivRel",
+      "limitation": "",
+      "source": "ops/div/div.md:L33-L59",
+      "excerpt": "<a id=\"E_DIV_REAL_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_DIV_REAL_FUNC_0010]</br></span>\n\nOperator **Div** divides tensor $A$ by tensor $B$ element-wise and stores the result in tensor $C$. Each element of $C$ is the quotient of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\frac{\\tilde{A}[i]}{\\tilde{B}[i]}\n$$\n\nwhere\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$,\n- $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- the quotient is the quotient in $\\mathbb{R}$ of the two elements.\n\nThe division is exact: $C[i]$ is the quotient in $\\mathbb{R}$, with no approximation.\n\n**Domain.** The quotient of two real numbers exists only when the divisor is non-null. The domain of the operator is therefore the set of pairs of real tensors whose divisor has no null element, i.e. $\\forall i,\\ \\tilde{B}[i] \\neq 0$; that condition is the precondition stated by constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_REAL_CONSTR_B_0010</span></b>](#E_DIV_REAL_CONSTR_B_0010) on tensor $B$. For every pair of tensors that satisfies it, the result is the one given above.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the quotient of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty. No quotient is formed for an empty result, so that the domain condition bears on the elements of $\\tilde{B}$ only.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
+      "line": 108
+    },
+    {
+      "key": "E_DIV_FLOAT_CONSTR_A_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/div/div.md:L275-L277",
+      "excerpt": "<a id=\"E_DIV_FLOAT_CONSTR_A_0010\"></a>\n- `[E_DIV_FLOAT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting.",
+      "line": 179
+    },
+    {
+      "key": "E_DIV_FLOAT_CONSTR_A_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/div/div.md:L278-L280",
+      "excerpt": "<a id=\"E_DIV_FLOAT_CONSTR_A_0020\"></a>\n- `[E_DIV_FLOAT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$ and $C$ have the same type.",
+      "line": 191
+    },
+    {
+      "key": "E_DIV_FLOAT_CONSTR_B_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/div/div.md:L288-L289",
+      "excerpt": "- `[E_DIV_FLOAT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_FLOAT_CONSTR_A_0010</span></b>](#E_DIV_FLOAT_CONSTR_A_0010) on tensor $A$.",
+      "line": 203
+    },
+    {
+      "key": "E_DIV_FLOAT_CONSTR_B_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/div/div.md:L290-L291",
+      "excerpt": "- `[E_DIV_FLOAT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_FLOAT_CONSTR_A_0020</span></b>](#E_DIV_FLOAT_CONSTR_A_0020) on tensor $A$.",
+      "line": 213
+    },
+    {
+      "key": "E_DIV_FLOAT_CONSTR_C_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastShapeIs",
+      "limitation": "",
+      "source": "ops/div/div.md:L301-L302",
+      "excerpt": "- `[E_DIV_FLOAT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape.",
+      "line": 223
+    },
+    {
+      "key": "E_DIV_FLOAT_CONSTR_C_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/div/div.md:L303-L304",
+      "excerpt": "- `[E_DIV_FLOAT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_FLOAT_CONSTR_A_0020</span></b>](#E_DIV_FLOAT_CONSTR_A_0020) on tensor $A$.",
+      "line": 233
+    },
+    {
+      "key": "E_DIV_FLOAT_FUNC_0010",
+      "status": "specified",
+      "declaration": "Generated.Div.floatDivRel",
+      "limitation": "",
+      "source": "ops/div/div.md:L166-L206",
+      "excerpt": "<a id=\"E_DIV_FLOAT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_DIV_FLOAT_FUNC_0010]</br></span>\n\nOperator **Div** divides tensor $A$ by tensor $B$ element-wise according to IEEE 754 floating-point semantics and stores the result in tensor $C$. Each element of $C$ is the floating-point quotient of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below. No element of $B$ is excluded: every combination of operands of the type, including the special numbers, has a result of the type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\tilde{A}[i] /_{(\\text{f})} \\tilde{B}[i] =\n\\begin{cases}\n\\text{NaN} & \\text{if } \\tilde{A}[i] \\text{ or } \\tilde{B}[i] \\text{ is NaN} \\\\\n\\text{NaN} & \\text{if } \\tilde{A}[i] \\text{ and } \\tilde{B}[i] \\text{ are both } \\pm\\infty, \\text{ or both } \\pm 0 \\\\\n\\pm\\infty & \\text{if } \\tilde{A}[i] \\text{ is finite and non-null and } \\tilde{B}[i] \\text{ is } \\pm 0, \\text{ or } \\tilde{A}[i] \\text{ is } \\pm\\infty \\text{ and } \\tilde{B}[i] \\text{ is finite and non-null} \\\\\n\\pm 0 & \\text{if } \\tilde{A}[i] \\text{ is } \\pm 0 \\text{ and } \\tilde{B}[i] \\text{ is finite and non-null, or } \\tilde{A}[i] \\text{ is finite and } \\tilde{B}[i] \\text{ is } \\pm\\infty \\\\\n\\text{round}\\!\\left(\\tilde{A}[i] / \\tilde{B}[i]\\right) & \\text{otherwise}\n\\end{cases}\n$$\n\nwhere\n- $/_{(\\text{f})}$ is the division of the floating-point type of $A$, $B$ and $C$, i.e. $/_{(\\text{f16})}$, $/_{(\\text{f32})}$ or $/_{(\\text{f64})}$ according to that type, whereas the $/$ of the last case is the division of $\\mathbb{R}$: there, $\\tilde{A}[i] / \\tilde{B}[i]$ is the exact quotient of the two elements,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $\\pm$ in the third and fourth cases is the sign of the exact quotient: $+$ when the two operands have the same sign and $-$ when they have opposite signs,\n- $\\text{round}(x)$ is the value of $x$ rounded to the nearest value of the type of $A$ and $B$ using the roundTiesToEven attribute of IEEE 754, the exponent range of the type being unbounded when deciding an overflow: a magnitude whose rounded value exceeds the largest finite value of the type gives an infinity of the sign of $x$, and a magnitude below the smallest subnormal value of the type gives a zero of the sign of $x$.\n\n**Operands that are NaN.** The first case propagates the NaN: a NaN operand gives a NaN result, whatever the other operand is. The NaN of this case is a quiet NaN; its sign and its payload are not specified, so that every quiet NaN of the type of $A$ and $B$ is a conforming result.\n\n**Invalid operation.** The second case is the invalid operation of IEEE 754 section 7.2 for division: the quotient $\\infty/\\infty$ and the quotient $0/0$ have no value in the extended reals, and the result is NaN, again any quiet NaN of the type.\n\n**Division by zero.** The third case is the division-by-zero exception of IEEE 754: a finite non-null dividend divided by a zero gives an infinity whose sign is the sign of the exact quotient, so that $1.0/(+0)$ gives $+\\infty$ and $-1.0/(+0)$ gives $-\\infty$. The division of an infinity by a finite non-null value also gives an infinity, of the sign of the exact quotient; that case is not an exception of the standard, the result being the limit of the quotients of the finite values.\n\n**Null quotients.** The fourth case gives a null result whose sign is the sign of the exact quotient: $\\tilde{A}[i] / \\tilde{B}[i]$ is null when the dividend is null and the divisor is finite non-null, and when the divisor is infinite and the dividend is finite. The signs of the operands then decide the sign of the zero: $(+0)/2.0$ gives $+0$ and $(-0)/2.0$ gives $-0$, while $(+0)/(-2.0)$ gives $-0$. A null dividend divided by a null divisor is not a null quotient: it falls in the second case and gives NaN. The last case also produces a null result when a non-null exact quotient is so small that it rounds to zero; its sign is then the sign of that exact quotient as well.\n\n**Finite operands.** In the last case both operands are finite and the divisor is non-null, so that the exact quotient is a non-null real number. The result is that quotient rounded as defined above. When the exact quotient is representable in the type, no rounding takes place; otherwise the result is the nearest value of the type, and it may be a subnormal value, a zero, or an infinity when the exponent of the exact quotient exceeds the largest exponent of the type.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the quotient of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
+      "line": 243
+    },
+    {
+      "key": "E_DIV_INT_CONSTR_A_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/div/div.md:L408-L410",
+      "excerpt": "<a id=\"E_DIV_INT_CONSTR_A_0010\"></a>\n- `[E_DIV_INT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting.",
+      "line": 304
+    },
+    {
+      "key": "E_DIV_INT_CONSTR_A_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/div/div.md:L411-L413",
+      "excerpt": "<a id=\"E_DIV_INT_CONSTR_A_0020\"></a>\n- `[E_DIV_INT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$ and $C$ have the same type.",
+      "line": 316
+    },
+    {
+      "key": "E_DIV_INT_CONSTR_B_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/div/div.md:L421-L422",
+      "excerpt": "- `[E_DIV_INT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_INT_CONSTR_A_0010</span></b>](#E_DIV_INT_CONSTR_A_0010) on tensor $A$.",
+      "line": 328
+    },
+    {
+      "key": "E_DIV_INT_CONSTR_B_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/div/div.md:L423-L424",
+      "excerpt": "- `[E_DIV_INT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_INT_CONSTR_A_0020</span></b>](#E_DIV_INT_CONSTR_A_0020) on tensor $A$.",
+      "line": 338
+    },
+    {
+      "key": "E_DIV_INT_CONSTR_C_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastShapeIs",
+      "limitation": "",
+      "source": "ops/div/div.md:L434-L435",
+      "excerpt": "- `[E_DIV_INT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape.",
+      "line": 348
+    },
+    {
+      "key": "E_DIV_INT_CONSTR_C_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/div/div.md:L436-L437",
+      "excerpt": "- `[E_DIV_INT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_INT_CONSTR_A_0020</span></b>](#E_DIV_INT_CONSTR_A_0020) on tensor $A$.",
+      "line": 358
+    },
+    {
+      "key": "E_DIV_INT_FUNC_0010",
+      "status": "specified",
+      "declaration": "Generated.Div.sintDivRel",
+      "limitation": "",
+      "source": "ops/div/div.md:L331-L366",
+      "excerpt": "<a id=\"E_DIV_INT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_DIV_INT_FUNC_0010]</br></span>\n\nOperator **Div** divides tensor $A$ by tensor $B$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the quotient of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below, truncated toward zero. Tensors $A$, $B$ and $C$ have the same signed $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] =\n\\begin{cases}\n\\operatorname{trunc}\\!\\left(\\tilde{A}[i] / \\tilde{B}[i]\\right) & \\text{if } -2^{n-1} \\le \\operatorname{trunc}\\!\\left(\\tilde{A}[i] / \\tilde{B}[i]\\right) \\le 2^{n-1}-1 \\\\[4pt]\n\\operatorname{trunc}\\!\\left(\\tilde{A}[i] / \\tilde{B}[i]\\right) - 2^n & \\text{if } \\operatorname{trunc}\\!\\left(\\tilde{A}[i] / \\tilde{B}[i]\\right) \\notin [-2^{n-1},\\, 2^{n-1}-1]\n\\end{cases}\n$$\n\nwhere\n- $\\tilde{A}[i] / \\tilde{B}[i]$ is the exact quotient of the two elements, the quotient in $\\mathbb{Q}$ of two integers whose divisor is non-null,\n- $\\operatorname{trunc}(x)$ is the integer part of $x$, i.e. $x$ rounded toward zero: $\\operatorname{trunc}(x) = \\lfloor x \\rfloor$ when $x \\ge 0$ and $\\operatorname{trunc}(x) = \\lceil x \\rceil$ when $x < 0$, so that $\\operatorname{trunc}(3.5) = 3$ and $\\operatorname{trunc}(-3.5) = -3$,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$,\n- $n$ is the number of bits of the type of $A$ and $B$.\n\nThe second case is the complement of the first: exactly one of the two cases applies to every pair of operands whose divisor is non-null, and the result is then determined.\n\n**Truncating division.** The quotient $\\operatorname{trunc}(a/b)$ is the unique integer $q$ such that $a = q \\cdot b + r$, with $|r| < |b|$ and with $r$ null or of the sign of $a$. It is the quotient ONNX prescribes for the integer types, and it differs from the floor: for `int8`, $7/2 = 3$ and $-7/2 = -3$, whereas the floor of $-3.5$ is $-4$. The sign of the result is the sign of the exact quotient: the quotient of two operands of the same sign is non-negative, and the quotient of two operands of opposite signs is non-positive, so that a null result is the neutral value $0$ of the type, with no sign.\n\n**The one quotient outside the range.** The values of an $n$-bit signed type lie in $[-2^{n-1}, 2^{n-1}-1]$, so that the quotient of two of its values, truncated toward zero, lies in $[-2^{n-1}, 2^{n-1}]$: the lower bound is reached by $(-2^{n-1})/1 = -2^{n-1}$, and the upper bound only by $(-2^{n-1})/(-1) = 2^{n-1}$. Only the value $2^{n-1}$ leaves the range of the type, so that the second case of the definition is the case $\\operatorname{trunc}(\\tilde{A}[i]/\\tilde{B}[i]) = 2^{n-1}$, reached by that single pair of operands; the result is then $2^{n-1} - 2^n = -2^{n-1}$. For `int8`, $-128 / -1$ gives $-128$; the exact quotient $128$ is represented by the value of the type that is congruent to it modulo $2^8$.\n\n**A null divisor.** No element of $B$ is excluded, so that a null element of $B$ makes the exact quotient undefined and the result of the operator undetermined; the condition is described in the \"Error conditions\" section. Every other pair of operands falls in one of the two cases above, and the result is fully determined.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the quotient of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty. No quotient is formed for an empty result, so that a null element of $B$ in an empty tensor raises no condition.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
+      "line": 368
+    },
+    {
+      "key": "E_DIV_UINT_CONSTR_A_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/div/div.md:L532-L534",
+      "excerpt": "<a id=\"E_DIV_UINT_CONSTR_A_0010\"></a>\n- `[E_DIV_UINT_CONSTR_A_0010]` Shape compatibility\n  - Statement: The shapes of $A$ and $B$ are compatible for broadcasting.",
+      "line": 428
+    },
+    {
+      "key": "E_DIV_UINT_CONSTR_A_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/div/div.md:L535-L537",
+      "excerpt": "<a id=\"E_DIV_UINT_CONSTR_A_0020\"></a>\n- `[E_DIV_UINT_CONSTR_A_0020]` Type consistency\n  - Statement: Tensors $A$, $B$ and $C$ have the same type.",
+      "line": 440
+    },
+    {
+      "key": "E_DIV_UINT_CONSTR_B_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastCompatible",
+      "limitation": "",
+      "source": "ops/div/div.md:L545-L546",
+      "excerpt": "- `[E_DIV_UINT_CONSTR_B_0010]` Shape compatibility\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_UINT_CONSTR_A_0010</span></b>](#E_DIV_UINT_CONSTR_A_0010) on tensor $A$.",
+      "line": 452
+    },
+    {
+      "key": "E_DIV_UINT_CONSTR_B_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/div/div.md:L547-L548",
+      "excerpt": "- `[E_DIV_UINT_CONSTR_B_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_UINT_CONSTR_A_0020</span></b>](#E_DIV_UINT_CONSTR_A_0020) on tensor $A$.",
+      "line": 462
+    },
+    {
+      "key": "E_DIV_UINT_CONSTR_C_0010",
+      "status": "specified",
+      "declaration": "Sonnx.BroadcastShapeIs",
+      "limitation": "",
+      "source": "ops/div/div.md:L558-L559",
+      "excerpt": "- `[E_DIV_UINT_CONSTR_C_0010]` Shape definition\n  - Statement: Tensor $C$ has the shape of $A$ and $B$ broadcast to a common shape.",
+      "line": 472
+    },
+    {
+      "key": "E_DIV_UINT_CONSTR_C_0020",
+      "status": "specified",
+      "declaration": "Sonnx.TypeConsistent",
+      "limitation": "",
+      "source": "ops/div/div.md:L560-L561",
+      "excerpt": "- `[E_DIV_UINT_CONSTR_C_0020]` Type consistency\n  - Statement: see constraint [<b><span style=\"font-family: 'Courier New', monospace\">E_DIV_UINT_CONSTR_A_0020</span></b>](#E_DIV_UINT_CONSTR_A_0020) on tensor $A$.",
+      "line": 482
+    },
+    {
+      "key": "E_DIV_UINT_FUNC_0010",
+      "status": "specified",
+      "declaration": "Generated.Div.uintDivRel",
+      "limitation": "",
+      "source": "ops/div/div.md:L464-L490",
+      "excerpt": "<a id=\"E_DIV_UINT_FUNC_0010\"></a>\n<span style=\"background: red; color: white; font-size:0.7em;\">[E_DIV_UINT_FUNC_0010]</br></span>\n\nOperator **Div** divides tensor $A$ by tensor $B$ element-wise and stores the result in output tensor $C$. Each element of $C$ is the quotient of the elements of $A$ and $B$ that correspond to it under the broadcasting rules given below, truncated toward zero. Tensors $A$, $B$ and $C$ have the same unsigned $n$-bit type, and the result is a value of that type.\n\nFor any [tensor index](../../common/definitions.md#tensor_index) $i$ of the result $C$:\n\n$$\nC[i] = \\left\\lfloor \\frac{\\tilde{A}[i]}{\\tilde{B}[i]} \\right\\rfloor\n$$\n\nwhere\n- $\\tilde{A}[i] / \\tilde{B}[i]$ is the exact quotient of the two elements, the quotient in $\\mathbb{Q}$ of two integers whose divisor is non-null,\n- $\\lfloor \\cdot \\rfloor$ is the floor, which for two non-negative operands is the quotient truncated toward zero,\n- $\\tilde{A}$ is tensor $A$ broadcast to the shape of $C$, and $\\tilde{B}$ is tensor $B$ broadcast to the shape of $C$.\n\n**The result never leaves the range of the type.** The operands are non-negative, so that their exact quotient is non-negative and its floor is at most the dividend: $0 \\le \\lfloor a/b \\rfloor \\le a \\le 2^n-1$ for every $b \\ge 1$. The result of a division by a non-null element is therefore the floor itself, with no reduction modulo $2^n$ and no overflow, and it is exact in the type. For `uint8`, $200/3$ gives $66$ and $255/255$ gives $1$. The truncation and the floor coincide on the unsigned types, so that the distinction between them, which the signed types make visible, has no effect here.\n\n**A null divisor.** No element of $B$ is excluded, so that a null element of $B$ makes the exact quotient undefined and the result of the operator undetermined; the condition is described in the \"Error conditions\" section, and it is the only condition under which the result is not the value given above.\n\n**Tensors of different shapes.** Tensors $A$ and $B$ are broadcast to the shape of $C$ following the multidirectional (Numpy-style) broadcasting rules: the shapes are aligned on their last dimension; a dimension that one operand does not have, including the leading dimensions missing from the operand with the smaller rank, is treated as a dimension of size $1$; and a dimension of size $1$ is extended to the size of the corresponding dimension of the other operand. Tensor $C$ has the resulting shape. When $A$ and $B$ have the same shape, $\\tilde{A}$ is $A$, $\\tilde{B}$ is $B$ and $C$ has that shape.\n\n**Tensors with no dimension.** A tensor with no dimension (a rank-0 tensor) is a tensor whose shape is empty. It is broadcast to the shape of the other operand, so that each element of $C$ is the quotient of the two operands and $C$ has the shape of the other operand.\n\n**Zero-sized dimensions.** An operand may have a zero-sized dimension. Such a dimension is compatible with a dimension of size $1$ of the other operand, and with an equal zero-sized dimension; the corresponding dimension of $C$ then has size $0$, and $C$ is empty. No quotient is formed for an empty result, so that a null element of $B$ in an empty tensor raises no condition.\n\n<span style=\"background: red; color: white; font-size:0.7em;\">[END]</br></span>",
+      "line": 492
+    },
+    {
+      "key": "real:example:1",
+      "status": "example_only",
+      "declaration": "Generated.Div.realExample1",
+      "limitation": "",
+      "source": "ops/div/div.md:L63-L75",
+      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 7 & -9 & 1 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & 4 & 3 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} \\frac{7}{2} & -\\frac{9}{4} & \\frac{1}{3} \\end{bmatrix}\n$$\n\nThe three quotients are given exactly, as the quotients of real numbers: $1/3$ has no finite decimal expansion and is not approximated.",
+      "line": 544
+    },
+    {
+      "key": "real:example:2",
+      "status": "example_only",
+      "declaration": "Generated.Div.realExample2",
+      "limitation": "",
+      "source": "ops/div/div.md:L77-L89",
+      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix} 4 & 9 \\\\ 16 & 25 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & 5 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} \\frac{4}{2} & \\frac{9}{5} \\\\[2pt] \\frac{16}{2} & \\frac{25}{5} \\end{bmatrix} = \\begin{bmatrix} 2 & \\frac{9}{5} \\\\[2pt] 8 & 5 \\end{bmatrix}\n$$\n\nTensor $B$ has rank $1$ and tensor $A$ has rank $2$; $B$ is broadcast to the shape of $A$, so that each column of $A$ is divided by the corresponding element of $B$.",
+      "line": 578
+    },
+    {
+      "key": "float:example:1",
+      "status": "example_only",
+      "declaration": "Generated.Div.floatExample1",
+      "limitation": "",
+      "source": "ops/div/div.md:L210-L222",
+      "excerpt": "### Example 1\n\n$$\nA = \\begin{bmatrix} 6.0 & -9.0 & 1.0 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3.0 & 4.0 & 8.0 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 2.0 & -2.25 & 0.125 \\end{bmatrix}\n$$\n\nThe quotient of two numbers of a floating-point type is not always exact; in this example every quotient is representable and $C$ is the exact result.",
+      "line": 623
+    },
+    {
+      "key": "float:example:2",
+      "status": "example_only",
+      "declaration": "Generated.Div.floatExample2",
+      "limitation": "",
+      "source": "ops/div/div.md:L224-L236",
+      "excerpt": "### Example 2\n\n$$\nA = \\begin{bmatrix} 1.0 & -1.0 & \\text{+inf} & \\text{+inf} & \\text{+0} & \\text{-0} & \\text{+0} & \\text{NaN} \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} \\text{+0} & \\text{+0} & \\text{+inf} & 4.0 & 4.0 & 4.0 & \\text{+0} & 1.0 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} \\text{+inf} & \\text{-inf} & \\text{NaN} & \\text{+inf} & \\text{+0} & \\text{-0} & \\text{NaN} & \\text{NaN} \\end{bmatrix}\n$$\n\nThe first two elements are divisions by zero: the dividend is finite and non-null and the divisor is $+0$, so the result is an infinity whose sign is the sign of the exact quotient, positive for $1.0$ and negative for $-1.0$. The third element is the invalid operation $\\infty/\\infty$, which yields NaN. The fourth is the division of an infinity by a finite non-null value, which gives the infinity of the sign of the quotient. The fifth and the sixth elements are divisions of a zero by a finite non-null value: the exact quotient is null, and its sign, positive when the operands have the same sign and negative otherwise, is the sign of the result. The seventh element is the invalid operation $0/0$. The eighth is the propagation of a NaN operand.",
+      "line": 665
+    },
+    {
+      "key": "float:example:3",
+      "status": "example_only",
+      "declaration": "Generated.Div.floatExample3",
+      "limitation": "",
+      "source": "ops/div/div.md:L238-L250",
+      "excerpt": "### Example 3\n\n$$\nA = \\begin{bmatrix} 1.0 & 10.0 & -10.0 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 3.0 & 3.0 & 3.0 \\end{bmatrix}\n$$\n\n$$\nC \\approx \\begin{bmatrix} 0.3333333333333333 & 3.3333333333333335 & -3.3333333333333335 \\end{bmatrix}\n$$\n\nNone of the three exact quotients is representable in `double`: each element of $C$ is the exact quotient rounded to the nearest `double`, which is the value displayed. The departure of an implementation from these values is the subject of the profile's accuracy guidelines.",
+      "line": 698
+    },
+    {
+      "key": "int:example:1",
+      "status": "example_only",
+      "declaration": "Generated.Div.intExample1",
+      "limitation": "",
+      "source": "ops/div/div.md:L370-L384",
+      "excerpt": "### Example 1\n\nFor the `int8` type:\n\n$$\nA = \\begin{bmatrix} 7 & -7 & 7 & -7 & -128 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & 2 & -2 & -2 & -1 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 3 & -3 & -3 & 3 & -128 \\end{bmatrix}\n$$\n\nThe first four quotients are $3.5$, $-3.5$, $-3.5$ and $3.5$: each is truncated toward zero, which gives $3$, $-3$, $-3$ and $3$, and not the floors $-3.5 \\to -4$. The last quotient is $(-128)/(-1) = 128$, which exceeds the maximum value $127$ of `int8`: the second case of the definition applies and the result is $128 - 2^8 = -128$, the value of the type congruent to $128$ modulo $2^8$.",
+      "line": 752
+    },
+    {
+      "key": "uint:example:1",
+      "status": "example_only",
+      "declaration": "Generated.Div.uintExample1",
+      "limitation": "",
+      "source": "ops/div/div.md:L494-L508",
+      "excerpt": "### Example 1\n\nFor the `uint8` type:\n\n$$\nA = \\begin{bmatrix} 7 & 200 & 255 & 6 \\end{bmatrix}\n\\quad\nB = \\begin{bmatrix} 2 & 3 & 255 & 6 \\end{bmatrix}\n$$\n\n$$\nC = \\begin{bmatrix} 3 & 66 & 1 & 1 \\end{bmatrix}\n$$\n\nThe quotient $7/2 = 3.5$ is truncated toward zero and gives $3$; $200/3 = 66.67$ gives $66$; $255/255 = 1$ and $6/6 = 1$ are exact. Each of the four results lies in the range $[0, 255]$ of `uint8`, as every quotient of the type does.",
+      "line": 792
+    }
+  ],
+  "artifact_sha256": "04934767e00859f09d9e83d3cdf9ea059a2d8a23319d7c747ac7b29e12d9d749",
+  "library_sha256": "3162109b4c926c2fa5dd5f8bd2eb2d90fb17a0480eccc0216a4ea9bd2b43ffab",
+  "compiler": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": "/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-004.lean:162:13: warning: Variable name `sa` is not explicitly referenced.\n\nHint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:\n  [apply] _sa\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-004.lean:162:26: warning: Variable name `sb` is not explicitly referenced.\n\nHint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:\n  [apply] _sb\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-004.lean:163:14: warning: Variable name `sa` is not explicitly referenced.\n\nHint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:\n  [apply] _sa\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-004.lean:163:28: warning: Variable name `sb` is not explicitly referenced.\n\nHint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:\n  [apply] _sb\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\nGenerated.Div.floatDivRel : Sonnx.FloatFormat \u2192\n  Sonnx.Tensor Sonnx.FVal \u2192 Sonnx.Tensor Sonnx.FVal \u2192 Sonnx.Tensor Sonnx.FVal \u2192 Prop\nGenerated.Div.floatExample1 : Prop\nGenerated.Div.floatExample2 : Prop\nGenerated.Div.floatExample3 : Prop\nGenerated.Div.intExample1 : Prop\nGenerated.Div.realDivElem : Rat \u2192 Rat \u2192 Rat \u2192 Prop\nGenerated.Div.realDivRel : Sonnx.Tensor Rat \u2192 Sonnx.Tensor Rat \u2192 Sonnx.Tensor Rat \u2192 Prop\nGenerated.Div.realExample1 : Prop\nGenerated.Div.realExample2 : Prop\nGenerated.Div.sintDivRel : (n : Nat) \u2192\n  Sonnx.Tensor (Sonnx.SIntN n) \u2192 Sonnx.Tensor (Sonnx.SIntN n) \u2192 Sonnx.Tensor (Sonnx.SIntN n) \u2192 Prop\nGenerated.Div.uintDivRel : (n : Nat) \u2192\n  Sonnx.Tensor (Sonnx.UIntN n) \u2192 Sonnx.Tensor (Sonnx.UIntN n) \u2192 Sonnx.Tensor (Sonnx.UIntN n) \u2192 Prop\nGenerated.Div.uintExample1 : Prop\n@Sonnx.BroadcastCompatible : {\u03b1 : Type} \u2192 Sonnx.Tensor \u03b1 \u2192 Sonnx.Tensor \u03b1 \u2192 Prop\n@Sonnx.BroadcastShapeIs : {\u03b1 : Type} \u2192 Sonnx.Tensor \u03b1 \u2192 Sonnx.Tensor \u03b1 \u2192 Sonnx.Tensor \u03b1 \u2192 Prop\n@Sonnx.TypeConsistent : {\u03b1 : Type} \u2192 \u03b1 \u2192 \u03b1 \u2192 \u03b1 \u2192 Prop",
+    "command": [
+      "/home/eric/.elan/bin/lake",
+      "env",
+      "lean",
+      "/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-004.lean"
+    ]
+  }
+}

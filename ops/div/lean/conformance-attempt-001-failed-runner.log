@@ -1,0 +1,17 @@
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:136:36: error(lean.unknownIdentifier): Unknown constant `Rat.mk`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:168:17: error(lean.unknownIdentifier): Unknown constant `List.get?`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:169:17: error(lean.unknownIdentifier): Unknown constant `List.get?`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:182:17: error(lean.unknownIdentifier): Unknown constant `List.get?`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:183:17: error(lean.unknownIdentifier): Unknown constant `List.get?`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:202:25: error(lean.unknownIdentifier): Unknown constant `List.get?`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:205:25: error(lean.unknownIdentifier): Unknown constant `List.get?`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:229:25: error(lean.unknownIdentifier): Unknown constant `List.get?`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:232:25: error(lean.unknownIdentifier): Unknown constant `List.get?`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:255:25: error(lean.unknownIdentifier): Unknown constant `List.get?`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:258:25: error(lean.unknownIdentifier): Unknown constant `List.get?`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:265:29: error(lean.invalidField): Invalid field `num`: The environment does not contain `Nat.num`, so it is not possible to project the field `num` from an expression
+  c
+of type `Nat`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/conformance-attempt-001.lean:265:54: error(lean.invalidField): Invalid field `den`: The environment does not contain `Nat.den`, so it is not possible to project the field `den` from an expression
+  c
+of type `Nat`

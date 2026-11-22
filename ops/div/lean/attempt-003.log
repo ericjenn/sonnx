@@ -1,0 +1,20 @@
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-003.lean:52:31: error: unexpected token 'then'; expected 'else'
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-003.lean:162:64: error(lean.unknownIdentifier): Unknown identifier `sb`
+Generated.Div.floatDivRel : Sonnx.FloatFormat →
+  Sonnx.Tensor Sonnx.FVal → Sonnx.Tensor Sonnx.FVal → Sonnx.Tensor Sonnx.FVal → Prop
+Generated.Div.floatExample1 : Prop
+Generated.Div.floatExample2 : Prop
+Generated.Div.floatExample3 : Prop
+Generated.Div.intExample1 : Prop
+Generated.Div.realDivElem : Rat → Rat → Rat → Prop
+Generated.Div.realDivRel : Sonnx.Tensor Rat → Sonnx.Tensor Rat → Sonnx.Tensor Rat → Prop
+Generated.Div.realExample1 : Prop
+Generated.Div.realExample2 : Prop
+Generated.Div.sintDivRel : (n : Nat) →
+  Sonnx.Tensor (Sonnx.SIntN n) → Sonnx.Tensor (Sonnx.SIntN n) → Sonnx.Tensor (Sonnx.SIntN n) → Prop
+Generated.Div.uintDivRel : (n : Nat) →
+  Sonnx.Tensor (Sonnx.UIntN n) → Sonnx.Tensor (Sonnx.UIntN n) → Sonnx.Tensor (Sonnx.UIntN n) → Prop
+Generated.Div.uintExample1 : Prop
+@Sonnx.BroadcastCompatible : {α : Type} → Sonnx.Tensor α → Sonnx.Tensor α → Prop
+@Sonnx.BroadcastShapeIs : {α : Type} → Sonnx.Tensor α → Sonnx.Tensor α → Sonnx.Tensor α → Prop
+@Sonnx.TypeConsistent : {α : Type} → α → α → α → Prop

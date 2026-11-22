@@ -233,6 +233,10 @@ def renderFun (fn : Fun) : String :=
 /-- A top-level declaration, without a trailing newline. -/
 def renderDecl : Decl → String
   | .typedef t name => "typedef " ++ declType t name ++ ";"
+  | .structDef name fields =>
+      "typedef struct {\n" ++
+        String.join (fields.map (fun f => indent 1 ++ declType f.type f.name ++ ";\n")) ++
+        "} " ++ name ++ ";"
   | .funDecl fn => renderFunHeader fn ++ ";"
   | .funDef fn => renderFun fn
   | .comment text => "/* " ++ escapeComment text ++ " */"

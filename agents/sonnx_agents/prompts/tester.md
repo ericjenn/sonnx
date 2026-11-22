@@ -372,6 +372,38 @@ Measured on 2026-10-04: the tester's case module for **Asin** imported `mpmath` 
 sweeps, and the run spent its repair rounds on `ModuleNotFoundError: No module named
 'mpmath'` while the document and the implementation were both sound.
 
+**NumPy 2 refuses an out-of-range Python integer in an unsigned array, wherever it
+appears.** `np.array([-1], dtype=np.uint8)` raises `OverflowError: Python integer -1 out of
+bounds for uint8`; the same literal is fine in a signed or floating dtype. The literal can be
+in a boundary sweep, in a special-values list or in a case tuple — any negative Python value
+passed directly to `np.array(..., dtype=<unsigned>)` raises before a single case runs. Build
+the list in `np.int64` and cast it (`.astype(dt)`, which wraps), or express the value as
+`np.iinfo(dt).max - k`; never pass a negative literal to an unsigned `dtype=` constructor.
+Measured on 2026-11-22: the **Mul** case set's `_int_boundary_cases` built
+`np.array([-1], dtype=uint8)`, and the **Div** case set's `_int_special_cases` built
+`np.array([7, -7, 7, -7, 1, -1], dtype=uint8)`; in both runs the corpus could not be
+profiled.
+
+**Never send `INT32_MIN / -1` or `INT64_MIN / -1` to ONNX Runtime.** The C integer
+division overflows for that pair, and ONNX Runtime's signed 32/64-bit `Div` kernel lets the
+process die with `SIGFPE` — no Python exception, no report. The document's wrap case for the
+pair is still a real case: check it against exact arithmetic, and exclude the pair from any
+array sent to `run_ort_batch`, recording in the sweep's summary that the runtime cannot
+evaluate it. `int8` and `int16` are safe (the operation is promoted to `int`), so the
+exhaustive 8-bit sweep can keep the pair. Measured on 2026-11-22: the **Div** case set's
+`sweep_int_domain` passed `(INT32_MIN, -1)` and `(INT64_MIN, -1)` to ONNX Runtime, the
+conformance driver died with `SIGFPE`, and the run stopped `lean-conformance-error`.
+
+**In the Lean conformance replay, a sweep's `impl` is ONNX Runtime, not your Python
+implementation.** `lean_conformance.py` calls `sweeps()` with an ONNX Runtime recorder to
+collect the inputs the runner must answer, so any `impl.div(INT32_MIN, -1)` or
+`impl.div(INT64_MIN, -1)` in a sweep reaches the runtime and kills the driver with `SIGFPE`,
+even when the sweep only wanted to compare the document with the implementation. State that
+pair's document result from exact arithmetic and **do not call `impl` with it at all** — not
+in the domain sweep, not in a dedicated overflow sweep. Measured on 2026-11-22: the **Div**
+case set removed the pair from the domain arrays but still called `impl.div` with it in
+`sweep_int_out_of_range_pair`; the conformance driver crashed at that call.
+
 ## The module must finish, and the harness does not wait forever
 
 The harness runs your module under a time limit, and the limit is small. A run that does not

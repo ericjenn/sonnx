@@ -1,464 +1,431 @@
 #include "sonnx_kernels.h"
 
-#include <limits.h>
 #include <math.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 
-static int failures = 0;
+static int g_fail = 0;
 
-/* Exact bit-level views, used so that signed zeros are distinguished and
-   NaN payloads are not compared. */
-static uint32_t f32_bits(float x) {
-  uint32_t u;
-  memcpy(&u, &x, sizeof u);
-  return u;
+static int feq32(float e, float g) {
+  if (isnan(e)) return isnan(g) != 0;
+  if (e == 0.0f) return (g == 0.0f) && ((signbit(e) != 0) == (signbit(g) != 0));
+  return e == g;
 }
 
-static uint64_t f64_bits(double x) {
-  uint64_t u;
-  memcpy(&u, &x, sizeof u);
-  return u;
+static int feq64(double e, double g) {
+  if (isnan(e)) return isnan(g) != 0;
+  if (e == 0.0) return (g == 0.0) && ((signbit(e) != 0) == (signbit(g) != 0));
+  return e == g;
 }
 
-static void check_f32(const char *name, const float *got, const float *exp,
-                      size_t n) {
-  size_t i;
-  int bad = 0;
-  for (i = 0; i < n; i++) {
-    if (isnan(exp[i])) {
-      if (!isnan(got[i])) {
-        bad = 1;
-      }
-    } else if (f32_bits(got[i]) != f32_bits(exp[i])) {
-      bad = 1;
+static void check_f32(const char *name, const float *exp, const float *got, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    if (!feq32(exp[i], got[i])) {
+      printf("FAIL %s: expected %a, got %a (index %zu)\n", name,
+             (double)exp[i], (double)got[i], i);
+      g_fail++;
+      return;
     }
   }
-  if (!bad) {
-    printf("ok %s\n", name);
-    return;
-  }
-  {
-    char eb[2048];
-    char gb[2048];
-    size_t eo = 0;
-    size_t go = 0;
-    eb[0] = '\0';
-    gb[0] = '\0';
-    for (i = 0; i < n; i++) {
-      int w;
-      if (eo + 64 < sizeof eb) {
-        if (i == 0) {
-          w = snprintf(eb + eo, sizeof eb - eo, "%.9g", (double)exp[i]);
-        } else {
-          w = snprintf(eb + eo, sizeof eb - eo, " %.9g", (double)exp[i]);
-        }
-        if (w > 0) {
-          eo += (size_t)w;
-        }
-      }
-      if (go + 64 < sizeof gb) {
-        if (i == 0) {
-          w = snprintf(gb + go, sizeof gb - go, "%.9g", (double)got[i]);
-        } else {
-          w = snprintf(gb + go, sizeof gb - go, " %.9g", (double)got[i]);
-        }
-        if (w > 0) {
-          go += (size_t)w;
-        }
-      }
-    }
-    printf("FAIL %s: expected [%s], got [%s]\n", name, eb, gb);
-    failures += 1;
-  }
+  printf("ok %s\n", name);
 }
 
-static void check_f64(const char *name, const double *got, const double *exp,
-                      size_t n) {
-  size_t i;
-  int bad = 0;
-  for (i = 0; i < n; i++) {
-    if (isnan(exp[i])) {
-      if (!isnan(got[i])) {
-        bad = 1;
-      }
-    } else if (f64_bits(got[i]) != f64_bits(exp[i])) {
-      bad = 1;
+static void check_f64(const char *name, const double *exp, const double *got, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    if (!feq64(exp[i], got[i])) {
+      printf("FAIL %s: expected %a, got %a (index %zu)\n", name,
+             exp[i], got[i], i);
+      g_fail++;
+      return;
     }
   }
-  if (!bad) {
-    printf("ok %s\n", name);
-    return;
-  }
-  {
-    char eb[2048];
-    char gb[2048];
-    size_t eo = 0;
-    size_t go = 0;
-    eb[0] = '\0';
-    gb[0] = '\0';
-    for (i = 0; i < n; i++) {
-      int w;
-      if (eo + 64 < sizeof eb) {
-        if (i == 0) {
-          w = snprintf(eb + eo, sizeof eb - eo, "%.17g", exp[i]);
-        } else {
-          w = snprintf(eb + eo, sizeof eb - eo, " %.17g", exp[i]);
-        }
-        if (w > 0) {
-          eo += (size_t)w;
-        }
-      }
-      if (go + 64 < sizeof gb) {
-        if (i == 0) {
-          w = snprintf(gb + go, sizeof gb - go, "%.17g", got[i]);
-        } else {
-          w = snprintf(gb + go, sizeof gb - go, " %.17g", got[i]);
-        }
-        if (w > 0) {
-          go += (size_t)w;
-        }
-      }
-    }
-    printf("FAIL %s: expected [%s], got [%s]\n", name, eb, gb);
-    failures += 1;
-  }
+  printf("ok %s\n", name);
 }
 
-#define DEF_INT_CHECK(TAG, T, FMT, CASTT)                                      \
-  static void check_##TAG(const char *name, const T *got, const T *exp,        \
-                          size_t n) {                                          \
-    size_t i;                                                                  \
-    int bad = 0;                                                               \
-    for (i = 0; i < n; i++) {                                                  \
-      if (got[i] != exp[i]) {                                                  \
-        bad = 1;                                                               \
-      }                                                                        \
-    }                                                                          \
-    if (!bad) {                                                                \
-      printf("ok %s\n", name);                                                 \
-      return;                                                                  \
-    }                                                                          \
-    {                                                                          \
-      char eb[2048];                                                           \
-      char gb[2048];                                                           \
-      size_t eo = 0;                                                           \
-      size_t go = 0;                                                           \
-      eb[0] = '\0';                                                            \
-      gb[0] = '\0';                                                            \
-      for (i = 0; i < n; i++) {                                                \
-        int w;                                                                 \
-        if (eo + 64 < sizeof eb) {                                             \
-          if (i == 0) {                                                        \
-            w = snprintf(eb + eo, sizeof eb - eo, FMT, (CASTT)exp[i]);         \
-          } else {                                                             \
-            w = snprintf(eb + eo, sizeof eb - eo, " " FMT, (CASTT)exp[i]);     \
-          }                                                                    \
-          if (w > 0) {                                                         \
-            eo += (size_t)w;                                                   \
-          }                                                                    \
-        }                                                                      \
-        if (go + 64 < sizeof gb) {                                             \
-          if (i == 0) {                                                        \
-            w = snprintf(gb + go, sizeof gb - go, FMT, (CASTT)got[i]);         \
-          } else {                                                             \
-            w = snprintf(gb + go, sizeof gb - go, " " FMT, (CASTT)got[i]);     \
-          }                                                                    \
-          if (w > 0) {                                                         \
-            go += (size_t)w;                                                   \
-          }                                                                    \
-        }                                                                      \
-      }                                                                        \
-      printf("FAIL %s: expected [%s], got [%s]\n", name, eb, gb);              \
-      failures += 1;                                                           \
-    }                                                                          \
+static void check_sint(const char *name, const int64_t *exp, const int64_t *got, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    if (exp[i] != got[i]) {
+      printf("FAIL %s: expected %lld, got %lld (index %zu)\n", name,
+             (long long)exp[i], (long long)got[i], i);
+      g_fail++;
+      return;
+    }
   }
+  printf("ok %s\n", name);
+}
 
-DEF_INT_CHECK(i8, int8_t, "%d", int)
-DEF_INT_CHECK(i16, int16_t, "%d", int)
-DEF_INT_CHECK(i32, int32_t, "%ld", long)
-DEF_INT_CHECK(i64, int64_t, "%lld", long long)
-DEF_INT_CHECK(u8, uint8_t, "%u", unsigned)
-DEF_INT_CHECK(u16, uint16_t, "%u", unsigned)
-DEF_INT_CHECK(u32, uint32_t, "%lu", unsigned long)
-DEF_INT_CHECK(u64, uint64_t, "%llu", unsigned long long)
+static void check_uint(const char *name, const uint64_t *exp, const uint64_t *got, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    if (exp[i] != got[i]) {
+      printf("FAIL %s: expected %llu, got %llu (index %zu)\n", name,
+             (unsigned long long)exp[i], (unsigned long long)got[i], i);
+      g_fail++;
+      return;
+    }
+  }
+  printf("ok %s\n", name);
+}
 
 int main(void) {
-  /* ------------------------------------------------------------------ f32 */
+  /* ---------------- f32 ---------------- */
 
-  /* Float Example 1: every sum is exactly representable. */
+  /* exact sums, including a zero made of opposite signs */
   {
-    const float a[6] = {3.0f, 4.5f, 16.0f, 1.0f, 25.5f, 24.25f};
-    const float b[6] = {3.0f, 2.0f, 4.0f, 0.0f, 5.0f, 4.0f};
-    const float e[6] = {6.0f, 6.5f, 20.0f, 1.0f, 30.5f, 28.25f};
-    float c[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-    sonnx_add_f32(a, b, c, 6);
-    check_f32("f32_example1", c, e, 6);
+    const size_t sh[1] = {3};
+    float ad[3] = {1.5f, 2.25f, -3.5f};
+    float bd[3] = {0.25f, -0.25f, 3.5f};
+    float cd[3] = {0.0f, 0.0f, 0.0f};
+    const float exp[3] = {1.75f, 2.0f, 0.0f};
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_f32(&a, &b, &c);
+    check_f32("f32_basic", exp, cd, 3);
   }
 
-  /* Float Example 2: infinities, NaN from (+inf) + (-inf), signed zeros. */
+  /* multi-element 2-D shape, loop bounds */
   {
-    const float a[4] = {1.0f, INFINITY, 0.0f, -INFINITY};
-    const float b[4] = {1.0f, -INFINITY, -0.0f, -INFINITY};
-    const float e[4] = {2.0f, NAN, 0.0f, -INFINITY};
-    float c[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    sonnx_add_f32(a, b, c, 4);
-    check_f32("f32_example2_special", c, e, 4);
+    const size_t sh[2] = {2, 3};
+    float ad[6] = {1.5f, -2.5f, 0.25f, 4.0f, -0.5f, 8.0f};
+    float bd[6] = {0.5f, -2.5f, 0.75f, -3.5f, 0.5f, -7.5f};
+    float cd[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+    const float exp[6] = {2.0f, -5.0f, 1.0f, 0.5f, 0.0f, 0.5f};
+    sonnx_tensor a = {.data = ad, .ndim = 2, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 2, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 2, .shape = sh};
+    sonnx_add_f32(&a, &b, &c);
+    check_f32("f32_2x3", exp, cd, 6);
   }
 
-  /* Null sums and their signs, checked through signbit. */
+  /* infinities and NaN */
   {
-    const float a[4] = {-0.0f, -0.0f, 0.0f, 0.0f};
-    const float b[4] = {-0.0f, 0.0f, -0.0f, 0.0f};
-    const int eneg[4] = {1, 0, 0, 0};
-    float c[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-    int got_neg[4];
-    size_t i;
-    int ok = 1;
-    sonnx_add_f32(a, b, c, 4);
-    for (i = 0; i < 4; i++) {
-      got_neg[i] = signbit(c[i]) ? 1 : 0;
-      if (c[i] != 0.0f) {
-        ok = 0;
-      }
-      if (got_neg[i] != eneg[i]) {
-        ok = 0;
-      }
-    }
-    if (ok) {
-      printf("ok f32_zero_signs\n");
-    } else {
-      char eb[64];
-      char gb[64];
-      snprintf(eb, sizeof eb, "%s %s %s %s", eneg[0] ? "-0" : "+0",
-               eneg[1] ? "-0" : "+0", eneg[2] ? "-0" : "+0",
-               eneg[3] ? "-0" : "+0");
-      snprintf(gb, sizeof gb, "%s %s %s %s", got_neg[0] ? "-0" : "+0",
-               got_neg[1] ? "-0" : "+0", got_neg[2] ? "-0" : "+0",
-               got_neg[3] ? "-0" : "+0");
-      printf("FAIL f32_zero_signs: expected [%s], got [%s]\n", eb, gb);
-      failures += 1;
-    }
+    const size_t sh[1] = {4};
+    float ad[4] = {INFINITY, -INFINITY, 1.0f, NAN};
+    float bd[4] = {-INFINITY, -INFINITY, -INFINITY, 1.0f};
+    float cd[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    const float exp[4] = {NAN, -INFINITY, -INFINITY, NAN};
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_f32(&a, &b, &c);
+    check_f32("f32_inf_nan", exp, cd, 4);
   }
 
-  /* Exact binary fractions, negative operands, cancelling operands. */
+  /* signed zeros */
   {
-    const float a[4] = {1.5f, -1.5f, 0.25f, -0.25f};
-    const float b[4] = {0.25f, 0.25f, -0.25f, -0.25f};
-    const float e[4] = {1.75f, -1.25f, 0.0f, -0.5f};
-    float c[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    sonnx_add_f32(a, b, c, 4);
-    check_f32("f32_binary_fractions", c, e, 4);
+    const size_t sh[1] = {3};
+    float ad[3] = {0.0f, -0.0f, 0.0f};
+    float bd[3] = {-0.0f, -0.0f, 0.0f};
+    float cd[3] = {1.0f, 1.0f, 1.0f};
+    const float exp[3] = {0.0f, -0.0f, 0.0f};
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_f32(&a, &b, &c);
+    check_f32("f32_signed_zeros", exp, cd, 3);
   }
 
-  /* Infinities of equal sign, and infinity plus a finite value. */
+  /* roundTiesToEven, subnormal result and overflow to infinity */
   {
-    const float a[3] = {INFINITY, -INFINITY, INFINITY};
-    const float b[3] = {INFINITY, -INFINITY, 1.5f};
-    const float e[3] = {INFINITY, -INFINITY, INFINITY};
-    float c[3] = {0.0f, 0.0f, 0.0f};
-    sonnx_add_f32(a, b, c, 3);
-    check_f32("f32_infinity_same_sign", c, e, 3);
+    const size_t sh[1] = {4};
+    float ad[4] = {1.0f, 1.0f, 0x1p-149f, 0x1.fffffep127f};
+    float bd[4] = {0x1p-24f, 0x1.8p-24f, 0x1p-149f, 0x1.fffffep127f};
+    float cd[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    const float exp[4] = {1.0f, 0x1.000002p0f, 0x1p-148f, INFINITY};
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_f32(&a, &b, &c);
+    check_f32("f32_rounding_subnormal_overflow", exp, cd, 4);
   }
 
-  /* Overflow: the exact sum rounds beyond the largest finite f32. */
+  /* empty result: the kernel must write nothing */
   {
-    const float a[2] = {0x1.fffffep127f, -0x1.fffffep127f};
-    const float b[2] = {0x1.fffffep127f, -0x1.fffffep127f};
-    const float e[2] = {INFINITY, -INFINITY};
-    float c[2] = {0.0f, 0.0f};
-    sonnx_add_f32(a, b, c, 2);
-    check_f32("f32_overflow_to_infinity", c, e, 2);
+    const size_t sh[2] = {0, 2};
+    float ad[1] = {1.5f};
+    float bd[1] = {2.5f};
+    float cd[2] = {7.5f, 7.5f};
+    const float exp[2] = {7.5f, 7.5f};
+    sonnx_tensor a = {.data = ad, .ndim = 2, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 2, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 2, .shape = sh};
+    sonnx_add_f32(&a, &b, &c);
+    check_f32("f32_zero_sized_dim", exp, cd, 2);
   }
 
-  /* A result of length zero must leave the output untouched. */
+  /* ---------------- f64 ---------------- */
+
+  /* float example 1, replayed exactly */
   {
-    float a = 1.0f;
-    float b = 2.0f;
-    float c = -7.0f;
-    sonnx_add_f32(&a, &b, &c, 0);
-    if (c == -7.0f) {
-      printf("ok f32_zero_length\n");
-    } else {
-      printf("FAIL f32_zero_length: expected [-7], got [%.9g]\n", (double)c);
-      failures += 1;
-    }
+    const size_t sh[2] = {3, 2};
+    double ad[6] = {3.0, 4.5, 16.0, 1.0, 25.5, 24.25};
+    double bd[6] = {3.0, 2.0, 4.0, 0.0, 5.0, 4.0};
+    double cd[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    const double exp[6] = {6.0, 6.5, 20.0, 1.0, 30.5, 28.25};
+    sonnx_tensor a = {.data = ad, .ndim = 2, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 2, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 2, .shape = sh};
+    sonnx_add_f64(&a, &b, &c);
+    check_f64("f64_float_example1", exp, cd, 6);
   }
 
-  /* ------------------------------------------------------------------ f64 */
-
-  /* Float Example 3: 0.1 + 0.2 rounds to 0x1.3333333333334p-2; 1.0 + -1.0
-     is the null sum of opposite signs, i.e. +0. */
+  /* float example 2, replayed exactly */
   {
-    const double a[3] = {0.1, 1.0, 1.0};
-    const double b[3] = {0.2, 2.0, -1.0};
-    const double e[3] = {0x1.3333333333334p-2, 3.0, 0.0};
-    double c[3] = {0.0, 0.0, 0.0};
-    sonnx_add_f64(a, b, c, 3);
-    check_f64("f64_example3", c, e, 3);
+    const size_t sh[1] = {4};
+    double ad[4] = {1.0, INFINITY, 0.0, -INFINITY};
+    double bd[4] = {1.0, -INFINITY, -0.0, -INFINITY};
+    double cd[4] = {0.0, 0.0, 0.0, 0.0};
+    const double exp[4] = {2.0, (double)NAN, 0.0, -INFINITY};
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_f64(&a, &b, &c);
+    check_f64("f64_float_example2", exp, cd, 4);
   }
 
-  /* Zeros, infinities and the invalid operation in f64. */
+  /* float example 3, replayed exactly */
   {
-    const double a[4] = {-0.0, -0.0, 0.0, INFINITY};
-    const double b[4] = {-0.0, 0.0, -0.0, -INFINITY};
-    const double e[4] = {-0.0, 0.0, 0.0, NAN};
-    double c[4] = {0.0, 0.0, 0.0, 0.0};
-    sonnx_add_f64(a, b, c, 4);
-    check_f64("f64_zero_infinity_nan", c, e, 4);
+    const size_t sh[1] = {3};
+    double ad[3] = {0.1, 1.0, 1.0};
+    double bd[3] = {0.2, 2.0, -1.0};
+    double cd[3] = {0.0, 0.0, 0.0};
+    const double exp[3] = {0.30000000000000004, 3.0, 0.0};
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_f64(&a, &b, &c);
+    check_f64("f64_float_example3", exp, cd, 3);
   }
 
-  /* Overflow beyond the largest f64, and a null sum of opposite values. */
+  /* negative zeros, overflow and a cancelling pair at the top of the range */
   {
-    const double a[3] = {0x1.fffffffffffffp1023, -0x1.fffffffffffffp1023,
-                         0x1p-1022};
-    const double b[3] = {0x1.fffffffffffffp1023, -0x1.fffffffffffffp1023,
-                         -0x1p-1022};
-    const double e[3] = {INFINITY, -INFINITY, 0.0};
-    double c[3] = {0.0, 0.0, 0.0};
-    sonnx_add_f64(a, b, c, 3);
-    check_f64("f64_overflow_and_cancel", c, e, 3);
+    const size_t sh[1] = {4};
+    double ad[4] = {-0.0, 0x1.fffffffffffffp1023, 0x1.fffffffffffffp1023,
+                    -0x1.fffffffffffffp1023};
+    double bd[4] = {-0.0, 0x1.fffffffffffffp1023, -0x1.fffffffffffffp1023,
+                    -0x1.fffffffffffffp1023};
+    double cd[4] = {1.0, 0.0, 1.0, 0.0};
+    const double exp[4] = {-0.0, INFINITY, 0.0, -INFINITY};
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_f64(&a, &b, &c);
+    check_f64("f64_zeros_overflow_cancel", exp, cd, 4);
   }
 
+  /* rank-0 tensors: one element, no shape */
   {
-    double a = 0.5;
-    double b = 0.25;
-    double c = -7.0;
-    sonnx_add_f64(&a, &b, &c, 0);
-    if (c == -7.0) {
-      printf("ok f64_zero_length\n");
-    } else {
-      printf("FAIL f64_zero_length: expected [-7], got [%.17g]\n", c);
-      failures += 1;
-    }
+    double ad[1] = {1.5};
+    double bd[1] = {2.25};
+    double cd[1] = {0.0};
+    const double exp[1] = {3.75};
+    sonnx_tensor a = {.data = ad, .ndim = 0, .shape = NULL};
+    sonnx_tensor b = {.data = bd, .ndim = 0, .shape = NULL};
+    sonnx_tensor c = {.data = cd, .ndim = 0, .shape = NULL};
+    sonnx_add_f64(&a, &b, &c);
+    check_f64("f64_rank0", exp, cd, 1);
   }
 
-  /* --------------------------------------------------------- signed ints */
+  /* ---------------- signed integers ---------------- */
 
-  /* Signed Example 1, replayed exactly. */
+  /* int example 1, replayed exactly */
   {
-    const int8_t a[3] = {-6, 100, -100};
-    const int8_t b[3] = {-3, 100, -100};
-    const int8_t e[3] = {-9, -56, 56};
-    int8_t c[3] = {0, 0, 0};
-    sonnx_add_i8(a, b, c, 3);
-    check_i8("i8_example1", c, e, 3);
+    const size_t sh[1] = {3};
+    int8_t ad[3] = {-6, 100, -100};
+    int8_t bd[3] = {-3, 100, -100};
+    int8_t cd[3] = {0, 0, 0};
+    const int64_t exp[3] = {-9, -56, 56};
+    int64_t got[3];
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_i8(&a, &b, &c);
+    for (size_t i = 0; i < 3; i++) got[i] = (int64_t)cd[i];
+    check_sint("i8_example1", exp, got, 3);
   }
 
-  /* i8 boundaries: wrap modulo 2^8, one step outside the range. */
+  /* i8 range boundaries, one step outside wraps */
   {
-    const int8_t a[7] = {INT8_MIN, INT8_MAX, INT8_MIN, INT8_MAX, 0, -1, 1};
-    const int8_t b[7] = {-1, 1, INT8_MIN, INT8_MAX, 0, 1, -1};
-    const int8_t e[7] = {127, -128, 0, -2, 0, 0, 0};
-    int8_t c[7] = {0, 0, 0, 0, 0, 0, 0};
-    sonnx_add_i8(a, b, c, 7);
-    check_i8("i8_wrap_boundaries", c, e, 7);
+    const size_t sh[1] = {4};
+    int8_t ad[4] = {INT8_MIN, INT8_MAX, INT8_MAX, INT8_MIN};
+    int8_t bd[4] = {-1, 1, INT8_MAX, INT8_MIN};
+    int8_t cd[4] = {0, 0, 0, 0};
+    const int64_t exp[4] = {127, -128, -2, 0};
+    int64_t got[4];
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_i8(&a, &b, &c);
+    for (size_t i = 0; i < 4; i++) got[i] = (int64_t)cd[i];
+    check_sint("i8_bounds", exp, got, 4);
   }
 
+  /* i16 boundaries */
   {
-    const int16_t a[5] = {INT16_MIN, INT16_MAX, INT16_MAX, -1, 12345};
-    const int16_t b[5] = {-1, 1, 1, INT16_MIN, -12345};
-    const int16_t e[5] = {32767, -32768, -32768, 32767, 0};
-    int16_t c[5] = {0, 0, 0, 0, 0};
-    sonnx_add_i16(a, b, c, 5);
-    check_i16("i16_wrap_boundaries", c, e, 5);
+    const size_t sh[1] = {3};
+    int16_t ad[3] = {INT16_MIN, INT16_MAX, 1000};
+    int16_t bd[3] = {-1, 1, 32000};
+    int16_t cd[3] = {0, 0, 0};
+    const int64_t exp[3] = {32767, -32768, -32536};
+    int64_t got[3];
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_i16(&a, &b, &c);
+    for (size_t i = 0; i < 3; i++) got[i] = (int64_t)cd[i];
+    check_sint("i16_bounds", exp, got, 3);
   }
 
+  /* i32 boundaries */
   {
-    const int32_t a[5] = {INT32_MIN, INT32_MAX, INT32_MIN, INT32_MAX, 0};
-    const int32_t b[5] = {-1, 1, INT32_MIN, INT32_MIN, 0};
-    const int32_t e[5] = {INT32_MAX, INT32_MIN, 0, -1, 0};
-    int32_t c[5] = {0, 0, 0, 0, 0};
-    sonnx_add_i32(a, b, c, 5);
-    check_i32("i32_wrap_boundaries", c, e, 5);
+    const size_t sh[1] = {3};
+    int32_t ad[3] = {INT32_MIN, INT32_MAX, 1};
+    int32_t bd[3] = {-1, 1, INT32_MAX};
+    int32_t cd[3] = {0, 0, 0};
+    const int64_t exp[3] = {INT32_MAX, INT32_MIN, INT32_MIN};
+    int64_t got[3];
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_i32(&a, &b, &c);
+    for (size_t i = 0; i < 3; i++) got[i] = (int64_t)cd[i];
+    check_sint("i32_bounds", exp, got, 3);
   }
 
+  /* i32 over a multi-element 2-D shape */
   {
-    const int64_t a[5] = {INT64_MIN, INT64_MAX, INT64_MIN, INT64_MAX, 0};
-    const int64_t b[5] = {-1, 1, INT64_MIN, INT64_MAX, 0};
-    const int64_t e[5] = {INT64_MAX, INT64_MIN, 0, -2, 0};
-    int64_t c[5] = {0, 0, 0, 0, 0};
-    sonnx_add_i64(a, b, c, 5);
-    check_i64("i64_wrap_boundaries", c, e, 5);
+    const size_t sh[2] = {2, 2};
+    int32_t ad[4] = {1, -1, 2000000000, 0};
+    int32_t bd[4] = {2, 1, 2000000000, -5};
+    int32_t cd[4] = {0, 0, 0, 0};
+    const int64_t exp[4] = {3, 0, -294967296, -5};
+    int64_t got[4];
+    sonnx_tensor a = {.data = ad, .ndim = 2, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 2, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 2, .shape = sh};
+    sonnx_add_i32(&a, &b, &c);
+    for (size_t i = 0; i < 4; i++) got[i] = (int64_t)cd[i];
+    check_sint("i32_2x2", exp, got, 4);
   }
 
+  /* empty i32 result */
   {
-    int8_t a = 1;
-    int8_t b = 2;
-    int8_t c = -7;
-    sonnx_add_i8(&a, &b, &c, 0);
-    if (c == -7) {
-      printf("ok i8_zero_length\n");
-    } else {
-      printf("FAIL i8_zero_length: expected [-7], got [%d]\n", (int)c);
-      failures += 1;
-    }
+    const size_t sh[2] = {2, 0};
+    int32_t ad[1] = {5};
+    int32_t bd[1] = {7};
+    int32_t cd[1] = {123};
+    const int64_t exp[1] = {123};
+    int64_t got[1];
+    sonnx_tensor a = {.data = ad, .ndim = 2, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 2, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 2, .shape = sh};
+    sonnx_add_i32(&a, &b, &c);
+    got[0] = (int64_t)cd[0];
+    check_sint("i32_zero_sized_dim", exp, got, 1);
   }
 
-  /* ------------------------------------------------------- unsigned ints */
-
-  /* Unsigned Example 1, replayed exactly. */
+  /* i64 boundaries */
   {
-    const uint8_t a[3] = {6, 200, 35};
-    const uint8_t b[3] = {3, 100, 5};
-    const uint8_t e[3] = {9, 44, 40};
-    uint8_t c[3] = {0, 0, 0};
-    sonnx_add_u8(a, b, c, 3);
-    check_u8("u8_example1", c, e, 3);
+    const size_t sh[1] = {3};
+    int64_t ad[3] = {INT64_MIN, INT64_MAX, 1};
+    int64_t bd[3] = {-1, 1, INT64_MAX};
+    int64_t cd[3] = {0, 0, 0};
+    const int64_t exp[3] = {INT64_MAX, INT64_MIN, INT64_MIN};
+    int64_t got[3];
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_i64(&a, &b, &c);
+    for (size_t i = 0; i < 3; i++) got[i] = cd[i];
+    check_sint("i64_bounds", exp, got, 3);
   }
 
-  /* u8 boundaries: wrap modulo 2^8, the result may be smaller than both. */
+  /* ---------------- unsigned integers ---------------- */
+
+  /* uint example 1, replayed exactly */
   {
-    const uint8_t a[6] = {0, 255, 255, 200, 1, 128};
-    const uint8_t b[6] = {0, 1, 255, 100, 254, 128};
-    const uint8_t e[6] = {0, 0, 254, 44, 255, 0};
-    uint8_t c[6] = {0, 0, 0, 0, 0, 0};
-    sonnx_add_u8(a, b, c, 6);
-    check_u8("u8_wrap_boundaries", c, e, 6);
+    const size_t sh[1] = {3};
+    uint8_t ad[3] = {6, 200, 35};
+    uint8_t bd[3] = {3, 100, 5};
+    uint8_t cd[3] = {0, 0, 0};
+    const uint64_t exp[3] = {9, 44, 40};
+    uint64_t got[3];
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_u8(&a, &b, &c);
+    for (size_t i = 0; i < 3; i++) got[i] = (uint64_t)cd[i];
+    check_uint("u8_example1", exp, got, 3);
   }
 
+  /* u8 boundaries */
   {
-    const uint16_t a[4] = {0, 65535, 65535, 32768};
-    const uint16_t b[4] = {0, 1, 65535, 32768};
-    const uint16_t e[4] = {0, 0, 65534, 0};
-    uint16_t c[4] = {0, 0, 0, 0};
-    sonnx_add_u16(a, b, c, 4);
-    check_u16("u16_wrap_boundaries", c, e, 4);
+    const size_t sh[1] = {4};
+    uint8_t ad[4] = {UINT8_MAX, UINT8_MAX, 0, 128};
+    uint8_t bd[4] = {1, UINT8_MAX, 0, 128};
+    uint8_t cd[4] = {0, 0, 0, 0};
+    const uint64_t exp[4] = {0, 254, 0, 0};
+    uint64_t got[4];
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_u8(&a, &b, &c);
+    for (size_t i = 0; i < 4; i++) got[i] = (uint64_t)cd[i];
+    check_uint("u8_bounds", exp, got, 4);
   }
 
+  /* u16 boundaries */
   {
-    const uint32_t a[4] = {0u, UINT32_MAX, UINT32_MAX, 2147483648u};
-    const uint32_t b[4] = {0u, 1u, UINT32_MAX, 2147483648u};
-    const uint32_t e[4] = {0u, 0u, 4294967294u, 0u};
-    uint32_t c[4] = {0u, 0u, 0u, 0u};
-    sonnx_add_u32(a, b, c, 4);
-    check_u32("u32_wrap_boundaries", c, e, 4);
+    const size_t sh[1] = {3};
+    uint16_t ad[3] = {UINT16_MAX, 1000, 0};
+    uint16_t bd[3] = {1, 65000, UINT16_MAX};
+    uint16_t cd[3] = {0, 0, 0};
+    const uint64_t exp[3] = {0, 464, UINT16_MAX};
+    uint64_t got[3];
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_u16(&a, &b, &c);
+    for (size_t i = 0; i < 3; i++) got[i] = (uint64_t)cd[i];
+    check_uint("u16_bounds", exp, got, 3);
   }
 
+  /* u32 boundaries */
   {
-    const uint64_t a[4] = {UINT64_C(0), UINT64_MAX, UINT64_MAX, UINT64_C(0)};
-    const uint64_t b[4] = {UINT64_C(0), UINT64_C(1), UINT64_MAX, UINT64_MAX};
-    const uint64_t e[4] = {UINT64_C(0), UINT64_C(0),
-                           UINT64_C(18446744073709551614), UINT64_MAX};
-    uint64_t c[4] = {UINT64_C(0), UINT64_C(0), UINT64_C(0), UINT64_C(0)};
-    sonnx_add_u64(a, b, c, 4);
-    check_u64("u64_wrap_boundaries", c, e, 4);
+    const size_t sh[1] = {3};
+    uint32_t ad[3] = {UINT32_MAX, 1, 0};
+    uint32_t bd[3] = {1, UINT32_MAX, UINT32_MAX};
+    uint32_t cd[3] = {0, 0, 0};
+    const uint64_t exp[3] = {0, 0, UINT32_MAX};
+    uint64_t got[3];
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_u32(&a, &b, &c);
+    for (size_t i = 0; i < 3; i++) got[i] = (uint64_t)cd[i];
+    check_uint("u32_bounds", exp, got, 3);
   }
 
+  /* u64 boundaries */
   {
-    uint8_t a = 1;
-    uint8_t b = 2;
-    uint8_t c = 255;
-    sonnx_add_u8(&a, &b, &c, 0);
-    if (c == 255) {
-      printf("ok u8_zero_length\n");
-    } else {
-      printf("FAIL u8_zero_length: expected [255], got [%u]\n", (unsigned)c);
-      failures += 1;
-    }
+    const size_t sh[1] = {3};
+    uint64_t ad[3] = {UINT64_MAX, 1, 0};
+    uint64_t bd[3] = {1, UINT64_MAX, UINT64_MAX};
+    uint64_t cd[3] = {0, 0, 0};
+    const uint64_t exp[3] = {0, 0, UINT64_MAX};
+    uint64_t got[3];
+    sonnx_tensor a = {.data = ad, .ndim = 1, .shape = sh};
+    sonnx_tensor b = {.data = bd, .ndim = 1, .shape = sh};
+    sonnx_tensor c = {.data = cd, .ndim = 1, .shape = sh};
+    sonnx_add_u64(&a, &b, &c);
+    for (size_t i = 0; i < 3; i++) got[i] = cd[i];
+    check_uint("u64_bounds", exp, got, 3);
   }
 
-  return failures == 0 ? 0 : 1;
+  if (g_fail != 0) {
+    fprintf(stderr, "%d failing case(s)\n", g_fail);
+    return 1;
+  }
+  return 0;
 }

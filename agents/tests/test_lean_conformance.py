@@ -60,7 +60,8 @@ def spec_file(work: Path) -> Path:
 
 def generated_tree(work: Path, spec: Path) -> Settings:
     """A run directory holding a coherent generated conformance artifact set."""
-    settings = Settings(op="Neg", run_dir=work, spec_path=spec, verbose=False)
+    settings = Settings(op="Neg", run_dir=work, spec_path=spec,
+                        ops_dir=work.parent / "ops", verbose=False)
     (work / "lean").mkdir(parents=True, exist_ok=True)
     (work / "lean" / "FormalSpec.lean").write_text("def negSpec : Prop := True\n",
                                                   encoding="utf-8")
@@ -161,6 +162,21 @@ def protocol_tests() -> None:
         check("float16 is explicitly unsupported (%s)" % exc, True)
     else:
         raise AssertionError("float16 was encoded")
+
+    lo32 = np.array([np.iinfo(np.int32).min], dtype=np.int32)
+    minus1 = np.array([-1], dtype=np.int32)
+    check("the signed 32-bit Div trap pair is detected",
+          lc.div_trap_pair([lo32, minus1], "Div"))
+    check("a safe 32-bit Div pair is not a trap",
+          not lc.div_trap_pair([lo32, np.array([1], np.int32)], "Div"))
+    check("the same pair is not a trap for another operator",
+          not lc.div_trap_pair([lo32, minus1], "Mul"))
+    check("the 8-bit pair is safe",
+          not lc.div_trap_pair([np.array([-128], np.int8),
+                                np.array([-1], np.int8)], "Div"))
+    check("the signed 64-bit Div trap pair is detected",
+          lc.div_trap_pair([np.array([np.iinfo(np.int64).min], np.int64),
+                            np.array([-1], np.int64)], "Div"))
 
 
 def corpus_tests(work: Path) -> None:
@@ -297,6 +313,7 @@ def selection_tests(work: Path) -> None:
     configured = work / "configured.py"
     configured.write_text("print('configured')\n", encoding="utf-8")
     settings = Settings(op="Neg", run_dir=work / "empty-run", spec_path=spec,
+                        ops_dir=work / "ops",
                         lean_conformance_script=configured, verbose=False)
     selection = lean.conformance_selection(settings, spec)
     check_equal("a configured driver wins", selection["kind"], "configured")
@@ -316,7 +333,8 @@ def selection_tests(work: Path) -> None:
     check_equal("the published driver is the fallback", selection["kind"],
                 "generated-published")
 
-    absent = Settings(op="Neg", run_dir=work / "nothing", spec_path=spec, verbose=False)
+    absent = Settings(op="Neg", run_dir=work / "nothing", spec_path=spec,
+                      ops_dir=work / "ops", verbose=False)
     selection = lean.conformance_selection(absent, spec)
     check_equal("no driver anywhere is unavailable", selection["kind"], "unavailable")
 
@@ -324,7 +342,8 @@ def selection_tests(work: Path) -> None:
     broken = work / "no-manifest"
     (broken / "lean" / "conformance.manifest.json").unlink()
     selection = lean.conformance_selection(
-        Settings(op="Neg", run_dir=broken, spec_path=spec, verbose=False), spec)
+        Settings(op="Neg", run_dir=broken, spec_path=spec, ops_dir=work / "ops",
+                 verbose=False), spec)
     check_equal("a generated driver without its manifest is stale",
                 selection["kind"], "stale")
     check("the reason names the manifest", "manifest" in selection["problem"])

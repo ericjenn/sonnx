@@ -1,0 +1,14 @@
+Generated.Mul.FloatMulRel : Sonnx.FloatFormat →
+  Sonnx.Tensor Sonnx.FVal → Sonnx.Tensor Sonnx.FVal → Sonnx.Tensor Sonnx.FVal → Prop
+Generated.Mul.IntMulRel : Nat → Sonnx.Tensor Int → Sonnx.Tensor Int → Sonnx.Tensor Int → Prop
+Generated.Mul.RealMulRel : Sonnx.Tensor Rat → Sonnx.Tensor Rat → Sonnx.Tensor Rat → Prop
+Generated.Mul.UintMulRel : Nat → Sonnx.Tensor Int → Sonnx.Tensor Int → Sonnx.Tensor Int → Prop
+Generated.Mul.floatExample1 : Sonnx.FloatFormat → Prop
+Generated.Mul.floatExample2 : Sonnx.FloatFormat → Prop
+Generated.Mul.intExample1 : Prop
+Generated.Mul.realExample1 : Prop
+Generated.Mul.realExample2 : Prop
+Generated.Mul.uintExample1 : Prop
+@Sonnx.BroadcastCompatible : {α : Type} → Sonnx.Tensor α → Sonnx.Tensor α → Prop
+@Sonnx.BroadcastShapeIs : {α : Type} → Sonnx.Tensor α → Sonnx.Tensor α → Sonnx.Tensor α → Prop
+@Sonnx.TypeConsistent : {α : Type} → α → α → α → Prop

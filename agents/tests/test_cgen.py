@@ -112,19 +112,26 @@ def main() -> int:
         check("the declarations are unique pairs",
               all(names.count(name) == 2 for name in expected))
 
+        check("the tensor struct is defined once",
+              text.count("} sonnx_tensor;") == 1)
+        check("the struct carries data, rank and dimensions",
+              "typedef struct {" in text and "void *data;" in text
+              and "size_t ndim;" in text and "const size_t *shape;" in text)
+        check("the kernel computes the element count from the output shape",
+              "n = n * c->shape[d];" in text)
         check("the loop is size_t and contiguous",
               "for (size_t i = 0; i < n; i++) {" in text)
         check("a float kernel applies the operator directly",
-              "c[i] = a[i] + b[i];" in text)
+              "C[i] = A[i] + B[i];" in text)
         check("a float64 kernel uses double",
-              "void sonnx_add_f64(const double *a, const double *b, double *c, size_t n)"
-              in text)
+              "void sonnx_add_f64(const sonnx_tensor *a, const sonnx_tensor *b, "
+              "sonnx_tensor *c)" in text)
         check("a signed kernel wraps in the unsigned type",
-              "c[i] = (int8_t)((uint8_t)a[i] - (uint8_t)b[i]);" in text)
+              "C[i] = (int8_t)((uint8_t)A[i] - (uint8_t)B[i]);" in text)
         check("a signed 64-bit kernel widens through uint64_t",
-              "c[i] = (int64_t)((uint64_t)a[i] + (uint64_t)b[i]);" in text)
+              "C[i] = (int64_t)((uint64_t)A[i] + (uint64_t)B[i]);" in text)
         check("an unsigned kernel converts modulo the width",
-              "c[i] = (uint16_t)(a[i] * b[i]);" in text)
+              "C[i] = (uint16_t)(A[i] * B[i]);" in text)
 
         again = directory / "operators-again.c"
         check("the emit driver succeeds again", emit_c(lake, again).returncode == 0)
@@ -158,7 +165,9 @@ def main() -> int:
 
         check("the header includes <stddef.h>", "#include <stddef.h>" in header_text)
         check("the header includes <stdint.h>", "#include <stdint.h>" in header_text)
-        check("the header holds no function body", "{" not in header_text)
+        check("the header defines the tensor struct once",
+              header_text.count("} sonnx_tensor;") == 1)
+        check("the header holds no function body", ") {" not in header_text)
         prototypes = re.findall(r"^void (sonnx_[A-Za-z0-9_]+)\(([^)]*)\);$", header_text,
                                 re.MULTILINE)
         check("the header declares every kernel once",
@@ -166,6 +175,8 @@ def main() -> int:
         check("the header omits float16", "f16" not in header_text)
 
         check("the source includes its header", '#include "sonnx_kernels.h"' in source_text)
+        check("the source does not redefine the tensor struct",
+              "typedef struct" not in source_text)
         check("the source does not repeat the standard includes",
               "#include <stddef.h>" not in source_text
               and "#include <stdint.h>" not in source_text)
@@ -188,6 +199,7 @@ def main() -> int:
 
         checker = directory / "check.c"
         checker.write_text(
+            "#include <stddef.h>\n"
             "#include <stdint.h>\n"
             "#include <stdio.h>\n"
             '#include "operators.c"\n'
@@ -199,15 +211,42 @@ def main() -> int:
             "}\n"
             "\n"
             "int main(void) {\n"
-            "  { int8_t a[2] = {127, 100}, b[2] = {1, 100}, c[2] = {0, 0};\n"
-            "    sonnx_add_i8(a, b, c, 2);\n"
-            '    check("int8 add wraps", c[0] == -128 && c[1] == -56); }\n'
-            "  { uint8_t a[2] = {0, 255}, b[2] = {1, 2}, c[2] = {0, 0};\n"
-            "    sonnx_sub_u8(a, b, c, 2);\n"
-            '    check("uint8 sub wraps", c[0] == 255 && c[1] == 253); }\n'
-            "  { double a[1] = {0.5}, b[1] = {2.0}, c[1] = {0.0};\n"
-            "    sonnx_mul_f64(a, b, c, 1);\n"
-            '    check("double mul", c[0] == 1.0); }\n'
+            "  { const size_t shape[1] = {2};\n"
+            "    int8_t a_data[2] = {127, 100}, b_data[2] = {1, 100}, c_data[2] = {0, 0};\n"
+            "    sonnx_tensor a = { .data = a_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_tensor b = { .data = b_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_tensor c = { .data = c_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_add_i8(&a, &b, &c);\n"
+            '    check("int8 add wraps", c_data[0] == -128 && c_data[1] == -56); }\n'
+            "  { const size_t shape[1] = {2};\n"
+            "    uint8_t a_data[2] = {0, 255}, b_data[2] = {1, 2}, c_data[2] = {0, 0};\n"
+            "    sonnx_tensor a = { .data = a_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_tensor b = { .data = b_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_tensor c = { .data = c_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_sub_u8(&a, &b, &c);\n"
+            '    check("uint8 sub wraps", c_data[0] == 255 && c_data[1] == 253); }\n'
+            "  { const size_t shape[1] = {1};\n"
+            "    double a_data[1] = {0.5}, b_data[1] = {2.0}, c_data[1] = {0.0};\n"
+            "    sonnx_tensor a = { .data = a_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_tensor b = { .data = b_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_tensor c = { .data = c_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_mul_f64(&a, &b, &c);\n"
+            '    check("double mul", c_data[0] == 1.0); }\n'
+            "  { /* rank 0: one element and no dimensions */\n"
+            "    float a_data[1] = {4.0f}, b_data[1] = {1.5f}, c_data[1] = {0.0f};\n"
+            "    sonnx_tensor a = { .data = a_data, .ndim = 0, .shape = NULL };\n"
+            "    sonnx_tensor b = { .data = b_data, .ndim = 0, .shape = NULL };\n"
+            "    sonnx_tensor c = { .data = c_data, .ndim = 0, .shape = NULL };\n"
+            "    sonnx_add_f32(&a, &b, &c);\n"
+            '    check("a rank-0 tensor has one element", c_data[0] == 5.5f); }\n'
+            "  { /* a zero-sized dimension: the kernel writes nothing */\n"
+            "    const size_t shape[1] = {0};\n"
+            "    float a_data[1] = {4.0f}, b_data[1] = {1.5f}, c_data[1] = {7.0f};\n"
+            "    sonnx_tensor a = { .data = a_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_tensor b = { .data = b_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_tensor c = { .data = c_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_add_f32(&a, &b, &c);\n"
+            '    check("a zero-sized dimension writes nothing", c_data[0] == 7.0f); }\n'
             "  return failures == 0 ? 0 : 1;\n"
             "}\n"
         )
@@ -226,18 +265,27 @@ def main() -> int:
 
         split_checker = directory / "check-split.c"
         split_checker.write_text(
+            "#include <stddef.h>\n"
             "#include <stdint.h>\n"
             '#include "sonnx_kernels.h"\n'
             "\n"
             "int main(void) {\n"
-            "  { const float a[2] = {5.0f, -1.0f}, b[2] = {3.0f, -1.0f};\n"
-            "    float c[2] = {0.0f, 0.0f};\n"
-            "    sonnx_sub_f32(a, b, c, 2);\n"
-            "    if (c[0] != 2.0f || c[1] != 0.0f) return 1; }\n"
-            "  { const int32_t a[1] = {INT32_MIN}, b[1] = {1};\n"
-            "    int32_t c[1] = {0};\n"
-            "    sonnx_sub_i32(a, b, c, 1);\n"
-            "    if (c[0] != INT32_MAX) return 1; }\n"
+            "  { const size_t shape[1] = {2};\n"
+            "    float a_data[2] = {5.0f, -1.0f}, b_data[2] = {3.0f, -1.0f};\n"
+            "    float c_data[2] = {0.0f, 0.0f};\n"
+            "    sonnx_tensor a = { .data = a_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_tensor b = { .data = b_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_tensor c = { .data = c_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_sub_f32(&a, &b, &c);\n"
+            "    if (c_data[0] != 2.0f || c_data[1] != 0.0f) return 1; }\n"
+            "  { const size_t shape[1] = {1};\n"
+            "    int32_t a_data[1] = {INT32_MIN}, b_data[1] = {1};\n"
+            "    int32_t c_data[1] = {0};\n"
+            "    sonnx_tensor a = { .data = a_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_tensor b = { .data = b_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_tensor c = { .data = c_data, .ndim = 1, .shape = shape };\n"
+            "    sonnx_sub_i32(&a, &b, &c);\n"
+            "    if (c_data[0] != INT32_MAX) return 1; }\n"
             "  return 0;\n"
             "}\n"
         )

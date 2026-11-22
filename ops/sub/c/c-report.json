@@ -8,11 +8,11 @@
   "lean": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/lean/FormalSpec.lean",
   "lean_sha256": "c98032d53eab3e4cc39c7f5251e5a9834b5167a92028dd7eccceed7af72b729d",
   "header": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/sonnx_kernels.h",
-  "header_sha256": "85000fde2711760502d6f3c51c3428f2e91484ca3edd8b6c71b4cc2567b7ad94",
+  "header_sha256": "4f344a99165760ee3efd6dd1bee7e3606d55c37828b598c15a6376d9256dbe39",
   "source": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/sonnx_kernels.c",
-  "source_sha256": "993cf27e5ba537121c310b42f8a1301e42f8feb35c6105801fc47a23923db50a",
+  "source_sha256": "f8ab203f6082ed763bd884104ada627f464628418a5d3aede20b79243e9cb4da",
   "test": "/run/media/eric/Work1/Work/gits/sonnx/ops/sub/c/c_tests-attempt-001.c",
-  "test_sha256": "90329a143e6d82073be250c69c42aa1a1c57b28bff4f09aabcd7c6002c1d04bf",
+  "test_sha256": "3a4f000b0c8ff6cac41c9a3362ae221388c226da08dfed87d0418a18c9cdf595",
   "cc": "cc",
   "command": [
     "cc",
@@ -30,14 +30,14 @@
   "stage": "run",
   "returncode": 0,
   "checks": {
-    "total": 25,
-    "passed": 25,
+    "total": 19,
+    "passed": 19,
     "failed": 0
   },
   "failures": [],
   "ok": true,
   "error": "",
-  "stdout": "ok f32 float example 1\nok f32 float example 2 (inf and signed zeros)\nok f32 infinite operands\nok f32 NaN propagation\nok f32 exact finite differences and signed zeros\nok f32 overflow to infinity\nok f32 single element\nok f64 float example 3 (rounding and exact cancellation)\nok f64 infinite and NaN operands\nok f64 overflow and max minus max\nok f64 signed zero differences\nok f64 subnormal difference is exact\nok f64 single element\nok i8 int example 1\nok i8 int example 2 (wraparound)\nok i8 boundaries and equal operands\nok i16 boundaries\nok i32 boundaries\nok i64 boundaries\nok u8 uint example 1\nok u8 wraparound and equal operands\nok u16 boundaries\nok u32 boundaries\nok u64 boundaries\nok n=0 empty output untouched\n",
+  "stdout": "ok f32_example1\nok f32_example2\nok f32_inf\nok f32_nan\nok f32_subnormal\nok f32_overflow\nok f32_zero_size\nok f64_example3\nok f64_special\nok f64_rank0\nok i8_example1\nok i8_example2\nok i16_bounds\nok i32_bounds\nok i64_bounds\nok u8_example1\nok u16_bounds\nok u32_bounds\nok u64_bounds\n",
   "stderr": "",
-  "written": "2026-11-21T11:32:27"
+  "written": "2026-11-21T17:59:34"
 }

@@ -223,6 +223,13 @@ CGEN_TEST = '''```c
 #include "sonnx_kernels.h"
 
 /* sonnx_neg_f32, sonnx_neg_f64, sonnx_neg_i32, sonnx_neg_u32 */
+static void use(const sonnx_tensor *a, const sonnx_tensor *b, sonnx_tensor *c) {
+  sonnx_neg_f32(a, b, c);
+  sonnx_neg_f64(a, b, c);
+  sonnx_neg_i32(a, b, c);
+  sonnx_neg_u32(a, b, c);
+}
+
 int main(void) {
   return 0;
 }
@@ -544,7 +551,7 @@ def run(scenario: Scenario, stale_reports=(), operator_restrictions=None,
     settings_kwargs.setdefault("lean_conformance_generate",
                                bool(scenario.conformance_generate))
     settings = Settings(op="Neg", run_dir=workdir, spec_path=workdir / "Neg.md", verbose=False,
-                        restrictions_dir=ops_dir,
+                        ops_dir=ops_dir, restrictions_dir=ops_dir,
                         max_iterations=settings_kwargs.pop("max_iterations", 5),
                         max_spec_rounds=settings_kwargs.pop("max_spec_rounds", 3),
                         max_case_repairs=settings_kwargs.pop("max_case_repairs", 2),
@@ -587,8 +594,11 @@ def run(scenario: Scenario, stale_reports=(), operator_restrictions=None,
             return {"ok": False, "emit": emit, "header": header, "source": source,
                     "name": "", "binop": "",
                     "compiler": {"ok": False, "stdout": "synthetic renderer failure"}}
-        header.write_text("void sonnx_neg_f32(const float *a, const float *b, float *c, "
-                          "size_t n);\n", encoding="utf-8")
+        header.write_text("typedef struct { void *data; size_t ndim; "
+                          "const size_t *shape; } sonnx_tensor;\n"
+                          "void sonnx_neg_f32(const sonnx_tensor *a, "
+                          "const sonnx_tensor *b, sonnx_tensor *c);\n",
+                          encoding="utf-8")
         source.write_text('#include "sonnx_kernels.h"\n', encoding="utf-8")
         return {"ok": True, "emit": emit, "header": header, "source": source,
                 "name": "neg", "binop": "sub", "compiler": {"ok": True, "stdout": ""}}

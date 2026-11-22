@@ -5,25 +5,30 @@ An operator is an `Elementwise` description: its name and its element
 operation.  `operatorsFile` turns a list of those descriptions into a C
 translation unit holding, for every operator and every element type, a kernel
 
-    void sonnx_<op>_<type>(const T *a, const T *b, T *c, size_t n)
+    void sonnx_<op>_<type>(const sonnx_tensor *a, const sonnx_tensor *b,
+                           sonnx_tensor *c)
 
-that writes the `n` pointwise results into `c`.
+that writes the elementwise results into `c`.  A tensor is the generated
+`sonnx_tensor` struct: a `void *data` array, the rank `ndim` and a pointer to
+the `ndim` dimensions.
 
 The contract, which the banner of the generated file states, is deliberately
 narrow:
 
-* the arrays are contiguous row-major arrays of the same length `n`;
-* broadcasting is the caller's responsibility — `a`, `b` and `c` describe the
-  same, already broadcast, shape;
+* the data arrays are contiguous row-major arrays and `a`, `b` and `c`
+  describe the same, already broadcast, shape;
+* broadcasting is the caller's responsibility;
+* the kernel computes the element count from `c->ndim` and `c->shape`, so a
+  rank-0 tensor has one element and a zero-sized dimension has none;
 * the integer kernels wrap modulo `2 ^ bits` (`Sonnx.uintWrap`,
   `Sonnx.sintWrap`): a signed result is computed in the unsigned type of the
   same width and converted back, so the arithmetic itself is well defined;
 * `float16` is not generated: Lean's model has it, C has no standard type
   for it.  `float32` and `float64` are.
 
-`rhs` is the only element-type-dependent part; the function shape is shared,
-so the prototype and the definition are rendered from the same `Fun` and
-cannot drift apart.
+`rhsFor` is the only element-type-dependent part; the function shape is
+shared, so the prototype and the definition are rendered from the same `Fun`
+and cannot drift apart.
 -/
 
 import CGen.Ast
@@ -71,14 +76,25 @@ def binOpName : BinOp → String
   | .eq => "eq" | .ne => "ne" | .logAnd => "logAnd" | .logOr => "logOr"
   | .assign => "assign" | .comma => "comma"
 
-/-- The value written into `c[i]`: `a[i] <op> b[i]` for floating point,
+/-- The tensor type the kernels take.  It is a `named` C type: the struct
+itself is `tensorStruct`. -/
+def tensor : CType := .named "sonnx_tensor"
+
+/-- The `sonnx_tensor` definition the generated header carries: the data
+array, the rank and a pointer to the dimensions.  The data pointer is
+untyped; the kernel name selects the element type. -/
+def tensorStruct : Decl :=
+  .structDef "sonnx_tensor"
+    [⟨.ptr .void, "data"⟩, ⟨.size, "ndim"⟩, ⟨.ptr (.const .size), "shape"⟩]
+
+/-- The value written into `c[i]`: `<a>[i] <op> <b>[i]` for floating point,
 computed in the unsigned type of the same width and converted back for signed
 integers, and computed then converted modulo `2 ^ bits` for unsigned integers.
 The element type is also the type of `c[i]`, so the assignment converts
-exactly once. -/
-def rhs (op : BinOp) (t : CType) : Expr :=
-  let a : Expr := .index (.var "a") (.var "i")
-  let b : Expr := .index (.var "b") (.var "i")
+exactly once.  The operands are expressions so that the kernel can index its
+typed local pointers, while `rhs` keeps the `a[i]`/`b[i]` spelling the printer
+probes use. -/
+def rhsFor (op : BinOp) (t : CType) (a b : Expr) : Expr :=
   match t with
   | .float _ => .binary op a b
   | .int bits true =>
@@ -86,27 +102,56 @@ def rhs (op : BinOp) (t : CType) : Expr :=
       .cast t (.binary op (.cast unsigned a) (.cast unsigned b))
   | _ => .cast t (.binary op a b)
 
+/-- The `a[i] <op> b[i]` element expression. -/
+def rhs (op : BinOp) (t : CType) : Expr :=
+  rhsFor op t (.index (.var "a") (.var "i")) (.index (.var "b") (.var "i"))
+
 /-- The kernel for an operator and an element type:
 
-    void sonnx_<op>_<type>(const T *a, const T *b, T *c, size_t n) {
+    void sonnx_<op>_<type>(const sonnx_tensor *a, const sonnx_tensor *b,
+                           sonnx_tensor *c) {
+      const T *A = (const T *)a->data;
+      const T *B = (const T *)b->data;
+      T *C = (T *)c->data;
+      size_t n = 1;
+      for (size_t d = 0; d < c->ndim; d++) {
+        n = n * c->shape[d];
+      }
       for (size_t i = 0; i < n; i++) {
-        c[i] = <element expression>;
+        C[i] = <element expression>;
       }
     }
 
-The index is `size_t` because `n` is, which also keeps the comparison free of
-sign-conversion warnings. -/
+The rank-0 tensor has one element (the product of no dimensions is 1); a
+zero-sized dimension makes `n` zero and writes nothing.  The index is
+`size_t`, which also keeps the comparison free of sign-conversion warnings. -/
 def kernel (e : Elementwise) (t : CType) : Fun :=
   { name := funName e t
     retType := .void
     params :=
-      [⟨.ptr (.const t), "a"⟩, ⟨.ptr (.const t), "b"⟩, ⟨.ptr t, "c"⟩, ⟨.size, "n"⟩]
+      [⟨.ptr (.const tensor), "a"⟩, ⟨.ptr (.const tensor), "b"⟩, ⟨.ptr tensor, "c"⟩]
     body :=
-      [.forLoop
-        (some (.decl .size "i" (some (.intLit 0))))
-        (some (.binary .lt (.var "i") (.var "n")))
-        (some (.unary .postInc (.var "i")))
-        (.block [.expr (.binary .assign (.index (.var "c") (.var "i")) (rhs e.op t))])] }
+      [.decl (.ptr (.const t)) "A"
+         (some (.cast (.ptr (.const t)) (.field (.var "a") "data" true))),
+       .decl (.ptr (.const t)) "B"
+         (some (.cast (.ptr (.const t)) (.field (.var "b") "data" true))),
+       .decl (.ptr t) "C"
+         (some (.cast (.ptr t) (.field (.var "c") "data" true))),
+       .decl .size "n" (some (.intLit 1)),
+       .forLoop
+         (some (.decl .size "d" (some (.intLit 0))))
+         (some (.binary .lt (.var "d") (.field (.var "c") "ndim" true)))
+         (some (.unary .postInc (.var "d")))
+         (.block [.expr (.binary .assign (.var "n")
+           (.binary .mul (.var "n")
+             (.index (.field (.var "c") "shape" true) (.var "d"))))]),
+       .forLoop
+         (some (.decl .size "i" (some (.intLit 0))))
+         (some (.binary .lt (.var "i") (.var "n")))
+         (some (.unary .postInc (.var "i")))
+         (.block [.expr (.binary .assign (.index (.var "C") (.var "i"))
+           (rhsFor e.op t (.index (.var "A") (.var "i"))
+                           (.index (.var "B") (.var "i"))))])] }
 
 /-- Every kernel of every operator in `ops`, for every element type. -/
 def funsFor (ops : List Elementwise) (types : List CType) : List Fun :=
@@ -121,9 +166,13 @@ contract the kernels assume. -/
 def banner : List String :=
   ["Generated by the SONNX CGen library. Do not edit.",
    "",
-   "Elementwise kernels over contiguous row-major arrays of length n.",
-   "Broadcasting is the caller's responsibility: a, b and c must all have",
-   "length n and describe the same (already broadcast) shape.",
+   "Elementwise kernels over sonnx_tensor values: a contiguous row-major",
+   "data array, its rank and a pointer to its dimensions.  The kernel name",
+   "selects the element type; data is void * and is cast to it.",
+   "Broadcasting is the caller's responsibility: a, b and c must describe",
+   "the same (already broadcast) shape.  The kernel computes the element",
+   "count from c->ndim and c->shape, so a rank-0 tensor has one element",
+   "and a zero-sized dimension has none.",
    "",
    "Signed integer kernels wrap modulo 2^bits (Sonnx.sintWrap); unsigned",
    "kernels wrap modulo 2^bits (Sonnx.uintWrap). float16 is not generated."]
@@ -134,7 +183,8 @@ def operatorsFileFor (ops : List Elementwise) (types : List CType) : CFile :=
   let funs := funsFor ops types
   { banner := banner
     includes := ["stddef.h", "stdint.h"]
-    decls := (funs.map (fun f => .funDecl f)) ++ (funs.map (fun f => .funDef f)) }
+    decls := tensorStruct :: ((funs.map (fun f => .funDecl f)) ++
+                              (funs.map (fun f => .funDef f))) }
 
 /-- The library's own translation unit. -/
 def operatorsFile : CFile := operatorsFileFor operators dtypes
@@ -148,7 +198,7 @@ def headerName : String := "sonnx_kernels.h"
 def headerFileFor (ops : List Elementwise) (types : List CType) : CFile :=
   { banner := banner
     includes := ["stddef.h", "stdint.h"]
-    decls := (funsFor ops types).map (fun f => .funDecl f) }
+    decls := tensorStruct :: (funsFor ops types).map (fun f => .funDecl f) }
 
 /-- The definitions of the kernels of `ops`, as a source file that includes the
 header: the header supplies the prototypes and the standard includes. -/

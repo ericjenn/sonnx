@@ -1,0 +1,42 @@
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-004.lean:162:13: warning: Variable name `sa` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _sa
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-004.lean:162:26: warning: Variable name `sb` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _sb
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-004.lean:163:14: warning: Variable name `sa` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _sa
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+/run/media/eric/Work1/Work/gits/sonnx/ops/div/lean/attempt-004.lean:163:28: warning: Variable name `sb` is not explicitly referenced.
+
+Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
+  [apply] _sb
+
+Note: This linter can be disabled with `set_option linter.unusedVariables false`
+Generated.Div.floatDivRel : Sonnx.FloatFormat →
+  Sonnx.Tensor Sonnx.FVal → Sonnx.Tensor Sonnx.FVal → Sonnx.Tensor Sonnx.FVal → Prop
+Generated.Div.floatExample1 : Prop
+Generated.Div.floatExample2 : Prop
+Generated.Div.floatExample3 : Prop
+Generated.Div.intExample1 : Prop
+Generated.Div.realDivElem : Rat → Rat → Rat → Prop
+Generated.Div.realDivRel : Sonnx.Tensor Rat → Sonnx.Tensor Rat → Sonnx.Tensor Rat → Prop
+Generated.Div.realExample1 : Prop
+Generated.Div.realExample2 : Prop
+Generated.Div.sintDivRel : (n : Nat) →
+  Sonnx.Tensor (Sonnx.SIntN n) → Sonnx.Tensor (Sonnx.SIntN n) → Sonnx.Tensor (Sonnx.SIntN n) → Prop
+Generated.Div.uintDivRel : (n : Nat) →
+  Sonnx.Tensor (Sonnx.UIntN n) → Sonnx.Tensor (Sonnx.UIntN n) → Sonnx.Tensor (Sonnx.UIntN n) → Prop
+Generated.Div.uintExample1 : Prop
+@Sonnx.BroadcastCompatible : {α : Type} → Sonnx.Tensor α → Sonnx.Tensor α → Prop
+@Sonnx.BroadcastShapeIs : {α : Type} → Sonnx.Tensor α → Sonnx.Tensor α → Sonnx.Tensor α → Prop
+@Sonnx.TypeConsistent : {α : Type} → α → α → α → Prop

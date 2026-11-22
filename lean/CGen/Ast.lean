@@ -100,9 +100,17 @@ structure Fun where
   body : List Stmt
   deriving Repr, Inhabited
 
-/-- A top-level declaration. -/
+/-- One field of a struct definition. -/
+structure Field where
+  type : CType
+  name : String
+  deriving Repr, Inhabited
+
+/-- A top-level declaration.  `structDef` renders a typedef of an anonymous
+struct: the tensor type the kernels receive. -/
 inductive Decl
   | typedef (type : CType) (name : String)
+  | structDef (name : String) (fields : List Field)
   | funDecl (fn : Fun)
   | funDef (fn : Fun)
   | comment (text : String)

@@ -315,6 +315,27 @@ def iter_cases(module):
         yield str(label), [np.asarray(array) for array in arrays], attrs
 
 
+def div_trap_pair(arrays, op: str) -> bool:
+    """True for the signed 32/64-bit `(INT_MIN, -1)` pair ONNX Runtime cannot run.
+
+    C integer division overflows for that pair, and ONNX Runtime's signed `Div` kernel
+    lets the process die with `SIGFPE`; no Python handler can catch it.  A corpus may
+    still contain the pair (the document states its wrapped result), so the driver must
+    not hand it to the runtime: the case is recorded `open`, and a sweep call raises a
+    Python error, which `check_sweeps` reports.
+    """
+    if op != "Div" or len(arrays) < 2:
+        return False
+    a, b = np.asarray(arrays[0]), np.asarray(arrays[1])
+    if a.dtype != b.dtype or a.dtype.kind != "i" or a.dtype.itemsize not in (4, 8):
+        return False
+    try:
+        aa, bb = np.broadcast_arrays(a, b)
+    except ValueError:
+        return False
+    return bool(np.any((aa == np.iinfo(a.dtype).min) & (bb == -1)))
+
+
 class _Recorder:
     """The implementation a corpus's sweeps are replayed against.
 
@@ -326,17 +347,22 @@ class _Recorder:
     later inputs.
     """
 
-    def __init__(self, reference, outputs, records, name):
+    def __init__(self, reference, outputs, records, name, op=""):
         self.reference = reference
         self.outputs = tuple(outputs)
         self.records = records
         self.name = name
+        self.op = op
 
     def __getattr__(self, attribute):
         if attribute.startswith("_"):
             raise AttributeError(attribute)
 
         def call(*arrays, **attrs):
+            if div_trap_pair(arrays, self.op):
+                raise ValueError(
+                    "ONNX Runtime cannot evaluate INT_MIN / -1 for a signed "
+                    "32/64-bit Div; the input is not replayed")
             self.records.append(("%s: %s" % (self.name["value"], attribute),
                                  [np.asarray(array) for array in arrays],
                                  dict(attrs)))
@@ -346,7 +372,7 @@ class _Recorder:
         return call
 
 
-def sweep_cases(module, reference, outputs, specloop):
+def sweep_cases(module, reference, outputs, specloop, op=""):
     """The inputs the corpus's own sweeps pass to the implementation.
 
     The Lean conformance must exercise the same inputs the Python verification did,
@@ -378,7 +404,7 @@ def sweep_cases(module, reference, outputs, specloop):
         sweeps = [named(sweep) for sweep in module.sweeps()]
     except Exception as exc:  # the corpus's own sweep list could not be built
         return [], ["the corpus's sweeps() raised: %s" % str(exc)[-500:]]
-    recorder = _Recorder(reference, outputs, records, current)
+    recorder = _Recorder(reference, outputs, records, current, op=op)
     try:
         reports = specloop.check_sweeps(recorder, sweeps)
     except Exception as exc:  # check_sweeps already isolates each sweep
@@ -614,7 +640,8 @@ def run(config: dict, json_path: Path, timeout: int = 1800, max_failures: int = 
     }
 
     outputs = tuple(config.get("outputs") or ("out",))
-    sweep_inputs, sweep_errors = sweep_cases(corpus, reference, outputs, specloop)
+    sweep_inputs, sweep_errors = sweep_cases(corpus, reference, outputs, specloop,
+                                             op=config.get("op") or "")
     cases = [(label, arrays, attrs, "cases")
              for label, arrays, attrs in iter_cases(corpus)]
     cases.extend((label, arrays, attrs, "sweeps")
@@ -644,6 +671,12 @@ def run(config: dict, json_path: Path, timeout: int = 1800, max_failures: int = 
                                           "category": category,
                                           "kind": unsupported_dtype.name,
                                           "reason": reason})
+            continue
+        if div_trap_pair(arrays, config.get("op") or ""):
+            report["open"].append({
+                "id": case_id, "label": label, "category": category,
+                "reason": "ONNX Runtime cannot evaluate INT_MIN / -1 for a signed "
+                          "32/64-bit Div (the C integer division traps)"})
             continue
         try:
             wanted = reference.run(arrays, attrs)
